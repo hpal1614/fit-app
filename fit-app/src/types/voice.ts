@@ -64,7 +64,8 @@ export type VoiceAction =
   | 'PERSONAL_RECORD'
   | 'SET_PREFERENCE'
   | 'CANCEL_COMMAND'
-  | 'HELP';
+  | 'HELP'
+  | 'unknown';
 
 export type VoiceContext = 
   | 'workout_active'
@@ -93,6 +94,7 @@ export interface VoiceCommandResult {
   confidence: number;
   originalTranscript: string;
   processedText: string;
+  response?: string;
   timestamp: Date;
   context?: WorkoutContext;
   errors?: string[];
@@ -118,7 +120,9 @@ export interface VoiceState {
   isInitialized: boolean;
   isListening: boolean;
   isSpeaking: boolean;
+  isProcessing: boolean;
   currentTranscript?: string;
+  lastTranscript?: string;
   confidence?: number;
   lastCommand?: VoiceCommandResult;
   error?: VoiceError;
@@ -184,7 +188,10 @@ export type VoiceErrorType =
   | 'context_mismatch'
   | 'parameter_validation_failed'
   | 'timeout'
-  | 'service_unavailable';
+  | 'service_unavailable'
+  | 'initialization_error'
+  | 'recognition_error'
+  | 'synthesis_error';
 
 // Voice analytics and training
 export interface VoiceUsageMetrics {
@@ -239,6 +246,9 @@ export type VoiceEventType =
 export interface VoiceEvent {
   type: VoiceEventType;
   data?: any;
+  state?: VoiceState;
+  error?: VoiceError;
+  result?: VoiceCommandResult;
   timestamp: Date;
   context?: WorkoutContext;
 }

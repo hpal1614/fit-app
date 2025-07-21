@@ -5,9 +5,9 @@ import type {
   Exercise,
   Set,
   WorkoutContext,
-  PersonalRecord,
-  WorkoutType
+  PersonalRecord
 } from '../types/workout';
+import { WorkoutType } from '../types/workout';
 import { WorkoutService } from '../services/workoutService';
 
 interface UseWorkoutOptions {
@@ -156,7 +156,7 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
   const startWorkout = useCallback(async (
     templateId?: string,
     customExercises?: Exercise[],
-    type: WorkoutType = 'strength'
+    type: WorkoutType = WorkoutType.STRENGTH
   ): Promise<Workout> => {
     if (!workoutServiceRef.current) {
       throw new Error('Workout service not available');
@@ -410,15 +410,29 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
   const currentExercise = currentWorkout?.exercises[currentExerciseIndex] || null;
 
   const workoutContext: WorkoutContext = {
-    hasActiveWorkout: isWorkoutActive,
-    currentWorkout,
-    currentExercise,
-    currentExerciseIndex,
-    currentSetIndex,
-    totalExercises: currentWorkout?.exercises.length || 0,
+    activeWorkout: currentWorkout || undefined,
+    currentExercise: currentExercise || undefined,
+    currentSet: currentSetIndex,
+    totalSets: currentWorkout?.exercises.reduce((total, ex) => total + ex.sets.length, 0) || 0,
     workoutDuration,
     isResting,
-    restTimeRemaining
+    restTimeRemaining,
+    userPreferences: {
+      defaultWeightUnit: 'lbs',
+      defaultRestTime: 90,
+      autoRestTimer: true,
+      showPersonalRecords: true,
+      enableVoiceCommands: true,
+      warmupRequired: false,
+      trackRPE: true,
+      roundingPreference: 'nearest_2_5',
+      plateCalculation: true,
+      notifications: {
+        restComplete: true,
+        personalRecord: true,
+        workoutReminders: true
+      }
+    }
   };
 
   // Statistics

@@ -84,7 +84,7 @@ export const SetLogger: React.FC<SetLoggerProps> = ({
   };
 
   const adjustValue = (
-    value: number,
+    _value: number,
     setter: React.Dispatch<React.SetStateAction<number>>,
     increment: number,
     min: number = 0,

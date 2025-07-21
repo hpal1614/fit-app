@@ -42,15 +42,19 @@ export type AIRequestType =
   | 'general-advice'
   | 'form-analysis'
   | 'nutrition-advice'
+  | 'nutrition'
   | 'motivation'
   | 'exercise-explanation'
   | 'workout-planning'
+  | 'workout_planning'
+  | 'workout_plan'
   | 'progress-analysis'
   | 'injury-prevention'
   | 'weight-calculation'
   | 'rest-guidance'
   | 'equipment-substitute'
-  | 'recovery-advice';
+  | 'recovery-advice'
+  | 'general';
 
 export interface AIRequest {
   type: AIRequestType;

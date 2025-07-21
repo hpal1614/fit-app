@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   AIResponse,
-  AIRequestType,
   FormAnalysis,
   NutritionAdvice,
   MotivationalMessage,
@@ -15,7 +14,7 @@ import { AICoachService } from '../services/aiService';
 interface UseAIOptions {
   enableCaching?: boolean;
   enableAnalytics?: boolean;
-  personalityProfile?: 'supportive' | 'motivational' | 'technical' | 'casual';
+  personalityProfile?: 'supportive' | 'motivational' | 'analytical' | 'friendly';
   responseStyle?: 'conversational' | 'concise' | 'detailed';
 }
 
@@ -140,15 +139,9 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
     setError(null);
 
     try {
-      const response = await aiServiceRef.current.analyzeForm({
-        exercise,
-        videoData,
-        timestamp: new Date()
-      });
+              const response = await aiServiceRef.current.analyzeForm(exercise, videoData);
 
-      if (response.content) {
-        return response as unknown as FormAnalysis;
-      }
+      return response;
       
       throw new Error('Invalid form analysis response');
     } catch (err) {
@@ -185,8 +178,8 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
         timestamp: new Date()
       });
 
-      if (response.type === 'nutrition' && response.data) {
-        return response.data as NutritionAdvice;
+      if (response.content) {
+        return response as unknown as NutritionAdvice;
       }
       
       throw new Error('Invalid nutrition advice response');
@@ -222,8 +215,8 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
         timestamp: new Date()
       });
 
-      if (response.type === 'motivation' && response.data) {
-        return response.data as MotivationalMessage;
+      if (response.content) {
+        return response as unknown as MotivationalMessage;
       }
       
       throw new Error('Invalid motivation response');
@@ -261,8 +254,8 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
         timestamp: new Date()
       });
 
-      if (response.type === 'workout_plan' && response.data) {
-        return response.data as WorkoutPlan;
+      if (response.content) {
+        return response as unknown as WorkoutPlan;
       }
       
       throw new Error('Invalid workout plan response');
@@ -300,9 +293,7 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
         timestamp: new Date()
       });
 
-      if (response.type === 'progression' && response.data) {
-        return response.data as Progression;
-      }
+      return response;
       
       throw new Error('Invalid progression response');
     } catch (err) {

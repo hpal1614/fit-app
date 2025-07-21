@@ -18,7 +18,7 @@ export class WorkoutService {
   private restTimer: NodeJS.Timeout | null = null;
   private workoutTimer: NodeJS.Timeout | null = null;
   private startTime: Date | null = null;
-  private _isInitialized = false;
+
 
   constructor() {
     this.db = DatabaseService.getInstance();
@@ -27,7 +27,7 @@ export class WorkoutService {
   async initialize(): Promise<boolean> {
     try {
       await this.db.initialize();
-      this._isInitialized = true;
+      
       return true;
     } catch (error) {
       console.error('Failed to initialize WorkoutService:', error);
@@ -252,15 +252,29 @@ export class WorkoutService {
     const currentExercise = this.getCurrentExercise();
     
     return {
-      hasActiveWorkout: !!this.currentWorkout,
-      currentWorkout: this.currentWorkout,
-      currentExercise,
-      currentExerciseIndex: this.currentExerciseIndex,
-      currentSetIndex: this.currentSetIndex,
-      totalExercises: this.currentWorkout?.exercises.length || 0,
+      activeWorkout: this.currentWorkout || undefined,
+      currentExercise: currentExercise || undefined,
+      currentSet: this.currentSetIndex,
+      totalSets: this.currentWorkout?.exercises.reduce((total, ex) => total + ex.sets.length, 0) || 0,
       workoutDuration: this.calculateWorkoutDuration(),
       isResting: !!this.restTimer,
-      restTimeRemaining: this.getRestTimeRemaining()
+      restTimeRemaining: this.getRestTimeRemaining(),
+      userPreferences: {
+        defaultWeightUnit: 'lbs',
+        defaultRestTime: 90,
+        autoRestTimer: true,
+        showPersonalRecords: true,
+        enableVoiceCommands: true,
+        warmupRequired: false,
+        trackRPE: true,
+        roundingPreference: 'nearest_2_5',
+        plateCalculation: true,
+        notifications: {
+          restComplete: true,
+          personalRecord: true,
+          workoutReminders: true
+        }
+      }
     };
   }
 
@@ -319,9 +333,13 @@ export class WorkoutService {
           const pr: PersonalRecord = {
             id: `pr-${Date.now()}-${Math.random()}`,
             exerciseId: exercise.exerciseId,
+            exerciseName: exercise.exercise.name,
+            type: 'one_rep_max',
+            value: this.calculateOneRepMax(set.weight, set.reps),
             weight: set.weight,
             reps: set.reps,
             oneRepMax: this.calculateOneRepMax(set.weight, set.reps),
+            unit: 'lbs',
             date: new Date(),
             workoutId: workout.id
           };

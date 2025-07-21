@@ -39,8 +39,13 @@ export class AICoachService {
     };
   }
 
-  async initialize(): Promise<boolean> {
+  async initialize(config?: Partial<AICoachConfig>): Promise<boolean> {
     try {
+      // Update config if provided
+      if (config) {
+        this.config = { ...this.config, ...config };
+      }
+      
       // Note: In production, API key should come from backend proxy
       if (this.config.apiKey) {
         this.openai = new OpenAI({
@@ -629,7 +634,7 @@ export class AICoachService {
   }
 
   async getProgression(request: any): Promise<Progression> {
-    return this.suggestProgression(request.history);
+    return this.suggestProgression(request.history, 0, 0);
   }
 }
 

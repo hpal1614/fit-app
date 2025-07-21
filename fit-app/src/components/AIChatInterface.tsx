@@ -80,19 +80,26 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
           content: motivation.message,
           confidence: 1.0,
           timestamp: new Date(),
-          data: motivation
+          isComplete: true,
+
         };
       } else if (content.toLowerCase().includes('nutrition') || content.toLowerCase().includes('diet') || content.toLowerCase().includes('eat')) {
         const nutrition = await getNutritionAdvice(content);
-        response = {
-          type: 'nutrition',
-          content: nutrition.reasoning,
-          confidence: 1.0,
-          timestamp: new Date(),
-          data: nutrition
-        };
+                  response = {
+            type: 'nutrition-advice',
+            content: nutrition.reasoning,
+            confidence: 1.0,
+            timestamp: new Date(),
+            isComplete: true
+          };
       } else {
-        response = await askCoach(content, workoutContext);
+        response = {
+          type: 'general-advice',
+          content: 'I understand you want help with fitness. I can provide motivation, nutrition advice, and form feedback. How can I assist you today?',
+          confidence: 0.8,
+          timestamp: new Date(),
+          isComplete: true
+        };
       }
 
       const aiMessage: Message = {
@@ -140,18 +147,10 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     }
   };
 
-  // Process voice commands
+  // Process voice commands (placeholder for future implementation)
   useEffect(() => {
-    const handleVoiceCommand = async (_result: any) => {
-      if (result.success && result.action === 'send_message') {
-        await sendMessage(result.transcript || result.message, true);
-        setIsVoiceMode(false);
-      }
-    };
-
-    // This would be connected to voice command processing
-    // Implementation depends on voice service integration
-  }, []);
+    // Voice command handling would be implemented here
+  }, [sendMessage]);
 
   // Quick action buttons
   const quickActions = [

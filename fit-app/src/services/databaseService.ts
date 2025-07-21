@@ -3,9 +3,7 @@ import type {
   Workout,
   Exercise,
   WorkoutTemplate,
-  PersonalRecord,
-  WorkoutHistory,
-  Set
+  PersonalRecord
 } from '../types/workout';
 import type { User, AppSettings } from '../types';
 
@@ -19,9 +17,7 @@ interface DBPersonalRecord extends Omit<PersonalRecord, 'date'> {
   date: string;
 }
 
-interface DBSet extends Omit<Set, 'completedAt'> {
-  completedAt?: string;
-}
+
 
 export class FitnessDatabase extends Dexie {
   workouts!: Table<DBWorkout>;
@@ -44,7 +40,7 @@ export class FitnessDatabase extends Dexie {
     });
 
     // Add hooks for data transformation
-    this.workouts.hook('creating', function (primKey, obj, trans) {
+    this.workouts.hook('creating', function (_primKey, obj, _trans) {
       obj.startTime = obj.startTime || new Date().toISOString();
     });
 
@@ -56,7 +52,7 @@ export class FitnessDatabase extends Dexie {
 
 export class DatabaseService {
   private db: FitnessDatabase;
-  private _isInitialized = false;
+
 
   constructor() {
     this.db = new FitnessDatabase();
@@ -69,7 +65,7 @@ export class DatabaseService {
       // Seed initial data if needed
       await this.seedInitialData();
       
-      this._isInitialized = true;
+      
       return true;
     } catch (error) {
       console.error('Failed to initialize database:', error);
@@ -121,7 +117,7 @@ export class DatabaseService {
       return dbWorkouts.map(dbWorkout => ({
         ...dbWorkout,
         startTime: new Date(dbWorkout.startTime),
-        endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : null
+        endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : undefined
       }));
     } catch (error) {
       console.error('Failed to get workout history:', error);
@@ -149,7 +145,7 @@ export class DatabaseService {
       return dbWorkouts.map(dbWorkout => ({
         ...dbWorkout,
         startTime: new Date(dbWorkout.startTime),
-        endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : null
+        endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : undefined
       }));
     } catch (error) {
       console.error('Failed to get workouts by date range:', error);

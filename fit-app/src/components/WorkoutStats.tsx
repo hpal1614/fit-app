@@ -48,7 +48,7 @@ export const WorkoutStats: React.FC<WorkoutStatsProps> = ({
       (exTotal, set) => exTotal + (set.restTime || 0), 0
     ), 0
   );
-  const avgRestTime = workout.totalSets > 0 ? Math.round(totalRestTime / workout.totalSets) : 0;
+  const avgRestTime = (workout.totalSets || 0) > 0 ? Math.round(totalRestTime / (workout.totalSets || 1)) : 0;
 
   // Get achievement level
   const getAchievementLevel = (): { title: string; icon: React.ReactNode; color: string } => {
@@ -116,7 +116,7 @@ export const WorkoutStats: React.FC<WorkoutStatsProps> = ({
             {/* Duration */}
             <div className="stat-card bg-blue-50 p-4 rounded-lg text-center">
               <Clock className="mx-auto mb-2 text-blue-600" size={24} />
-              <div className="text-2xl font-bold text-blue-900">{formatDuration(workout.totalDuration)}</div>
+              <div className="text-2xl font-bold text-blue-900">{formatDuration(workout.totalDuration || 0)}</div>
               <div className="text-sm text-blue-600">Duration</div>
             </div>
 
@@ -245,7 +245,7 @@ export const WorkoutStats: React.FC<WorkoutStatsProps> = ({
                 if (navigator.share) {
                   navigator.share({
                     title: 'My Workout Stats',
-                    text: `Just completed a ${formatDuration(workout.totalDuration)} workout with ${workout.totalSets} sets and ${workout.totalReps} reps!`,
+                    text: `Just completed a ${formatDuration(workout.totalDuration || 0)} workout with ${workout.totalSets || 0} sets and ${workout.totalReps || 0} reps!`,
                   });
                 }
               }}

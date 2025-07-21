@@ -80,7 +80,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(category)}`}>
               {category}
             </span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(difficulty)}`}>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(difficulty.toString())}`}>
               {difficulty}
             </span>
             {equipment && equipment.length > 0 && (

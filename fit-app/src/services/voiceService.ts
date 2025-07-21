@@ -50,6 +50,7 @@ export class VoiceService {
       isInitialized: false,
       isListening: false,
       isSpeaking: false,
+      isProcessing: false,
       continuousMode: this.config.recognition.continuous
     };
   }
