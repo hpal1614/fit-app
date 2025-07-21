@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Primary Colors */
+  --fitness-blue: #3B82F6;
+  --fitness-green: #10B981;
+  --fitness-orange: #F59E0B;
+  --fitness-red: #EF4444;
+  
+  /* Voice States */
+  --voice-listening: #8B5CF6;
+  --voice-speaking: #06B6D4;
+  --voice-processing: #F59E0B;
+  --voice-idle: #6B7280;
+  --voice-error: #EF4444;
+  
+  /* Neutral Scale */
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+}
+
+/* Dark mode variables */
+.dark {
+  --bg-primary: var(--gray-900);
+  --bg-secondary: var(--gray-800);
+  --bg-tertiary: var(--gray-700);
+  --text-primary: var(--gray-50);
+  --text-secondary: var(--gray-300);
+  --text-tertiary: var(--gray-400);
+}
+
+/* Light mode variables */
+.light {
+  --bg-primary: var(--gray-50);
+  --bg-secondary: var(--gray-100);
+  --bg-tertiary: var(--gray-200);
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-700);
+  --text-tertiary: var(--gray-600);
+}
+
+@layer components {
+  .voice-button {
+    @apply relative flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 ease-in-out;
+  }
+  
+  .voice-button.listening {
+    @apply bg-voice-listening animate-pulse-slow;
+  }
+  
+  .voice-button.speaking {
+    @apply bg-voice-speaking animate-bounce-subtle;
+  }
+  
+  .voice-button.processing {
+    @apply bg-voice-processing animate-spin;
+  }
+  
+  .voice-button.idle {
+    @apply bg-voice-idle hover:bg-fitness-blue;
+  }
+  
+  .voice-button.error {
+    @apply bg-voice-error animate-pulse;
+  }
+  
+  .voice-wave {
+    @apply bg-current opacity-60 mx-1 animate-voice-wave;
+    width: 4px;
+    height: 20px;
+    border-radius: 2px;
+  }
+  
+  .voice-wave:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  
+  .voice-wave:nth-child(3) {
+    animation-delay: 0.2s;
+  }
+  
+  .voice-wave:nth-child(4) {
+    animation-delay: 0.3s;
+  }
+  
+  .voice-wave:nth-child(5) {
+    animation-delay: 0.4s;
+  }
+  
+  .workout-card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-700;
+  }
+  
+  .exercise-item {
+    @apply p-3 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
+  }
+  
+  .stat-card {
+    @apply bg-gradient-to-br from-fitness-blue to-fitness-green text-white p-4 rounded-lg shadow-md;
+  }
+  
+  .chat-message {
+    @apply max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-sm;
+  }
+  
+  .chat-message.user {
+    @apply bg-fitness-blue text-white ml-auto;
+  }
+  
+  .chat-message.ai {
+    @apply bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mr-auto;
+  }
+}
+
+/* Scrollbar styling */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-400) var(--gray-100);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Focus states for accessibility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-fitness-blue focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+}
+
+/* Loading spinner */
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
