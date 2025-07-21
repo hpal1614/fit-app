@@ -57,18 +57,28 @@ export class VoiceService {
 
   async initialize(): Promise<boolean> {
     try {
+      console.log('🎤 Initializing Voice Service...');
+      
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        console.log('⚠️ Not in browser environment, voice disabled');
+        return false;
+      }
+
+      // Check for speech synthesis support (more basic check first)
+      if (!window.speechSynthesis) {
+        console.log('⚠️ Speech synthesis not supported');
+        return false;
+      }
+
       // Check for speech recognition support
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
       if (!SpeechRecognition) {
-        this.handleError({
-          type: 'unsupported_browser',
-          message: 'Speech recognition not supported in this browser',
-          recoverable: false,
-          suggestedAction: 'Use a modern browser with speech recognition support',
-          timestamp: new Date()
-        });
-        return false;
+        console.log('⚠️ Speech recognition not supported, but service will work in limited mode');
+        // Continue initialization for synthesis-only mode
+        this.isInitialized = true;
+        return true;
       }
 
       // Initialize speech recognition
@@ -236,6 +246,13 @@ export class VoiceService {
   async speak(text: string, options?: SpeechOptions): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
+        // Check if synthesis is available
+        if (!this.synthesis || !window.speechSynthesis) {
+          console.log('🔊 Speech synthesis not available, skipping speak:', text);
+          resolve();
+          return;
+        }
+
         // Stop current speech if interruption is allowed
         if (options?.interrupt && this.state.isSpeaking) {
           this.synthesis.cancel();

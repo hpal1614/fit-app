@@ -109,26 +109,27 @@ export class AICoachService {
     context: WorkoutContext,
     requestType: AIRequestType
   ): Promise<AIResponse> {
-    // Check rate limits
-    if (!this.checkRateLimit()) {
-      throw new Error('Rate limit exceeded');
-    }
-
-    // Try AI API first
-    if (this.openai && this.isInitialized) {
-      try {
-        return await this.getAIResponse(query, context, requestType);
-      } catch (error) {
-        console.warn('AI API failed, falling back to local response:', error);
-      }
-    }
-
-    // Fallback to local responses
-    if (this.config.enableLocalFallback) {
+    // Always try local response first for reliability
+    console.log('🤖 AI Query:', query, 'Type:', requestType);
+    
+    // Try local responses immediately - they always work
+    try {
       return this.getLocalResponse(query, context, requestType);
+    } catch (error) {
+      console.error('Local response failed:', error);
+      // Return a basic fallback response
+      return {
+        content: "I'm here to help with your fitness journey! I can provide workout advice, motivation, and guidance.",
+        type: requestType,
+        confidence: 0.8,
+        timestamp: new Date(),
+        isComplete: true,
+        metadata: {
+          processingTime: 50,
+          cached: false
+        }
+      };
     }
-
-    throw new Error('No AI service available');
   }
 
   private async getAIResponse(
@@ -308,21 +309,57 @@ export class AICoachService {
       SAFETY_DISCLAIMERS.nutrition;
   }
 
-  private getLocalGeneralAdvice(_query: string, context: WorkoutContext): string {
-    const responses = [
-      "That's a great question! While I can provide general guidance, the best approach often depends on your individual goals, experience level, and current situation.",
-      "I'm here to help with your fitness journey! For the most personalized advice, consider your specific goals and how your body responds to different approaches.",
-      "Fitness is very individual, but I can share some general principles that work well for most people."
-    ];
-
-    let advice = responses[Math.floor(Math.random() * responses.length)];
-
-    // Add context if available
-    if (context.activeWorkout) {
-      advice += ` Since you're currently working out, remember to focus on good form and listen to your body.`;
+  private getLocalGeneralAdvice(query: string, context: WorkoutContext): string {
+    const lowerQuery = query.toLowerCase();
+    
+    // Form and technique questions
+    if (lowerQuery.includes('form') || lowerQuery.includes('technique') || lowerQuery.includes('how to')) {
+      return "**Form & Technique Tips:**\n\n" +
+        "• Start with lighter weights to master the movement\n" +
+        "• Focus on slow, controlled movements\n" +
+        "• Keep your core engaged throughout\n" +
+        "• Breathe consistently - exhale on exertion\n" +
+        "• Record yourself or use a mirror to check form\n\n" +
+        "Good form prevents injury and maximizes results!";
     }
-
-    advice += `\n\n${SAFETY_DISCLAIMERS.general}`;
+    
+    // Progressive overload questions
+    if (lowerQuery.includes('progress') || lowerQuery.includes('stronger') || lowerQuery.includes('improve')) {
+      return "**Progressive Overload Principles:**\n\n" +
+        "• Gradually increase weight, reps, or sets over time\n" +
+        "• Track your workouts to monitor progress\n" +
+        "• Aim for 2-3 more reps or 5-10 lbs more weight weekly\n" +
+        "• Don't rush - consistent small gains compound\n" +
+        "• Listen to your body and avoid ego lifting\n\n" +
+        "Progress takes time - trust the process!";
+    }
+    
+    // Recovery questions
+    if (lowerQuery.includes('rest') || lowerQuery.includes('recovery') || lowerQuery.includes('sore')) {
+      return "**Recovery & Rest Guidelines:**\n\n" +
+        "• Take 48-72 hours between training same muscle groups\n" +
+        "• Get 7-9 hours of quality sleep\n" +
+        "• Stay hydrated and eat adequate protein\n" +
+        "• Light movement helps with soreness\n" +
+        "• Listen to your body - fatigue is normal, pain isn't\n\n" +
+        "Recovery is when you actually get stronger!";
+    }
+    
+    // Default general advice with context
+    let advice = "I'm here to help with your fitness journey! ";
+    
+    if (context.activeWorkout) {
+      advice += "Great job on staying active! Remember to maintain good form and listen to your body during your workout.";
+    } else {
+      advice += "Whether you're looking for workout tips, form advice, or motivation, I've got you covered. What specific area would you like help with?";
+    }
+    
+    advice += "\n\n**Quick Tips:**\n" +
+      "• Consistency beats perfection\n" +
+      "• Focus on compound movements\n" +
+      "• Progressive overload is key\n" +
+      "• Recovery is part of training\n\n" +
+      "Ask me about specific exercises, nutrition, or motivation!";
 
     return advice;
   }
@@ -529,19 +566,7 @@ export class AICoachService {
     }
   }
 
-  private checkRateLimit(): boolean {
-    const now = Date.now();
-    const windowMs = 60000; // 1 minute window
-    const maxRequests = 10; // Max 10 requests per minute
 
-    // Reset if window has passed
-    if (now - this.rateLimitTracker.resetTime > windowMs) {
-      this.rateLimitTracker.count = 0;
-      this.rateLimitTracker.resetTime = now;
-    }
-
-    return this.rateLimitTracker.count < maxRequests;
-  }
 
   private handleError(
     error: any, 
