@@ -49,10 +49,13 @@ export interface Exercise {
   category: ExerciseCategory;
   primaryMuscles: MuscleGroup[];
   secondaryMuscles: MuscleGroup[];
+  muscleGroups: MuscleGroup[];
   equipment: EquipmentType[];
   instructions: string[];
   tips: string[];
   difficulty: 1 | 2 | 3 | 4 | 5;
+  estimatedDuration?: number;
+  defaultSets?: Set[];
   videoUrl?: string;
   imageUrl?: string;
   variations?: string[];
@@ -70,12 +73,18 @@ export interface Set {
   isWarmup?: boolean;
   isFailure?: boolean;
   tempo?: string; // e.g., "3-1-2-1" (eccentric-pause-concentric-pause)
+  isCompleted?: boolean;
+  completedAt?: Date;
 }
 
 export interface WorkoutExercise {
+  id: string;
   exerciseId: string;
   exercise: Exercise;
   sets: Set[];
+  completedSets: Set[];
+  startTime?: Date;
+  endTime?: Date;
   targetSets?: number;
   targetReps?: number;
   targetWeight?: number;
@@ -92,6 +101,10 @@ export interface Workout {
   startTime: Date;
   endTime?: Date;
   duration?: number; // in seconds
+  totalDuration?: number; // in seconds
+  totalSets?: number;
+  totalReps?: number;
+  totalWeight?: number;
   notes?: string;
   templateId?: string;
   totalVolume?: number; // calculated: sum of sets * reps * weight
@@ -141,6 +154,9 @@ export interface PersonalRecord {
   exerciseName: string;
   type: 'one_rep_max' | 'volume' | 'endurance' | 'time';
   value: number;
+  weight: number;
+  reps: number;
+  oneRepMax: number;
   unit: string; // kg, lbs, minutes, seconds, etc.
   date: Date;
   workoutId: string;

@@ -585,6 +585,52 @@ export class AICoachService {
     this.requestQueue.clear();
     this.isInitialized = false;
   }
+
+  // Singleton pattern
+  private static instance: AICoachService;
+  
+  static getInstance(config?: Partial<AICoachConfig>): AICoachService {
+    if (!AICoachService.instance) {
+      AICoachService.instance = new AICoachService(config);
+    }
+    return AICoachService.instance;
+  }
+
+  // Method aliases for compatibility with useAI hook
+  async getResponse(request: any): Promise<AIResponse> {
+    return this.getCoachingResponse(request.message, request.context);
+  }
+
+  async getNutritionAdvice(request: any): Promise<AIResponse> {
+    const response = await this.getCoachingResponse(
+      request.query,
+      request.context,
+      'nutrition'
+    );
+    return response;
+  }
+
+  async getMotivation(request: any): Promise<AIResponse> {
+    const response = await this.getCoachingResponse(
+      'motivate me',
+      request.context,
+      'motivation'
+    );
+    return response;
+  }
+
+  async planWorkout(request: any): Promise<AIResponse> {
+    const response = await this.getCoachingResponse(
+      `Plan a workout for ${request.workoutType || 'strength training'}`,
+      request.context,
+      'workout_planning'
+    );
+    return response;
+  }
+
+  async getProgression(request: any): Promise<Progression> {
+    return this.suggestProgression(request.history);
+  }
 }
 
 // Singleton instance

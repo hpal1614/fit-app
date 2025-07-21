@@ -24,8 +24,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   onClose,
   className = ''
 }) => {
-  const { askCoach, getMotivation, getNutritionAdvice, isLoading, error, isAvailable } = useAI();
-  const { speak, processCommand, isListening, startListening, stopListening } = useVoice({ workoutContext });
+  const { getMotivation, getNutritionAdvice, isLoading, error, isAvailable } = useAI();
+  const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -45,7 +45,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       id: Date.now().toString(),
       type: 'ai',
       content: `Hey there! I'm your AI fitness coach. ${
-        workoutContext?.hasActiveWorkout 
+        workoutContext?.activeWorkout 
           ? `I see you're working on ${workoutContext.currentExercise?.exercise.name}. How can I help?`
           : 'Ready to get started with your fitness journey? Ask me about workouts, nutrition, or form tips!'
       }`,
@@ -86,7 +86,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         const nutrition = await getNutritionAdvice(content);
         response = {
           type: 'nutrition',
-          content: nutrition.recommendation,
+          content: nutrition.reasoning,
           confidence: 1.0,
           timestamp: new Date(),
           data: nutrition
@@ -142,7 +142,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
   // Process voice commands
   useEffect(() => {
-    const handleVoiceCommand = async (result: any) => {
+    const handleVoiceCommand = async (_result: any) => {
       if (result.success && result.action === 'send_message') {
         await sendMessage(result.transcript || result.message, true);
         setIsVoiceMode(false);

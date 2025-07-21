@@ -564,9 +564,18 @@ export class VoiceService {
     this.eventListeners.clear();
     this.isInitialized = false;
   }
+
+  // Singleton pattern
+  private static instance: VoiceService;
+  
+  static getInstance(config?: Partial<VoiceConfig>): VoiceService {
+    if (!VoiceService.instance) {
+      VoiceService.instance = new VoiceService(config);
+    }
+    return VoiceService.instance;
+  }
 }
 
-// Singleton instance
 let voiceServiceInstance: VoiceService | null = null;
 
 export function getVoiceService(config?: Partial<VoiceConfig>): VoiceService {

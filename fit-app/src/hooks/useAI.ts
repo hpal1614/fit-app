@@ -146,8 +146,8 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
         timestamp: new Date()
       });
 
-      if (response.type === 'form_analysis' && response.data) {
-        return response.data as FormAnalysis;
+      if (response.content) {
+        return response as unknown as FormAnalysis;
       }
       
       throw new Error('Invalid form analysis response');

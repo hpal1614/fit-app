@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, Clock, Save, RotateCcw, Check } from 'lucide-react';
+import { Plus, Minus, Clock, Save, RotateCcw } from 'lucide-react';
 import type { WorkoutExercise, Set } from '../types/workout';
 
 interface SetLoggerProps {

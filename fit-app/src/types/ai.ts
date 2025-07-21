@@ -286,11 +286,12 @@ export interface ContentFilter {
 
 // Error handling
 export interface AIError {
-  type: 'rate_limit' | 'api_error' | 'content_filter' | 'context_too_long' | 'service_unavailable';
+  type: 'rate_limit' | 'api_error' | 'content_filter' | 'context_too_long' | 'service_unavailable' | 'initialization_error' | 'request_error' | 'analysis_error' | 'planning_error';
   message: string;
   retryAfter?: number; // seconds
-  fallbackAvailable: boolean;
+  fallbackAvailable?: boolean;
   timestamp: Date;
+  recoverable?: boolean;
 }
 
 // Local AI capabilities

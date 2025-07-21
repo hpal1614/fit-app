@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Pause, Square, SkipForward, SkipBack, Timer, Trophy, TrendingUp, MessageCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Pause, Square, SkipForward, SkipBack, Timer, MessageCircle } from 'lucide-react';
 import { useWorkout } from '../hooks/useWorkout';
 import { useVoice } from '../hooks/useVoice';
 import { useAI } from '../hooks/useAI';
@@ -40,13 +40,13 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
   } = useWorkout({ enableTimers: true });
 
   const { speak } = useVoice({ workoutContext });
-  const { askCoach, getMotivation, isAvailable: isAIAvailable } = useAI();
+  const { isAvailable: isAIAvailable } = useAI();
 
   const [showAIChat, setShowAIChat] = useState(false);
   const [showStats, setShowStats] = useState(false);
 
   // Handle voice commands from VoiceButton
-  const handleVoiceCommand = async (transcript: string, result: any) => {
+  const handleVoiceCommand = async (_transcript: string, result: any) => {
     if (result.success) {
       // Provide audio feedback for successful commands
       await speak(result.response);

@@ -18,6 +18,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.CHEST],
     secondaryMuscles: [MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS],
+    muscleGroups: [MuscleGroup.CHEST, MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS],
     equipment: [EquipmentType.BARBELL],
     instructions: [
       'Lie on the bench with your eyes under the bar',
@@ -44,6 +45,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.CHEST],
     secondaryMuscles: [MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS],
+    muscleGroups: [MuscleGroup.CHEST, MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS],
     equipment: [EquipmentType.BARBELL],
     instructions: [
       'Set the bench to a 30-45 degree incline',
@@ -67,6 +69,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.BACK, MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS],
     secondaryMuscles: [MuscleGroup.CORE, MuscleGroup.FOREARMS],
+    muscleGroups: [MuscleGroup.BACK, MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS, MuscleGroup.CORE, MuscleGroup.FOREARMS],
     equipment: [EquipmentType.BARBELL],
     instructions: [
       'Stand with feet hip-width apart, bar over mid-foot',
@@ -93,6 +96,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.BACK],
     secondaryMuscles: [MuscleGroup.BICEPS, MuscleGroup.CORE],
+    muscleGroups: [MuscleGroup.BACK, MuscleGroup.BICEPS, MuscleGroup.CORE],
     equipment: [EquipmentType.BODYWEIGHT],
     instructions: [
       'Hang from the bar with palms facing away',
@@ -118,6 +122,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.QUADS, MuscleGroup.GLUTES],
     secondaryMuscles: [MuscleGroup.HAMSTRINGS, MuscleGroup.CORE],
+    muscleGroups: [MuscleGroup.QUADS, MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS, MuscleGroup.CORE],
     equipment: [EquipmentType.BARBELL],
     instructions: [
       'Position the bar on your upper back (trapezius)',
@@ -144,6 +149,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.QUADS, MuscleGroup.GLUTES],
     secondaryMuscles: [MuscleGroup.HAMSTRINGS, MuscleGroup.CORE],
+    muscleGroups: [MuscleGroup.QUADS, MuscleGroup.GLUTES, MuscleGroup.HAMSTRINGS, MuscleGroup.CORE],
     equipment: [EquipmentType.BODYWEIGHT, EquipmentType.DUMBBELL],
     instructions: [
       'Stand tall with feet hip-width apart',
@@ -169,6 +175,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.SHOULDERS],
     secondaryMuscles: [MuscleGroup.TRICEPS, MuscleGroup.CORE],
+    muscleGroups: [MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS, MuscleGroup.CORE],
     equipment: [EquipmentType.BARBELL],
     instructions: [
       'Stand with feet shoulder-width apart',
@@ -195,6 +202,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.ISOLATION,
     primaryMuscles: [MuscleGroup.BICEPS],
     secondaryMuscles: [MuscleGroup.FOREARMS],
+    muscleGroups: [MuscleGroup.BICEPS, MuscleGroup.FOREARMS],
     equipment: [EquipmentType.DUMBBELL],
     instructions: [
       'Stand with a dumbbell in each hand, arms at your sides',
@@ -219,6 +227,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.TRICEPS],
     secondaryMuscles: [MuscleGroup.SHOULDERS, MuscleGroup.CHEST],
+    muscleGroups: [MuscleGroup.TRICEPS, MuscleGroup.SHOULDERS, MuscleGroup.CHEST],
     equipment: [EquipmentType.BODYWEIGHT],
     instructions: [
       'Position yourself between parallel bars or on a bench',
@@ -244,6 +253,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.ISOLATION,
     primaryMuscles: [MuscleGroup.CORE],
     secondaryMuscles: [MuscleGroup.SHOULDERS, MuscleGroup.GLUTES],
+    muscleGroups: [MuscleGroup.CORE, MuscleGroup.SHOULDERS, MuscleGroup.GLUTES],
     equipment: [EquipmentType.BODYWEIGHT],
     instructions: [
       'Start in a push-up position with forearms on the ground',
@@ -269,6 +279,7 @@ export const EXERCISE_DATABASE: Exercise[] = [
     category: ExerciseCategory.COMPOUND,
     primaryMuscles: [MuscleGroup.CHEST],
     secondaryMuscles: [MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS, MuscleGroup.CORE],
+    muscleGroups: [MuscleGroup.CHEST, MuscleGroup.SHOULDERS, MuscleGroup.TRICEPS, MuscleGroup.CORE],
     equipment: [EquipmentType.BODYWEIGHT],
     instructions: [
       'Start in a plank position with hands under shoulders',

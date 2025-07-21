@@ -1,4 +1,4 @@
-import Dexie, { Table } from 'dexie';
+import Dexie, { type Table } from 'dexie';
 import type {
   Workout,
   Exercise,
@@ -48,15 +48,15 @@ export class FitnessDatabase extends Dexie {
       obj.startTime = obj.startTime || new Date().toISOString();
     });
 
-    this.workouts.hook('updating', function (modifications, primKey, obj, trans) {
-      modifications.updatedAt = new Date().toISOString();
+    this.workouts.hook('updating', function (modifications, _primKey, _obj, _trans) {
+      (modifications as any).updatedAt = new Date().toISOString();
     });
   }
 }
 
 export class DatabaseService {
   private db: FitnessDatabase;
-  private isInitialized = false;
+  private _isInitialized = false;
 
   constructor() {
     this.db = new FitnessDatabase();
@@ -69,7 +69,7 @@ export class DatabaseService {
       // Seed initial data if needed
       await this.seedInitialData();
       
-      this.isInitialized = true;
+      this._isInitialized = true;
       return true;
     } catch (error) {
       console.error('Failed to initialize database:', error);
@@ -102,7 +102,7 @@ export class DatabaseService {
       return {
         ...dbWorkout,
         startTime: new Date(dbWorkout.startTime),
-        endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : null
+        endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : undefined
       };
     } catch (error) {
       console.error('Failed to get workout:', error);
@@ -282,7 +282,7 @@ export class DatabaseService {
         .filter(exercise => 
           exercise.name.toLowerCase().includes(lowerQuery) ||
           exercise.category.toLowerCase().includes(lowerQuery) ||
-          exercise.muscleGroups.some(muscle => muscle.toLowerCase().includes(lowerQuery))
+          exercise.muscleGroups.some((muscle: string) => muscle.toLowerCase().includes(lowerQuery))
         )
         .toArray();
     } catch (error) {
@@ -350,10 +350,10 @@ export class DatabaseService {
       
       const stats = workouts.reduce((acc, workout) => {
         acc.totalWorkouts++;
-        acc.totalDuration += workout.totalDuration;
-        acc.totalSets += workout.totalSets;
-        acc.totalReps += workout.totalReps;
-        acc.totalWeight += workout.totalWeight;
+        acc.totalDuration += workout.totalDuration || 0;
+        acc.totalSets += workout.totalSets || 0;
+        acc.totalReps += workout.totalReps || 0;
+        acc.totalWeight += workout.totalWeight || 0;
         return acc;
       }, {
         totalWorkouts: 0,

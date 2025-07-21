@@ -65,7 +65,7 @@ export interface UseWorkoutReturn {
 }
 
 export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn => {
-  const { autoSave = true, enableTimers = true } = options;
+  const { enableTimers = true } = options;
   
   const workoutServiceRef = useRef<WorkoutService | null>(null);
   

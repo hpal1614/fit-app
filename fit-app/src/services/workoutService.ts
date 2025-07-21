@@ -3,15 +3,11 @@ import type {
   WorkoutExercise,
   Exercise,
   Set,
-  WorkoutTemplate,
   PersonalRecord,
-  WorkoutContext,
-  WorkoutPreferences,
-  WorkoutType,
-  ExerciseCategory,
-  MuscleGroup
+  WorkoutContext
 } from '../types/workout';
-import { getExerciseById, getExercisesByMuscleGroup, WORKOUT_TEMPLATES } from '../constants/exercises';
+import { WorkoutType } from '../types/workout';
+import { getExerciseById, WORKOUT_TEMPLATES } from '../constants/exercises';
 import { DatabaseService } from './databaseService';
 
 export class WorkoutService {
@@ -22,7 +18,7 @@ export class WorkoutService {
   private restTimer: NodeJS.Timeout | null = null;
   private workoutTimer: NodeJS.Timeout | null = null;
   private startTime: Date | null = null;
-  private isInitialized = false;
+  private _isInitialized = false;
 
   constructor() {
     this.db = DatabaseService.getInstance();
@@ -31,7 +27,7 @@ export class WorkoutService {
   async initialize(): Promise<boolean> {
     try {
       await this.db.initialize();
-      this.isInitialized = true;
+      this._isInitialized = true;
       return true;
     } catch (error) {
       console.error('Failed to initialize WorkoutService:', error);
@@ -43,7 +39,7 @@ export class WorkoutService {
   async startWorkout(
     templateId?: string,
     customExercises?: Exercise[],
-    workoutType: WorkoutType = 'strength'
+    workoutType: WorkoutType = WorkoutType.STRENGTH
   ): Promise<Workout> {
     try {
       let exercises: WorkoutExercise[] = [];
@@ -51,26 +47,36 @@ export class WorkoutService {
       if (templateId) {
         const template = WORKOUT_TEMPLATES.find(t => t.id === templateId);
         if (template) {
-          exercises = template.exercises.map(ex => ({
-            ...ex,
-            id: `${Date.now()}-${Math.random()}`,
-            completedSets: [],
-            notes: '',
-            startTime: null,
-            endTime: null
-          }));
+          exercises = template.exercises.map(ex => {
+            const exercise = getExerciseById(ex.exerciseId);
+            return {
+              id: `${Date.now()}-${Math.random()}`,
+              exerciseId: ex.exerciseId,
+              exercise: exercise!,
+              sets: exercise?.defaultSets || [],
+              completedSets: [],
+              targetSets: ex.targetSets,
+              targetReps: ex.targetReps,
+              targetWeight: ex.targetWeight,
+              restTimeBetweenSets: ex.restTime,
+              notes: '',
+              orderIndex: ex.orderIndex,
+              startTime: undefined,
+              endTime: undefined
+            };
+          });
         }
       } else if (customExercises) {
         exercises = customExercises.map((exercise, index) => ({
+          id: `${Date.now()}-${index}`,
           exerciseId: exercise.id,
           exercise,
-          order: index,
-          sets: exercise.defaultSets || [{ id: `set-${Date.now()}-${index}`, reps: 10, weight: 0, restTime: 60, isCompleted: false }],
+          sets: exercise.defaultSets || [],
           completedSets: [],
           notes: '',
-          id: `${Date.now()}-${index}`,
-          startTime: null,
-          endTime: null
+          orderIndex: index,
+          startTime: undefined,
+          endTime: undefined
         }));
       }
 
@@ -80,7 +86,7 @@ export class WorkoutService {
         type: workoutType,
         exercises,
         startTime: new Date(),
-        endTime: null,
+        endTime: undefined,
         totalDuration: 0,
         totalSets: 0,
         totalReps: 0,
@@ -164,6 +170,7 @@ export class WorkoutService {
       reps,
       weight,
       restTime: restTime || 60,
+      timestamp: new Date(),
       isCompleted: true,
       completedAt: new Date(),
       notes
@@ -177,13 +184,20 @@ export class WorkoutService {
       const pr: PersonalRecord = {
         id: `pr-${Date.now()}`,
         exerciseId: exercise.exerciseId,
+        exerciseName: exercise.exercise.name,
+        type: 'one_rep_max',
+        value: this.calculateOneRepMax(weight, reps),
         weight,
         reps,
         oneRepMax: this.calculateOneRepMax(weight, reps),
+        unit: 'lbs',
         date: new Date(),
         workoutId: this.currentWorkout.id
       };
       
+      if (!this.currentWorkout.personalRecords) {
+        this.currentWorkout.personalRecords = [];
+      }
       this.currentWorkout.personalRecords.push(pr);
       await this.db.savePersonalRecord(pr);
     }
@@ -312,6 +326,9 @@ export class WorkoutService {
             workoutId: workout.id
           };
           
+          if (!workout.personalRecords) {
+            workout.personalRecords = [];
+          }
           workout.personalRecords.push(pr);
           await this.db.savePersonalRecord(pr);
         }
