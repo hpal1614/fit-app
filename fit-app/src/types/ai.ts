@@ -80,6 +80,7 @@ export interface AIResponse {
     processingTime?: number;
     model?: string;
     cached?: boolean;
+    provider?: string;
   };
   timestamp: Date;
   isComplete: boolean;

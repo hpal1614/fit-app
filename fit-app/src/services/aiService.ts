@@ -20,7 +20,7 @@ export class AICoachService {
   private config: AICoachConfig;
   private cache: Map<string, AICache> = new Map();
   private requestQueue: Map<string, Promise<AIResponse>> = new Map();
-  private rateLimitTracker: { count: number; resetTime: number } = { count: 0, resetTime: Date.now() };
+
   private isInitialized = false;
 
   constructor(config?: Partial<AICoachConfig>) {
@@ -109,66 +109,209 @@ export class AICoachService {
     context: WorkoutContext,
     requestType: AIRequestType
   ): Promise<AIResponse> {
-    // Always try local response first for reliability
     console.log('🤖 AI Query:', query, 'Type:', requestType);
     
-    // Try local responses immediately - they always work
-    try {
-      return this.getLocalResponse(query, context, requestType);
-    } catch (error) {
-      console.error('Local response failed:', error);
-      // Return a basic fallback response
-      return {
-        content: "I'm here to help with your fitness journey! I can provide workout advice, motivation, and guidance.",
-        type: requestType,
-        confidence: 0.8,
-        timestamp: new Date(),
-        isComplete: true,
-        metadata: {
-          processingTime: 50,
-          cached: false
-        }
-      };
+    // Try real AI APIs first (primary functionality)
+    const apiKeys = {
+      openrouter: import.meta.env.VITE_OPENROUTER_API_KEY,
+      groq: import.meta.env.VITE_GROQ_API_KEY,
+      google: import.meta.env.VITE_GOOGLE_AI_API_KEY
+    };
+    
+    console.log('🔑 Available API Keys:', {
+      openrouter: apiKeys.openrouter ? `${apiKeys.openrouter.substring(0, 20)}...` : 'NOT SET',
+      groq: apiKeys.groq ? `${apiKeys.groq.substring(0, 20)}...` : 'NOT SET',
+      google: apiKeys.google ? `${apiKeys.google.substring(0, 20)}...` : 'NOT SET'
+    });
+
+    // Try OpenRouter first (most capable)
+    if (apiKeys.openrouter) {
+      try {
+        console.log('🎯 Trying OpenRouter API...');
+        return await this.callOpenRouter(query, context, requestType, apiKeys.openrouter);
+      } catch (error) {
+        console.warn('OpenRouter failed:', error);
+      }
     }
+
+    // Try Groq (fast and reliable)
+    if (apiKeys.groq) {
+      try {
+        console.log('⚡ Trying Groq API...');
+        return await this.callGroq(query, context, requestType, apiKeys.groq);
+      } catch (error) {
+        console.warn('Groq failed:', error);
+      }
+    }
+
+    // Try Google AI (Gemini)
+    if (apiKeys.google) {
+      try {
+        console.log('🧠 Trying Google Gemini API...');
+        return await this.callGemini(query, context, requestType, apiKeys.google);
+      } catch (error) {
+        console.warn('Google Gemini failed:', error);
+      }
+    }
+
+    // Only fallback to local if ALL APIs fail
+    console.log('❌ All AI APIs failed, using local fallback');
+    return this.getLocalResponse(query, context, requestType);
   }
 
-  private async getAIResponse(
+  private async callOpenRouter(
     query: string,
     context: WorkoutContext,
-    requestType: AIRequestType
+    requestType: AIRequestType,
+    apiKey: string
   ): Promise<AIResponse> {
     const systemPrompt = this.buildSystemPrompt(requestType, context);
     const userPrompt = this.buildUserPrompt(query, context, requestType);
-
     const startTime = Date.now();
-    
-    const completion = await this.openai!.chat.completions.create({
-      model: this.config.model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      max_tokens: this.config.maxTokens,
-      temperature: this.config.temperature,
-      stream: false
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'AI Fitness Coach'
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+        stream: false
+      })
     });
 
-    const processingTime = Date.now() - startTime;
-    const content = completion.choices[0]?.message?.content || '';
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+    }
 
-    // Update rate limiting
-    this.rateLimitTracker.count++;
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    const processingTime = Date.now() - startTime;
 
     return {
       content: content.trim(),
       type: requestType,
-      confidence: 0.9, // High confidence for AI responses
+      confidence: 0.95,
       timestamp: new Date(),
       isComplete: true,
       metadata: {
-        tokensUsed: completion.usage?.total_tokens,
+        provider: 'openrouter',
+        model: 'claude-3.5-sonnet',
+        tokensUsed: data.usage?.total_tokens,
         processingTime,
-        model: this.config.model,
+        cached: false
+      }
+    };
+  }
+
+  private async callGroq(
+    query: string,
+    context: WorkoutContext,
+    requestType: AIRequestType,
+    apiKey: string
+  ): Promise<AIResponse> {
+    const systemPrompt = this.buildSystemPrompt(requestType, context);
+    const userPrompt = this.buildUserPrompt(query, context, requestType);
+    const startTime = Date.now();
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    const processingTime = Date.now() - startTime;
+
+    return {
+      content: content.trim(),
+      type: requestType,
+      confidence: 0.92,
+      timestamp: new Date(),
+      isComplete: true,
+      metadata: {
+        provider: 'groq',
+        model: 'llama-3.1-70b-versatile',
+        tokensUsed: data.usage?.total_tokens,
+        processingTime,
+        cached: false
+      }
+    };
+  }
+
+  private async callGemini(
+    query: string,
+    context: WorkoutContext,
+    requestType: AIRequestType,
+    apiKey: string
+  ): Promise<AIResponse> {
+    const systemPrompt = this.buildSystemPrompt(requestType, context);
+    const userPrompt = this.buildUserPrompt(query, context, requestType);
+    const startTime = Date.now();
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `${systemPrompt}\n\nUser: ${userPrompt}`
+          }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature: 0.7
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const processingTime = Date.now() - startTime;
+
+    return {
+      content: content.trim(),
+      type: requestType,
+      confidence: 0.90,
+      timestamp: new Date(),
+      isComplete: true,
+      metadata: {
+        provider: 'google',
+        model: 'gemini-1.5-flash',
+        tokensUsed: data.usageMetadata?.totalTokenCount,
+        processingTime,
         cached: false
       }
     };
@@ -372,7 +515,7 @@ export class AICoachService {
       
       if (this.openai && this.isInitialized) {
         // Use AI for detailed analysis
-        const response = await this.getAIResponse(query, {} as WorkoutContext, 'form-analysis');
+        const response = await this.processRequest(query, {} as WorkoutContext, 'form-analysis');
         
         // Parse AI response into FormAnalysis structure
         return {
