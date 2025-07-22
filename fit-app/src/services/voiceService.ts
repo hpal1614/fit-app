@@ -12,6 +12,10 @@ import type {
 } from '../types/voice';
 import type { WorkoutContext } from '../types/workout';
 import { VOICE_COMMAND_CONFIG, EXERCISE_ALIASES, WEIGHT_UNITS } from '../constants/voiceCommands';
+import { EnhancedNLPService } from './nlpService';
+import { ConversationMemoryService } from './conversationMemoryService';
+import { UserLearningService } from './userLearningService';
+import { ConversationFlowManager } from './conversationFlow';
 
 // Extend the global interface for Web Speech API
 declare global {
@@ -40,6 +44,12 @@ export class VoiceService {
   private isInitialized = false;
   // private currentUtterance: SpeechSynthesisUtterance | null = null;
   private recognitionTimeout: NodeJS.Timeout | null = null;
+  
+  // AI-powered services
+  private nlpService: EnhancedNLPService;
+  private memoryService: ConversationMemoryService;
+  private learningService: UserLearningService;
+  private conversationFlow: ConversationFlowManager;
 
   constructor(config?: Partial<VoiceConfig>) {
     this.synthesis = window.speechSynthesis;
@@ -53,6 +63,12 @@ export class VoiceService {
       isProcessing: false,
       continuousMode: this.config.recognition.continuous
     };
+    
+    // Initialize AI services
+    this.nlpService = EnhancedNLPService.getInstance();
+    this.memoryService = ConversationMemoryService.getInstance();
+    this.learningService = UserLearningService.getInstance();
+    this.conversationFlow = new ConversationFlowManager();
   }
 
   async initialize(): Promise<boolean> {
@@ -316,61 +332,88 @@ export class VoiceService {
     });
   }
 
-  processVoiceCommand(transcript: string): VoiceCommandResult {
-    const normalizedTranscript = this.normalizeTranscript(transcript);
-    let bestMatch: VoiceCommandResult | null = null;
-    let highestConfidence = 0;
-
-    // Check each command pattern
-    for (const command of this.config.commands) {
-      for (const pattern of command.patterns) {
-        const match = this.matchPattern(normalizedTranscript, pattern);
-        
-        if (match && match.confidence >= command.confidence) {
-          if (match.confidence > highestConfidence) {
-            highestConfidence = match.confidence;
-            bestMatch = {
-              success: true,
-              action: command.action,
-              parameters: match.parameters,
-              confidence: match.confidence,
-              originalTranscript: transcript,
-              transcript: transcript,
-              processedText: normalizedTranscript,
-              timestamp: new Date(),
-              context: this.state.context
-            };
-          }
-        }
-      }
+  async processVoiceCommand(transcript: string): Promise<VoiceCommandResult> {
+    // Use AI-powered NLP instead of regex patterns
+    const nlpResult = await this.nlpService.processText(transcript, {
+      currentExercise: this.state.context?.currentExercise?.exercise.name,
+      previousIntent: this.nlpService.getContext().previousIntent
+    });
+    
+    // Handle conversation flow
+    if (this.conversationFlow.isInFlow()) {
+      const response = await this.conversationFlow.processUserInput(transcript, this.state.context || {} as WorkoutContext);
+      
+      // Add to conversation memory
+      this.memoryService.addMessage({
+        id: Date.now().toString(),
+        role: 'user',
+        content: transcript,
+        timestamp: new Date(),
+        type: nlpResult.intent as any
+      }, this.state.context);
+      
+      // Speak the response
+      await this.speak(response.text);
+      
+      return {
+        success: true,
+        action: nlpResult.intent as VoiceAction,
+        parameters: this.extractParametersFromNLP(nlpResult),
+        confidence: nlpResult.confidence,
+        originalTranscript: transcript,
+        transcript: transcript,
+        processedText: nlpResult.normalizedText,
+        timestamp: new Date(),
+        context: this.state.context,
+        aiResponse: response.text
+      };
     }
-
-    if (bestMatch && bestMatch.confidence >= this.config.confidenceThreshold) {
-      this.state.lastCommand = bestMatch;
-      this.emitEvent('command_recognized', bestMatch);
-      return bestMatch;
-    }
-
-    // No command recognized
-    const failureResult: VoiceCommandResult = {
-      success: false,
-      action: 'HELP' as VoiceAction,
-      parameters: {},
-      confidence: 0,
+    
+    // Convert NLP result to voice command result
+    const parameters = this.extractParametersFromNLP(nlpResult);
+    
+    // Learn from this interaction
+    const predictions = this.learningService.predictUserNeeds(this.state.context || {} as WorkoutContext);
+    
+    // Map NLP intent to voice action
+    const action = this.mapIntentToAction(nlpResult.intent);
+    
+    const result: VoiceCommandResult = {
+      success: nlpResult.confidence > 0.5,
+      action,
+      parameters,
+      confidence: nlpResult.confidence,
       originalTranscript: transcript,
       transcript: transcript,
-      processedText: normalizedTranscript,
+      processedText: nlpResult.normalizedText,
       timestamp: new Date(),
       context: this.state.context,
-      errors: ['Command not recognized'],
-      suggestions: this.getSuggestions(normalizedTranscript)
+      aiInterpretation: nlpResult.aiInterpretation,
+      suggestions: predictions.suggestedActions
     };
-
-    this.emitEvent('command_recognized', failureResult);
-    return failureResult;
+    
+    // Add to conversation memory
+    this.memoryService.addMessage({
+      id: Date.now().toString(),
+      role: 'user',
+      content: transcript,
+      timestamp: new Date(),
+      type: nlpResult.intent as any
+    }, this.state.context);
+    
+    // Learn from this interaction
+    await this.learningService.learnFromInteraction(
+      nlpResult,
+      this.state.context || {} as WorkoutContext,
+      result.success ? 'success' : 'failure'
+    );
+    
+    this.state.lastCommand = result;
+    this.emitEvent('command_recognized', result);
+    return result;
   }
 
-  private processVoiceInput(input: VoiceInput): void {
+  private async processVoiceInput(input: VoiceInput): Promise<void> {
     if (input.confidence < this.config.confidenceThreshold) {
       this.handleError({
         type: 'low_confidence',
@@ -381,8 +424,66 @@ export class VoiceService {
       return;
     }
 
-    const result = this.processVoiceCommand(input.transcript);
+    const result = await this.processVoiceCommand(input.transcript);
     this.emitEvent('command_executed', result);
+  }
+  
+  private extractParametersFromNLP(nlpResult: any): Record<string, any> {
+    const parameters: Record<string, any> = {};
+    
+    // Extract exercise
+    const exerciseEntity = nlpResult.entities.find((e: any) => e.type === 'exercise');
+    if (exerciseEntity) {
+      parameters.exercise = exerciseEntity.value;
+      parameters.exerciseName = exerciseEntity.text;
+    }
+    
+    // Extract reps
+    const repsEntity = nlpResult.entities.find((e: any) => e.type === 'reps');
+    if (repsEntity) {
+      parameters.reps = repsEntity.value;
+    }
+    
+    // Extract weight
+    const weightEntity = nlpResult.entities.find((e: any) => e.type === 'weight');
+    if (weightEntity) {
+      parameters.weight = weightEntity.value;
+      parameters.unit = this.state.context?.userPreferences?.defaultWeightUnit || 'lbs';
+    }
+    
+    // Extract from AI interpretation if available
+    if (nlpResult.aiInterpretation && nlpResult.extractedData) {
+      if (nlpResult.extractedData.exercise && !parameters.exercise) {
+        parameters.exercise = nlpResult.extractedData.exercise;
+      }
+      if (nlpResult.extractedData.reps && !parameters.reps) {
+        parameters.reps = nlpResult.extractedData.reps;
+      }
+      if (nlpResult.extractedData.weight && !parameters.weight) {
+        parameters.weight = nlpResult.extractedData.weight;
+      }
+    }
+    
+    return parameters;
+  }
+  
+  private mapIntentToAction(intent: string): VoiceAction {
+    const intentActionMap: Record<string, VoiceAction> = {
+      'log_exercise': 'LOG_EXERCISE',
+      'quick_log': 'LOG_EXERCISE',
+      'ask_ai': 'AI_COACHING',
+      'motivation': 'MOTIVATION_REQUEST',
+      'form_analysis': 'FORM_ANALYSIS',
+      'nutrition': 'NUTRITION_QUERY',
+      'workout_control': 'START_WORKOUT',
+      'start_workout': 'START_WORKOUT',
+      'end_workout': 'END_WORKOUT',
+      'rest_timer': 'REST_TIMER',
+      'next_exercise': 'NEXT_EXERCISE',
+      'previous_exercise': 'PREVIOUS_EXERCISE'
+    };
+    
+    return intentActionMap[intent] || 'HELP';
   }
 
   private normalizeTranscript(transcript: string): string {

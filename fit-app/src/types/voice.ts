@@ -109,6 +109,8 @@ export interface VoiceCommandResult {
   errors?: string[];
   suggestions?: string[];
   reasoning?: string; // For AI-generated reasoning
+  aiInterpretation?: string; // AI's understanding of the command
+  aiResponse?: string; // AI-generated response text
 }
 
 export interface VoiceInput {
