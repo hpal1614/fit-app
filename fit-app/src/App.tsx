@@ -12,7 +12,7 @@ import { ConversationFlowManager } from './services/conversationFlow';
 // Removed unused VoiceAction import
 
 // Initialize intelligent services
-// AI service initialization moved to useAI hook
+const aiService = AICoachService.getInstance();
 const conversationFlow = new ConversationFlowManager();
 
 function App() {

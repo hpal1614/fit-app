@@ -3,7 +3,7 @@ import type {
   VoiceAction,
   WorkoutContext
 } from '../types/voice';
-import { AICoachService } from './aiService';
+// AI service import removed
 
 interface VoiceCommandIntent {
   action: VoiceAction;
@@ -21,7 +21,7 @@ interface ExerciseMapping {
 }
 
 export class FitnessNLP {
-  private aiService: AICoachService;
+  // AI service removed for simplicity
   
   private exerciseDatabase: ExerciseMapping = {
     'bench': 'bench press',
@@ -344,46 +344,41 @@ export class FitnessNLP {
     return { action: 'unknown', parameters: {}, confidence: 0, reasoning: 'No nutrition pattern detected' };
   }
 
+  private detectBasicIntent(transcript: string, _context: WorkoutContext): VoiceCommandIntent {
+    const lowerTranscript = transcript.toLowerCase();
+    
+    // Simple pattern matching for basic intents
+    if (lowerTranscript.includes('motivat') || lowerTranscript.includes('encourage')) {
+      return { action: 'MOTIVATION_REQUEST', parameters: {}, confidence: 0.8, reasoning: 'Motivation keyword detected' };
+    }
+    
+    if (lowerTranscript.includes('form') || lowerTranscript.includes('technique')) {
+      return { action: 'FORM_ANALYSIS', parameters: {}, confidence: 0.7, reasoning: 'Form keyword detected' };
+    }
+    
+    if (lowerTranscript.includes('start') || lowerTranscript.includes('begin')) {
+      return { action: 'START_WORKOUT', parameters: {}, confidence: 0.6, reasoning: 'Start keyword detected' };
+    }
+    
+    if (lowerTranscript.includes('end') || lowerTranscript.includes('finish')) {
+      return { action: 'END_WORKOUT', parameters: {}, confidence: 0.6, reasoning: 'End keyword detected' };
+    }
+    
+    // Default fallback
+    return { action: 'HELP', parameters: {}, confidence: 0.3, reasoning: 'No clear intent detected' };
+  }
+
   private async parseWithAI(transcript: string, context: WorkoutContext): Promise<VoiceCommandResult> {
-    const prompt = `Parse this fitness voice command and extract the intent. The user is using voice to control their workout app.
-
-USER SAID: "${transcript}"
-
-WORKOUT CONTEXT: ${context.activeWorkout ? `Active workout: ${context.currentExercise?.exercise.name || 'Unknown exercise'}` : 'No active workout'}
-
-Determine the most likely intent from these options:
-- LOG_EXERCISE: User wants to log a set (reps/weight for an exercise)
-- START_WORKOUT/END_WORKOUT: Control workout session
-- FORM_ANALYSIS: User wants form feedback
-- MOTIVATION_REQUEST: User needs motivation/encouragement
-- EXERCISE_INFO: User wants to learn about an exercise
-- NUTRITION_QUERY: User asking about nutrition/food
-- GET_PROGRESS: User wants to see their progress/PRs
-- NEXT_EXERCISE/PREVIOUS_EXERCISE: Navigate between exercises
-- HELP: User needs help or doesn't know what to say
-- CLARIFY: Command unclear, need clarification
-
-Extract parameters if applicable:
-- exercise: exercise name (normalized)
-- reps: number of repetitions
-- weight: weight amount
-- unit: lbs or kg
-
-Return ONLY this JSON format:
-{
-  "action": "ACTION_NAME",
-  "parameters": {"exercise": "...", "reps": 0, "weight": 0},
-  "confidence": 0.0-1.0,
-  "reasoning": "Why you chose this action"
-}`;
-
-          try {
-        // AI service call removed - return basic fallback response
+    // Simplified parsing without AI service call
+    try {
+        // Use basic pattern detection instead of AI
+        const basicIntent = this.detectBasicIntent(transcript, context);
         const basicResponse = {
-          action: intent.action,
-          parameters: intent.parameters,
-          confidence: intent.confidence,
-          response: `I'll help you with ${intent.action.replace('_', ' ')}.`
+          action: basicIntent.action,
+          parameters: basicIntent.parameters,
+          confidence: basicIntent.confidence,
+          response: `I'll help you with ${basicIntent.action.replace('_', ' ')}.`,
+          reasoning: 'Basic pattern matching'
         };
         const parsed = basicResponse;
       
