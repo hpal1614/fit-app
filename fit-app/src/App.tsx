@@ -88,7 +88,7 @@ function App() {
           }
           break;
 
-        case 'END_WORKOUT':
+        case 'END_WORKOUT': {
           const completedWorkout = await workoutLogger.endWorkout();
           if (completedWorkout) {
             const duration = workoutLogger.workoutDuration;
@@ -104,8 +104,9 @@ function App() {
             await voiceRecognition.speak(summaryResponse.content, { emotion: 'celebratory' });
           }
           break;
+        }
 
-        case 'LOG_EXERCISE':
+        case 'LOG_EXERCISE': {
           const { exercise, reps, weight, unit = 'lbs' } = parameters;
           if (exercise && reps && weight) {
             await workoutLogger.logSet(reps, weight);
@@ -120,8 +121,9 @@ function App() {
             await voiceRecognition.speak(setFeedback.content, { emotion: 'celebratory' });
           }
           break;
+        }
 
-        case 'NEXT_EXERCISE':
+        case 'NEXT_EXERCISE': {
           if (workoutLogger.isWorkoutActive) {
             const nextEx = workoutLogger.nextExercise();
             if (nextEx) {
@@ -134,6 +136,7 @@ function App() {
             }
           }
           break;
+        }
 
         case 'PREVIOUS_EXERCISE':
           if (workoutLogger.isWorkoutActive) {
@@ -142,7 +145,7 @@ function App() {
           }
           break;
 
-        case 'START_REST_TIMER':
+        case 'START_REST_TIMER': {
           const restTime = parameters.seconds || 90; // Default 90 seconds
           workoutLogger.startRestTimer(restTime);
           await voiceRecognition.speak(
@@ -150,8 +153,9 @@ function App() {
             { emotion: 'instructional' }
           );
           break;
+        }
 
-        case 'FORM_ANALYSIS':
+        case 'FORM_ANALYSIS': {
           const exercise = parameters.exercise || context.currentExercise?.exercise.name;
           if (exercise) {
             const formAnalysis = await aiService.getCoachingResponse(
@@ -167,8 +171,9 @@ function App() {
             );
           }
           break;
+        }
 
-        case 'MOTIVATION_REQUEST':
+        case 'MOTIVATION_REQUEST': {
           const motivation = await aiService.getCoachingResponse(
             parameters.context || 'User needs motivation during workout',
             context,
@@ -176,8 +181,9 @@ function App() {
           );
           await voiceRecognition.speak(motivation.content, { emotion: 'encouraging' });
           break;
+        }
 
-        case 'NUTRITION_QUERY':
+        case 'NUTRITION_QUERY': {
           const nutritionAdvice = await aiService.getCoachingResponse(
             parameters.query || 'General nutrition advice',
             context,
@@ -185,8 +191,9 @@ function App() {
           );
           await voiceRecognition.speak(nutritionAdvice.content, { emotion: 'instructional' });
           break;
+        }
 
-        case 'EXERCISE_INFO':
+        case 'EXERCISE_INFO': {
           const exerciseInfoResponse = await aiService.getCoachingResponse(
             `Explain ${parameters.exercise}: muscles worked, form tips, and benefits.`,
             context,
@@ -194,8 +201,9 @@ function App() {
           );
           await voiceRecognition.speak(exerciseInfoResponse.content, { emotion: 'instructional' });
           break;
+        }
 
-        case 'GET_PROGRESS':
+        case 'GET_PROGRESS': {
           const exercise = parameters.exercise;
           if (exercise) {
             // This would normally fetch from database
@@ -205,6 +213,7 @@ function App() {
             );
           }
           break;
+        }
 
         case 'SHOW_STATS':
           setShowStats(true);
@@ -215,7 +224,7 @@ function App() {
           await voiceRecognition.speak("Your workout history would be displayed here!", { emotion: 'neutral' });
           break;
 
-        case 'HELP':
+        case 'HELP': {
           const helpMessage = `I'm your AI fitness coach! I can help you:
           • Log sets by saying "Log bench press 8 reps at 185 pounds"
           • Analyze form by saying "How's my squat form?"
@@ -227,16 +236,18 @@ function App() {
           
           await voiceRecognition.speak(helpMessage, { emotion: 'instructional' });
           break;
+        }
 
-        case 'CLARIFY':
+        case 'CLARIFY': {
           const suggestions = nlpService.getSuggestions(parameters.originalTranscript || '');
           await voiceRecognition.speak(
             `I didn't quite understand that. ${suggestions[0] || "Try saying something like 'Log bench press 8 reps at 185 pounds'"}`,
             { emotion: 'apologetic' }
           );
           break;
+        }
 
-        default:
+        default: {
           // Get AI response for unknown commands
           const response = await aiService.getCoachingResponse(
             `User said: "${parameters.originalTranscript || 'Unknown command'}". Provide a helpful response.`,
@@ -244,6 +255,7 @@ function App() {
             'general-advice'
           );
           await voiceRecognition.speak(response.content, { emotion: 'neutral' });
+        }
       }
     } catch (error) {
       console.error(`Failed to execute command ${action}:`, error);
