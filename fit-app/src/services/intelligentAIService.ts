@@ -4,7 +4,7 @@ import type {
   AIRequestType,
   WorkoutContext
 } from '../types/ai';
-import type { Exercise } from '../types/workout';
+// Removed unused Exercise import
 
 interface AIProvider {
   name: 'openrouter' | 'groq' | 'google';
@@ -398,7 +398,7 @@ CURRENT CONTEXT:`;
       prompt += `
 - Exercise focus: ${exercise.exercise.primaryMuscles.join(', ')}
 - Sets completed: ${exercise.completedSets.length}/${exercise.targetSets}
-- Form notes: ${exercise.formNotes || 'None'}`;
+- Exercise notes: ${exercise.notes || 'None'}`;
     }
 
     // Add user intelligence context
@@ -471,7 +471,7 @@ RESPONSE:`;
 
   private calculateTotalSets(context: EnhancedContext): number {
     if (!context.activeWorkout) return 0;
-    return context.activeWorkout.exercises.reduce((total, ex) => total + (ex.completedSets?.length || 0), 0);
+    return context.activeWorkout.exercises.reduce((total: number, ex: any) => total + (ex.completedSets?.length || 0), 0);
   }
 
   private estimateExperienceLevel(context: WorkoutContext): 'beginner' | 'intermediate' | 'advanced' {
@@ -518,7 +518,7 @@ RESPONSE:`;
     return 'high';
   }
 
-  private trackUsage(provider: 'openrouter' | 'groq' | 'google', requests: number, tokens: number): void {
+  private trackUsage(provider: 'openrouter' | 'groq' | 'google', requests: number, _tokens: number): void {
     const providerObj = this.providers.find(p => p.name === provider);
     if (providerObj) {
       providerObj.usedToday += requests;
@@ -549,7 +549,7 @@ RESPONSE:`;
     // Try next available provider
     const availableProviders = this.getAvailableProviders();
     if (availableProviders.length > 0) {
-      const nextProvider = this.selectBestProvider(requestType);
+      // const nextProvider = this.selectBestProvider(requestType);
       return this.getCoachingResponse(query, context, requestType);
     }
 
@@ -613,11 +613,11 @@ RESPONSE:`;
     return `You're putting in the work and that's what matters! Every rep, every set is building a stronger, healthier you. Stay focused on form, control your breathing, and trust the process. You've got this! 🔥`;
   }
 
-  private getIntelligentExerciseInfo(query: string, context: EnhancedContext): string {
+  private getIntelligentExerciseInfo(_query: string, context: EnhancedContext): string {
     const currentExercise = context.currentExercise?.exercise;
     
     if (currentExercise) {
-      return `**${currentExercise.name}**\n\n**Primary Muscles:** ${currentExercise.primaryMuscles.join(', ')}\n\n**Key Form Points:**\n${currentExercise.instructions.slice(0, 3).map((inst, i) => `${i + 1}. ${inst}`).join('\n')}\n\n**Pro Tip:** ${currentExercise.tips?.[0] || 'Focus on controlled movement and proper breathing.'}\n\nBased on your current workout, maintain consistent form as fatigue sets in!`;
+      return `**${currentExercise.name}**\n\n**Primary Muscles:** ${currentExercise.primaryMuscles.join(', ')}\n\n**Key Form Points:**\n${currentExercise.instructions.slice(0, 3).map((inst: string, i: number) => `${i + 1}. ${inst}`).join('\n')}\n\n**Pro Tip:** ${currentExercise.tips?.[0] || 'Focus on controlled movement and proper breathing.'}\n\nBased on your current workout, maintain consistent form as fatigue sets in!`;
     }
     
     return `I'd love to help explain any exercise! Since you're currently working out, let me know which specific movement you'd like to know about. I can provide form cues, muscle targets, and safety tips tailored to your experience level.`;
@@ -644,7 +644,7 @@ RESPONSE:`;
 
   private getIntelligentNutritionAdvice(query: string, context: EnhancedContext): string {
     const timeInWorkout = context.workoutDuration || 0;
-    const timeOfDay = context.temporalContext?.timeOfDay || new Date().getHours();
+    // const timeOfDay = context.temporalContext?.timeOfDay || new Date().getHours();
     
     let advice = '';
     

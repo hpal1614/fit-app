@@ -1,5 +1,8 @@
 import type { Exercise, WorkoutContext, ProgressMetrics, PersonalRecord } from './workout';
 
+// Re-export commonly used types
+export type { WorkoutContext, Exercise } from './workout';
+
 // AI Coach configuration
 export interface AICoachConfig {
   provider: 'openai' | 'anthropic' | 'local' | 'hybrid';

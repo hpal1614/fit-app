@@ -335,6 +335,7 @@ export class VoiceService {
               parameters: match.parameters,
               confidence: match.confidence,
               originalTranscript: transcript,
+              transcript: transcript,
               processedText: normalizedTranscript,
               timestamp: new Date(),
               context: this.state.context
@@ -357,6 +358,7 @@ export class VoiceService {
       parameters: {},
       confidence: 0,
       originalTranscript: transcript,
+      transcript: transcript,
       processedText: normalizedTranscript,
       timestamp: new Date(),
       context: this.state.context,

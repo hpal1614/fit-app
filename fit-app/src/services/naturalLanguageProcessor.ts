@@ -101,7 +101,9 @@ export class FitnessNLP {
       if (result.confidence > 0.7) {
         return {
           ...result,
+          originalTranscript: transcript,
           transcript: transcript,
+          processedText: transcript,
           timestamp: new Date(),
           success: true
         };
@@ -384,7 +386,9 @@ Return ONLY this JSON format:
         action: parsed.action,
         parameters: parsed.parameters || {},
         confidence: parsed.confidence || 0.5,
+        originalTranscript: transcript,
         transcript: transcript,
+        processedText: transcript,
         timestamp: new Date(),
         reasoning: parsed.reasoning || 'AI interpretation'
       };
@@ -394,10 +398,12 @@ Return ONLY this JSON format:
       // Fallback to asking user for clarification
       return {
         success: false,
-        action: 'CLARIFY',
+        action: 'HELP' as VoiceAction, // Changed from CLARIFY to HELP which exists in VoiceAction
         parameters: { originalTranscript: transcript },
         confidence: 0.3,
+        originalTranscript: transcript,
         transcript: transcript,
+        processedText: transcript,
         timestamp: new Date(),
         reasoning: 'Could not parse command, requesting clarification'
       };
