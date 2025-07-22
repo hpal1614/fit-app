@@ -7,12 +7,12 @@ import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
 
 // Import new intelligent services
-import { IntelligentAIService } from './services/intelligentAIService';
+import { AICoachService } from './services/aiService';
 import { ConversationFlowManager } from './services/conversationFlow';
 // Removed unused VoiceAction import
 
 // Initialize intelligent services
-const aiService = new IntelligentAIService();
+// AI service initialization moved to useAI hook
 const conversationFlow = new ConversationFlowManager();
 
 function App() {

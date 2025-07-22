@@ -3,7 +3,7 @@ import type {
   VoiceAction,
   WorkoutContext
 } from '../types/voice';
-import { IntelligentAIService } from './intelligentAIService';
+import { AICoachService } from './aiService';
 import { FitnessNLP } from './naturalLanguageProcessor';
 
 interface ConversationFlow {
@@ -70,12 +70,12 @@ interface FormDiscussionFlow extends ConversationFlow {
 export class ConversationFlowManager {
   private currentFlow: ConversationFlow | null = null;
   private conversationHistory: ConversationTurn[] = [];
-  private aiService: IntelligentAIService;
+  private aiService: AICoachService;
   private nlp: FitnessNLP;
   private flowTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.aiService = new IntelligentAIService();
+    this.aiService = AICoachService.getInstance();
     this.nlp = new FitnessNLP();
   }
 

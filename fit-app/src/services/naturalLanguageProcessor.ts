@@ -3,7 +3,7 @@ import type {
   VoiceAction,
   WorkoutContext
 } from '../types/voice';
-import { IntelligentAIService } from './intelligentAIService';
+import { AICoachService } from './aiService';
 
 interface VoiceCommandIntent {
   action: VoiceAction;
@@ -21,7 +21,7 @@ interface ExerciseMapping {
 }
 
 export class FitnessNLP {
-  private aiService: IntelligentAIService;
+  private aiService: AICoachService;
   
   private exerciseDatabase: ExerciseMapping = {
     'bench': 'bench press',
@@ -79,7 +79,7 @@ export class FitnessNLP {
   };
 
   constructor() {
-    this.aiService = new IntelligentAIService();
+    // AI service initialization removed
   }
 
   async parseVoiceInput(transcript: string, context: WorkoutContext): Promise<VoiceCommandResult> {
@@ -377,9 +377,15 @@ Return ONLY this JSON format:
   "reasoning": "Why you chose this action"
 }`;
 
-    try {
-      const aiResponse = await this.aiService.getCoachingResponse(prompt, context, 'general-advice');
-      const parsed = JSON.parse(aiResponse.content);
+          try {
+        // AI service call removed - return basic fallback response
+        const basicResponse = {
+          action: intent.action,
+          parameters: intent.parameters,
+          confidence: intent.confidence,
+          response: `I'll help you with ${intent.action.replace('_', ' ')}.`
+        };
+        const parsed = basicResponse;
       
       return {
         success: true,
