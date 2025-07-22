@@ -5,3 +5,5 @@ export { default as SetLogger } from './SetLogger';
 export { default as AIChatInterface } from './AIChatInterface';
 export { default as WorkoutStats } from './WorkoutStats';
 export { default as RestTimer } from './RestTimer';
+export { BottomNavigation } from './BottomNavigation';
+export { WorkoutsTab } from './WorkoutsTab';
