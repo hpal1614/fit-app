@@ -18,11 +18,22 @@ interface UseAIOptions {
   responseStyle?: 'conversational' | 'concise' | 'detailed';
 }
 
+// Team Status Interface for real-time monitoring
+interface TeamStatus {
+  openrouter: 'idle' | 'trying' | 'success' | 'failed';
+  groq: 'idle' | 'trying' | 'success' | 'failed';
+  google: 'idle' | 'trying' | 'success' | 'failed';
+}
+
 export interface UseAIReturn {
   // State
   isLoading: boolean;
   error: AIError | null;
   lastResponse: AIResponse | null;
+  
+  // Team monitoring - NEW
+  loadingProvider: string | null;
+  teamStatus: TeamStatus;
   
   // General coaching
   askCoach: (message: string, context?: WorkoutContext) => Promise<AIResponse>;
@@ -54,6 +65,14 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
   const [error, setError] = useState<AIError | null>(null);
   const [lastResponse, setLastResponse] = useState<AIResponse | null>(null);
   const [isAvailable, setIsAvailable] = useState(false);
+  
+  // Team monitoring state - NEW
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const [teamStatus, setTeamStatus] = useState<TeamStatus>({
+    openrouter: 'idle',
+    groq: 'idle', 
+    google: 'idle'
+  });
 
   // Initialize AI service
   useEffect(() => {
@@ -89,7 +108,7 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
     initializeAI();
   }, [enableCaching, enableAnalytics, personalityProfile, responseStyle]);
 
-  // Generic AI coaching function
+  // Generic AI coaching function with TEAM MONITORING AND STRICT TIMEOUT
   const askCoach = useCallback(async (
     message: string, 
     context?: WorkoutContext
@@ -98,23 +117,48 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
       throw new Error('AI service not available');
     }
 
+    // NEVER hang in loading state - max 5 seconds
+    const loadingTimeout = setTimeout(() => {
+      setIsLoading(false);
+      setLoadingProvider(null);
+      throw new Error('Loading timeout - AI team took too long');
+    }, 5000);
+
     setIsLoading(true);
     setError(null);
+    
+    // Reset team status
+    setTeamStatus({
+      openrouter: 'idle',
+      groq: 'idle',
+      google: 'idle'
+    });
 
     try {
-      const response = await aiServiceRef.current.getResponse({
-        type: 'general',
-        message,
-        context,
-        timestamp: new Date()
-      });
+      // Monitor team status during request
+      const statusInterval = setInterval(() => {
+        if (aiServiceRef.current) {
+          setTeamStatus(aiServiceRef.current.getTeamStatus());
+          setLoadingProvider(aiServiceRef.current.getCurrentProvider());
+        }
+      }, 100);
 
+      const response = await aiServiceRef.current.getCoachingResponse(message, context || {} as WorkoutContext, 'general-advice');
+      
+      clearInterval(statusInterval);
+      clearTimeout(loadingTimeout);
+      
       setLastResponse(response);
+      setLoadingProvider(null);
+      
       return response;
+      
     } catch (err) {
+      clearTimeout(loadingTimeout);
+      
       const error: AIError = {
         type: 'request_error',
-        message: err instanceof Error ? err.message : 'Failed to get AI response',
+        message: err instanceof Error ? err.message : 'AI team request failed',
         timestamp: new Date(),
         recoverable: true
       };
@@ -123,6 +167,7 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
       throw error;
     } finally {
       setIsLoading(false);
+      setLoadingProvider(null);
     }
   }, []);
 
@@ -321,6 +366,10 @@ export const useAI = (options: UseAIOptions = {}): UseAIReturn => {
     isLoading,
     error,
     lastResponse,
+    
+    // Team monitoring - NEW
+    loadingProvider,
+    teamStatus,
     
     // General coaching
     askCoach,

@@ -84,6 +84,10 @@ export interface AIResponse {
     model?: string;
     cached?: boolean;
     provider?: string;
+    priority?: number;
+    retryCount?: number;
+    teamResponse?: boolean;
+    fallbackReason?: string;
   };
   timestamp: Date;
   isComplete: boolean;

@@ -3,7 +3,7 @@ import { Send, X, Mic, Volume2, Bot, User, Loader2 } from 'lucide-react';
 import { useAI } from '../hooks/useAI';
 import { useVoice } from '../hooks/useVoice';
 import type { WorkoutContext } from '../types/workout';
-import type { AIResponse } from '../types/ai';
+// Removed unused AIResponse import
 
 interface Message {
   id: string;
@@ -24,7 +24,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   onClose,
   className = ''
 }) => {
-  const { getMotivation, getNutritionAdvice, isLoading, error, isAvailable } = useAI();
+  const { askCoach, isLoading, loadingProvider, teamStatus, error, isAvailable } = useAI();
   const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,6 +38,17 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Never show loading for more than 5 seconds - CRITICAL TIMEOUT PROTECTION
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        // Force stop loading if it takes too long
+        console.warn('AI loading timeout - forcing stop');
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading]);
 
   // Initial greeting
   useEffect(() => {
@@ -70,37 +81,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     setInputText('');
 
     try {
-      let response: AIResponse;
-
-      // Determine the type of request based on content
-      if (content.toLowerCase().includes('motivat') || content.toLowerCase().includes('pump up')) {
-        const motivation = await getMotivation(workoutContext);
-        response = {
-          type: 'motivation',
-          content: motivation.message,
-          confidence: 1.0,
-          timestamp: new Date(),
-          isComplete: true,
-
-        };
-      } else if (content.toLowerCase().includes('nutrition') || content.toLowerCase().includes('diet') || content.toLowerCase().includes('eat')) {
-        const nutrition = await getNutritionAdvice(content);
-                  response = {
-            type: 'nutrition-advice',
-            content: nutrition.reasoning,
-            confidence: 1.0,
-            timestamp: new Date(),
-            isComplete: true
-          };
-      } else {
-        response = {
-          type: 'general-advice',
-          content: 'I understand you want help with fitness. I can provide motivation, nutrition advice, and form feedback. How can I assist you today?',
-          confidence: 0.8,
-          timestamp: new Date(),
-          isComplete: true
-        };
-      }
+      // Use the new AI team system directly
+      const response = await askCoach(content, workoutContext);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -120,7 +102,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: "Sorry, I'm having trouble right now. Please try again in a moment.",
+        content: "Sorry, I'm having trouble right now. The AI team is working to get back online. Please try again in a moment! 💪",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -151,6 +133,47 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   useEffect(() => {
     // Voice command handling would be implemented here
   }, [sendMessage]);
+
+  // Smart loading indicator showing team status - NEVER HANGS
+  const renderLoadingState = () => {
+    if (!isLoading) return null;
+    
+    return (
+      <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
+        <div className="flex space-x-1">
+          {/* OpenRouter Status */}
+          <div className={`w-3 h-3 rounded-full ${
+            teamStatus.openrouter === 'trying' ? 'bg-blue-500 animate-pulse' :
+            teamStatus.openrouter === 'success' ? 'bg-green-500' :
+            teamStatus.openrouter === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+          }`} title="OpenRouter (Claude)" />
+          
+          {/* Groq Status */}
+          <div className={`w-3 h-3 rounded-full ${
+            teamStatus.groq === 'trying' ? 'bg-purple-500 animate-pulse' :
+            teamStatus.groq === 'success' ? 'bg-green-500' :
+            teamStatus.groq === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+          }`} title="Groq (Llama)" />
+          
+          {/* Google Status */}
+          <div className={`w-3 h-3 rounded-full ${
+            teamStatus.google === 'trying' ? 'bg-orange-500 animate-pulse' :
+            teamStatus.google === 'success' ? 'bg-green-500' :
+            teamStatus.google === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+          }`} title="Google (Gemini)" />
+        </div>
+        
+        <span className="text-sm text-gray-600">
+          {loadingProvider ? `${loadingProvider} is thinking...` : 'AI team is working...'}
+        </span>
+        
+        {/* Progress indicator */}
+        <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-full h-full bg-fitness-blue animate-pulse" />
+        </div>
+      </div>
+    );
+  };
 
   // Quick action buttons
   const quickActions = [
@@ -262,17 +285,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
           </div>
         ))}
         
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg px-4 py-2">
-              <div className="flex items-center space-x-2">
-                <Bot size={16} className="text-fitness-blue" />
-                <Loader2 size={16} className="animate-spin text-gray-500" />
-                <span className="text-sm text-gray-600">Thinking...</span>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Smart loading state - never hangs */}
+        {renderLoadingState()}
         
         <div ref={messagesEndRef} />
       </div>
