@@ -146,34 +146,7 @@ export interface MotivationalMessage {
   affirmations?: string[];
 }
 
-export interface WorkoutPlan {
-  name: string;
-  description: string;
-  duration: number; // weeks
-  schedule: {
-    dayOfWeek: number;
-    workoutType: string;
-    exercises: {
-      exercise: Exercise;
-      sets: number;
-      reps: number | string; // "8-12" for ranges
-      weight?: number | string; // "bodyweight" or specific weight
-      rest: number; // seconds
-      notes?: string;
-    }[];
-    estimatedDuration: number; // minutes
-  }[];
-  progressionPlan: {
-    week: number;
-    changes: string[];
-  }[];
-  goals: string[];
-  requirements: {
-    equipment: string[];
-    experience: string;
-    timeCommitment: string;
-  };
-}
+// WorkoutPlan interface moved to workout.ts to avoid duplicate exports
 
 export interface Progression {
   exercise: Exercise;

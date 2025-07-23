@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AIChatInterface } from './components/AIChatInterface';
 import { useAI } from './hooks/useAI';
 import { useVoice } from './hooks/useVoiceEmergency';
-import { Mic, MessageCircle, Home, Settings } from 'lucide-react';
+import { Mic, MessageCircle, Home } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -71,7 +71,24 @@ function App() {
 
         {activeTab === 'chat' && (
           <AIChatInterface
-            workoutContext={{}}
+            workoutContext={{
+              userPreferences: {
+                defaultWeightUnit: 'kg',
+                defaultRestTime: 60,
+                autoRestTimer: true,
+                showPersonalRecords: true,
+                enableVoiceCommands: true,
+                warmupRequired: false,
+                trackRPE: false,
+                roundingPreference: 'nearest_2_5',
+                plateCalculation: false,
+                notifications: {
+                  restComplete: true,
+                  personalRecord: true,
+                  workoutReminders: true
+                }
+              }
+            }}
             onClose={() => setActiveTab('home')}
           />
         )}

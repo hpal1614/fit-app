@@ -331,7 +331,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
         {error && (
           <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-            {error.message}
+            {error}
           </div>
         )}
 

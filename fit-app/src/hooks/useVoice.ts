@@ -98,7 +98,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
           await voiceService.startListening();
         }
 
-      } catch (err) {
+      } catch (_err) {
         setError({
           type: 'initialization_error',
           message: 'Failed to initialize voice service',
@@ -131,7 +131,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
       setError(null);
       await voiceServiceRef.current.startListening();
       return true;
-    } catch (err) {
+    } catch (_err) {
       setError({
         type: 'recognition_error',
         message: 'Failed to start listening',
@@ -156,7 +156,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
       setError(null);
       await voiceServiceRef.current.speak(text, options);
       return true;
-    } catch (err) {
+    } catch (_err) {
       setError({
         type: 'synthesis_error',
         message: 'Failed to speak text',
@@ -207,7 +207,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
       setLastCommand(result);
       setConfidence(result.confidence);
       return result;
-    } catch (err) {
+    } catch (_err) {
               const errorResult: VoiceCommandResult = {
           success: false,
           action: 'unknown',
@@ -218,7 +218,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
           processedText: input,
           response: 'Failed to process command',
           timestamp: new Date(),
-          errors: [err instanceof Error ? err.message : 'Unknown error']
+          errors: [_err instanceof Error ? _err.message : 'Unknown error']
         };
       
       setLastCommand(errorResult);

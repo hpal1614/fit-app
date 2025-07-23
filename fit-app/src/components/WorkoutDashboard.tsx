@@ -46,7 +46,7 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
   const [showStats, setShowStats] = useState(false);
 
   // Handle voice commands from VoiceButton
-  const handleVoiceCommand = async (_transcript: string, result: any) => {
+  const handleVoiceCommand = async (_transcript: string, result: { success: boolean; response: string; action?: string }) => {
     if (result.success) {
       // Provide audio feedback for successful commands
       await speak(result.response);
@@ -85,8 +85,8 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
     try {
       await startWorkout();
       await speak('Workout started! Let\'s crush this session.');
-    } catch (err) {
-      console.error('Failed to start workout:', err);
+    } catch (_err) {
+      console.error('Failed to start workout:', _err);
       await speak('Sorry, I couldn\'t start the workout. Please try again.');
     }
   };
@@ -98,8 +98,8 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
         await speak(`Great job! You completed ${getTotalSets()} sets and lifted ${getTotalWeight()} total pounds.`);
         setShowStats(true);
       }
-    } catch (err) {
-      console.error('Failed to end workout:', err);
+    } catch (_err) {
+      console.error('Failed to end workout:', _err);
       await speak('There was an issue ending your workout. Please try again.');
     }
   };
@@ -164,7 +164,7 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
             workoutContext={workoutContext}
             size="lg"
             showLabel={false}
-            onCommandProcessed={handleVoiceCommand}
+            onCommandProcessed={(command: string, result: unknown) => handleVoiceCommand(command, result as { success: boolean; response: string; action?: string })}
             className="flex-shrink-0"
           />
         </div>
@@ -284,7 +284,7 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
               try {
                 await logSet(reps, weight, restTime, notes);
                 await speak(`Set logged: ${reps} reps at ${weight} pounds.`);
-              } catch (err) {
+              } catch (_err) {
                 await speak('Failed to log set. Please try again.');
               }
             }}

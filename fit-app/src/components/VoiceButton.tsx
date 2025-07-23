@@ -9,7 +9,7 @@ interface VoiceButtonProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showLabel?: boolean;
   autoStart?: boolean;
-  onCommandProcessed?: (command: string, result: any) => void;
+  onCommandProcessed?: (command: string, result: unknown) => void;
 }
 
 export const VoiceButton: React.FC<VoiceButtonProps> = ({

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 
-export const useVoice = (options: any = {}) => {
+export const useVoice = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
 
   // Check browser support immediately
   useEffect(() => {
@@ -69,7 +69,7 @@ export const useVoice = (options: any = {}) => {
       setIsListening(true);
       setError(null);
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
         console.log('🎙️ Voice input:', transcript);
         setIsListening(false);
@@ -80,7 +80,7 @@ export const useVoice = (options: any = {}) => {
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        setError(`Voice error: ${event.error}`);
+        setError(`Voice error: ${event.error || 'Unknown error'}`);
         setIsListening(false);
       };
 
@@ -105,7 +105,7 @@ export const useVoice = (options: any = {}) => {
   return {
     isListening,
     isSupported: () => isSupported,
-    error,
+    error: _error,
     speak,
     startListening,
     stopListening
