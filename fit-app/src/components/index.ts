@@ -6,5 +6,6 @@ export { VoiceButton } from './VoiceButton';
 export { WorkoutDashboard } from './WorkoutDashboard';
 export { WorkoutStats } from './WorkoutStats';
 export { VoiceCoachInterface } from './VoiceCoachInterface';
+export { FormAnalysisInterface } from './FormAnalysisInterface';
 export { BottomNavigation } from './BottomNavigation';
 export { WorkoutsTab } from './WorkoutsTab';
