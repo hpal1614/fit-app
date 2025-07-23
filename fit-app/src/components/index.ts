@@ -9,5 +9,6 @@ export { VoiceCoachInterface } from './VoiceCoachInterface';
 export { FormAnalysisInterface } from './FormAnalysisInterface';
 export { BiometricsDashboard } from './BiometricsDashboard';
 export { MonitoringDashboard } from './MonitoringDashboard';
+export { MobileWorkoutInterface } from './MobileWorkoutInterface';
 export { BottomNavigation } from './BottomNavigation';
 export { WorkoutsTab } from './WorkoutsTab';
