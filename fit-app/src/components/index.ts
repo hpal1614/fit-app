@@ -7,5 +7,6 @@ export { WorkoutDashboard } from './WorkoutDashboard';
 export { WorkoutStats } from './WorkoutStats';
 export { VoiceCoachInterface } from './VoiceCoachInterface';
 export { FormAnalysisInterface } from './FormAnalysisInterface';
+export { BiometricsDashboard } from './BiometricsDashboard';
 export { BottomNavigation } from './BottomNavigation';
 export { WorkoutsTab } from './WorkoutsTab';
