@@ -327,3 +327,55 @@ export interface DevicePerformance {
   storageQuota: number; // MB
   networkSpeed: 'slow' | 'medium' | 'fast';
 }
+
+export interface Message {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  age: number;
+  experienceLevel: 'beginner' | 'intermediate' | 'advanced';
+  goals: string[];
+  equipment: string[];
+  injuries?: string[];
+  preferences?: {
+    workoutTime?: string;
+    workoutDuration?: number;
+    restDays?: string[];
+  };
+}
+
+export interface WorkoutContext {
+  currentExercise?: string;
+  intensity: 'low' | 'medium' | 'high';
+  duration: number;
+  caloriesBurned: number;
+  heartRate?: number;
+  sets?: number;
+  reps?: number;
+  weight?: number;
+}
+
+export interface FitnessGoals {
+  primaryGoal: 'muscle_gain' | 'weight_loss' | 'strength' | 'endurance' | 'general_fitness';
+  targetWeight?: number;
+  targetBodyFat?: number;
+  weeklyWorkoutTarget: number;
+  specificGoals?: string[];
+  timeline?: string;
+}
+
+export interface AIResponse {
+  message: string;
+  suggestions?: string[];
+  metadata?: {
+    cached?: boolean;
+    similarity?: number;
+    responseTime?: number;
+    error?: boolean;
+  };
+}
