@@ -5,7 +5,7 @@ export const PDFWorkoutUploader: React.FC<{
   onUpload: (plan: WorkoutPlan) => void;
   onBack: () => void;
   aiService: any;
-}> = ({ onUpload, onBack }) => {
+}> = ({ onUpload: _onUpload, onBack }) => {
   return (
     <div className="p-4 text-center">
       <h2 className="text-xl font-bold mb-4">PDF Workout Uploader</h2>

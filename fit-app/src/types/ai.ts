@@ -146,7 +146,7 @@ export interface MotivationalMessage {
   affirmations?: string[];
 }
 
-export interface WorkoutPlan {
+export interface AIWorkoutPlan {
   name: string;
   description: string;
   duration: number; // weeks
