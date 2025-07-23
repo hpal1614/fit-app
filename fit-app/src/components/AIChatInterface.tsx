@@ -87,7 +87,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: response.content,
+        content: (response as any).content || response,
         timestamp: new Date()
       };
 
@@ -98,7 +98,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         await speak(response.content);
       }
 
-    } catch (error) {
+    } catch (_error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
@@ -143,23 +143,29 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         <div className="flex space-x-1">
           {/* OpenRouter Status */}
           <div className={`w-3 h-3 rounded-full ${
-            teamStatus.openrouter === 'trying' ? 'bg-blue-500 animate-pulse' :
-            teamStatus.openrouter === 'success' ? 'bg-green-500' :
-            teamStatus.openrouter === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+            typeof teamStatus === 'object' && teamStatus && 'openrouter' in teamStatus ?
+            ((teamStatus as any).openrouter === 'trying' ? 'bg-blue-500 animate-pulse' :
+            (teamStatus as any).openrouter === 'success' ? 'bg-green-500' :
+            (teamStatus as any).openrouter === 'failed' ? 'bg-red-500' : 'bg-gray-300') :
+            'bg-gray-300'
           }`} title="OpenRouter (Claude)" />
           
           {/* Groq Status */}
           <div className={`w-3 h-3 rounded-full ${
-            teamStatus.groq === 'trying' ? 'bg-purple-500 animate-pulse' :
-            teamStatus.groq === 'success' ? 'bg-green-500' :
-            teamStatus.groq === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+            typeof teamStatus === 'object' && teamStatus && 'groq' in teamStatus ?
+            ((teamStatus as any).groq === 'trying' ? 'bg-purple-500 animate-pulse' :
+            (teamStatus as any).groq === 'success' ? 'bg-green-500' :
+            (teamStatus as any).groq === 'failed' ? 'bg-red-500' : 'bg-gray-300') :
+            'bg-gray-300'
           }`} title="Groq (Llama)" />
           
           {/* Google Status */}
           <div className={`w-3 h-3 rounded-full ${
-            teamStatus.google === 'trying' ? 'bg-orange-500 animate-pulse' :
-            teamStatus.google === 'success' ? 'bg-green-500' :
-            teamStatus.google === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+            typeof teamStatus === 'object' && teamStatus && 'google' in teamStatus ?
+            ((teamStatus as any).google === 'trying' ? 'bg-orange-500 animate-pulse' :
+            (teamStatus as any).google === 'success' ? 'bg-green-500' :
+            (teamStatus as any).google === 'failed' ? 'bg-red-500' : 'bg-gray-300') :
+            'bg-gray-300'
           }`} title="Google (Gemini)" />
         </div>
         
@@ -329,9 +335,12 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
           </button>
         </form>
 
+        {/* Error State */}
         {error && (
-          <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-            {error.message}
+          <div className="m-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {typeof error === 'string' ? error : 'An error occurred'}
+            </p>
           </div>
         )}
 

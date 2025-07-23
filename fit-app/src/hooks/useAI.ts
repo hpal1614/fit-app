@@ -3,7 +3,16 @@ import { AICoachService } from '../services/aiService';
 
 const aiService = AICoachService.getInstance();
 
-export const useAI = () => {
+export interface UseAIReturn {
+  askCoach: (message: string, context?: any) => Promise<any>;
+  isLoading: boolean;
+  error: string | null;
+  isAvailable: boolean;
+  loadingProvider?: string;
+  teamStatus?: string;
+}
+
+export const useAI = (): UseAIReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +54,8 @@ export const useAI = () => {
     askCoach,
     isLoading,
     error,
-    isAvailable: true // Always available with fallbacks
+    isAvailable: true, // Always available with fallbacks
+    loadingProvider: isLoading ? 'AI' : undefined,
+    teamStatus: 'Ready'
   };
 };

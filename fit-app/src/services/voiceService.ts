@@ -31,6 +31,16 @@ declare global {
   }
 }
 
+export const speak = async (text: string): Promise<void> => {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.pitch = 1;
+    utterance.rate = 1;
+    utterance.volume = 1;
+    window.speechSynthesis.speak(utterance);
+  }
+};
+
 export class VoiceService {
   private recognition: any | null = null;
   private synthesis: SpeechSynthesis;

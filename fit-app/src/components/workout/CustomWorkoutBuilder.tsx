@@ -5,7 +5,7 @@ export const CustomWorkoutBuilder: React.FC<{
   onSave: (plan: WorkoutPlan) => void;
   onBack: () => void;
   aiService: any;
-}> = ({ onSave, onBack }) => {
+}> = ({ onBack }) => {
   return (
     <div className="p-4 text-center">
       <h2 className="text-xl font-bold mb-4">Custom Workout Builder</h2>
