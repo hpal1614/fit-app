@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export const useVoice = (options: any = {}) => {
+export const useVoice = (_options: any = {}) => {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [error, setError] = useState<string | null>(null);

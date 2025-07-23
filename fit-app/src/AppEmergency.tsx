@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AIChatInterface } from './components/AIChatInterface';
 import { useAI } from './hooks/useAI';
 import { useVoice } from './hooks/useVoiceEmergency';
-import { Mic, MessageCircle, Home, Settings } from 'lucide-react';
+import { Mic, MessageCircle, Home } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -42,7 +42,7 @@ function App() {
               >
                 {isLoading ? 'Testing AI...' : 'Test AI Response'}
               </button>
-              {error && <p className="text-red-500 mt-2">Error: {error}</p>}
+              {error && <p className="text-red-500 mt-2">Error: {error.message}</p>}
             </div>
 
             {/* Voice Test */}
@@ -71,7 +71,6 @@ function App() {
 
         {activeTab === 'chat' && (
           <AIChatInterface
-            workoutContext={{}}
             onClose={() => setActiveTab('home')}
           />
         )}
