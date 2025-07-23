@@ -7,7 +7,7 @@ import type {
 
 interface VoiceCommandIntent {
   action: VoiceAction;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   confidence: number;
   reasoning: string;
 }
@@ -190,7 +190,7 @@ export class FitnessNLP {
     for (const { pattern, action } of workoutPatterns) {
       const match = transcript.match(pattern);
       if (match) {
-        const parameters: any = {};
+        const parameters: Record<string, unknown> = {};
         if (match[1] && action === 'START_WORKOUT') {
           parameters.workoutType = match[1].trim();
         }
@@ -229,7 +229,7 @@ export class FitnessNLP {
     for (const { pattern, action } of questionPatterns) {
       const match = transcript.match(pattern);
       if (match) {
-        const parameters: any = {};
+        const parameters: Record<string, unknown> = {};
         
         if (action === 'FORM_ANALYSIS' || action === 'EXERCISE_INFO' || action === 'GET_PROGRESS') {
           parameters.exercise = this.normalizeExerciseName(match[1]);
@@ -393,8 +393,8 @@ export class FitnessNLP {
         timestamp: new Date(),
         reasoning: parsed.reasoning || 'AI interpretation'
       };
-    } catch (error) {
-      console.warn('AI parsing failed:', error);
+    } catch (_error) {
+      console.warn('AI parsing failed:', _error);
       
       // Fallback to asking user for clarification
       return {
@@ -417,7 +417,7 @@ export class FitnessNLP {
     weight?: number;
     unit?: string;
   } {
-    const result: any = {};
+    const result: unknown = {};
     
     // Try to identify which component is which based on context
     for (const component of components) {

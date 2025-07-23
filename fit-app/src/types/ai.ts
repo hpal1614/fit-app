@@ -1,4 +1,4 @@
-import type { Exercise, WorkoutContext, ProgressMetrics, PersonalRecord } from './workout';
+import type { WorkoutContext, Exercise, PersonalRecord, ProgressMetrics } from './workout';
 
 // Re-export commonly used types
 export type { WorkoutContext, Exercise } from './workout';
@@ -65,7 +65,7 @@ export interface AIRequest {
   context: WorkoutContext;
   userProfile?: UserProfile;
   conversationHistory?: AIMessage[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   priority: 'low' | 'normal' | 'high';
   timestamp: Date;
 }
@@ -146,33 +146,54 @@ export interface MotivationalMessage {
   affirmations?: string[];
 }
 
+export type FitnessGoal = 
+  | 'strength' | 'muscle-gain' | 'fat-loss' | 'endurance'
+  | 'performance' | 'health' | 'rehabilitation' | 'maintenance';
+
+export interface WorkoutSchedule {
+  daysPerWeek: number;
+  sessionDuration: number; // minutes
+  restDays: number[];
+  flexibility: 'strict' | 'flexible' | 'adaptive';
+}
+
+export interface ProgressionPlan {
+  type: 'linear' | 'undulating' | 'block' | 'adaptive';
+  progressionRate: number; // percentage per week
+  deloadWeeks: number[];
+  adjustmentCriteria: string[];
+}
+
+export interface PlannedExercise {
+  exerciseId: string;
+  week: number;
+  sets: number;
+  reps: number | string; // can be "8-12"
+  weight: number | string; // can be "75%"
+  restTime: number;
+  notes: string[];
+  alternatives: string[];
+}
+
+export interface PlanAdjustment {
+  week: number;
+  type: 'volume' | 'intensity' | 'frequency' | 'exercise';
+  description: string;
+  reasoning: string;
+}
+
 export interface WorkoutPlan {
+  id: string;
   name: string;
   description: string;
   duration: number; // weeks
-  schedule: {
-    dayOfWeek: number;
-    workoutType: string;
-    exercises: {
-      exercise: Exercise;
-      sets: number;
-      reps: number | string; // "8-12" for ranges
-      weight?: number | string; // "bodyweight" or specific weight
-      rest: number; // seconds
-      notes?: string;
-    }[];
-    estimatedDuration: number; // minutes
-  }[];
-  progressionPlan: {
-    week: number;
-    changes: string[];
-  }[];
-  goals: string[];
-  requirements: {
-    equipment: string[];
-    experience: string;
-    timeCommitment: string;
-  };
+  goal: FitnessGoal;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  schedule: WorkoutSchedule;
+  progression: ProgressionPlan;
+  exercises: PlannedExercise[];
+  notes: string[];
+  adjustments: PlanAdjustment[];
 }
 
 export interface Progression {
@@ -212,7 +233,7 @@ export interface AIMessage {
   content: string;
   timestamp: Date;
   type?: AIRequestType;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   reactions?: {
     helpful: boolean;
     accurate: boolean;
@@ -323,4 +344,4 @@ export interface LocalAIConfig {
   fallbackToRemote: boolean;
   maxLocalModelSize: number; // MB
   offlineMode: boolean;
-}
+}export interface LearningMetrics { accuracy: number; improvement: number; }

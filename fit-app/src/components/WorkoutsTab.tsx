@@ -4,16 +4,26 @@ import { AIWorkoutGenerator } from './workout/AIWorkoutGenerator';
 import { CustomWorkoutBuilder } from './workout/CustomWorkoutBuilder';
 import { PDFWorkoutUploader } from './workout/PDFWorkoutUploader';
 import { WorkoutPlanCard } from './workout/WorkoutPlanCard';
-import type { WorkoutPlan } from '../types/workout';
+import type { WorkoutPlan, WorkoutContext } from '../types/workout';
+
+interface UserProfile {
+  fitnessLevel: string;
+  goals: string[];
+  equipment: string[];
+  preferredDuration: number;
+  injuries?: string[];
+}
 
 export const WorkoutsTab: React.FC<{
-  workoutContext: any;
-  aiService: any;
+  workoutContext: WorkoutContext;
+  aiService: {
+    getCoachingResponse: (prompt: string, context: WorkoutContext, type: string) => Promise<{ content: string }>;
+  };
 }> = ({ workoutContext, aiService }) => {
   const [activeSection, setActiveSection] = useState<'browse' | 'generate' | 'custom' | 'upload'>('browse');
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
 
-  const handleGenerateAIWorkout = async (userProfile: any) => {
+  const handleGenerateAIWorkout = async (userProfile: UserProfile) => {
     const prompt = `Generate a personalized workout plan:
     
     User Profile: ${JSON.stringify(userProfile)}

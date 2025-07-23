@@ -112,7 +112,7 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
         setWorkoutHistory(history);
         setPersonalRecords(records);
         
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to initialize workout service');
       }
     };
@@ -177,8 +177,8 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
       setWorkoutDuration(0);
       
       return workout;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to start workout';
+    } catch (_err) {
+      const errorMessage = _err instanceof Error ? _err.message : 'Failed to start workout';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -225,8 +225,8 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
       }
       
       return completedWorkout;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to end workout';
+    } catch (_err) {
+      const errorMessage = _err instanceof Error ? _err.message : 'Failed to end workout';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -326,10 +326,10 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
       setCurrentSetIndex(prev => prev + 1);
       
       return set;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to log set';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+    } catch (_err) {
+      console.error('Failed to log set:', _err);
+      setError('Failed to log set. Please try again.');
+      throw new Error('Failed to log set. Please try again.');
     } finally {
       setIsLoading(false);
     }

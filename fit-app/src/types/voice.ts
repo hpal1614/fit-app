@@ -89,7 +89,7 @@ export interface VoiceParameter {
   name: string;
   type: 'string' | 'number' | 'exercise' | 'weight' | 'reps' | 'time' | 'boolean';
   required: boolean;
-  validation?: RegExp | ((value: any) => boolean);
+  validation?: RegExp | ((value: unknown) => boolean);
   defaultValue?: any;
   aliases?: string[];
 }
@@ -98,7 +98,7 @@ export interface VoiceParameter {
 export interface VoiceCommandResult {
   success: boolean;
   action: VoiceAction;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   confidence: number;
   originalTranscript: string;
   transcript: string; // Alias for originalTranscript for backwards compatibility
@@ -232,7 +232,7 @@ export interface VoicePersonalization {
   trainingData: Array<{
     spoken: string;
     intended: VoiceAction;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     timestamp: Date;
   }>;
   contextPreferences: {
@@ -266,4 +266,4 @@ export interface VoiceEvent {
   context?: WorkoutContext;
 }
 
-export type VoiceEventListener = (event: VoiceEvent) => void;
+export type VoiceEventListener = (_event: VoiceEvent) => void;

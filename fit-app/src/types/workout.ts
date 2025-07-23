@@ -198,7 +198,7 @@ export interface WorkoutPreferences {
 // Voice integration types
 export interface VoiceWorkoutCommand {
   type: 'start_workout' | 'end_workout' | 'log_set' | 'add_exercise' | 'rest_timer' | 'next_exercise' | 'repeat_last';
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   confidence: number;
   timestamp: Date;
 }

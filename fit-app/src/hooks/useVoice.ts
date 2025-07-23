@@ -68,22 +68,22 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
         voiceServiceRef.current = voiceService;
 
         // Set up event listeners
-        voiceService.addEventListener('stateChange', (event) => {
-          if (event.state) {
-            setState(event.state);
+        voiceService.addEventListener('stateChange', (_event) => {
+          if (_event.state) {
+            setState(_event.state);
           }
         });
 
-        voiceService.addEventListener('error', (event) => {
-          if (event.error) {
-            setError(event.error);
+        voiceService.addEventListener('error', (_event) => {
+          if (_event.error) {
+            setError(_event.error);
           }
         });
 
-        voiceService.addEventListener('commandProcessed', (event) => {
-          if (event.result) {
-            setLastCommand(event.result);
-            setConfidence(event.result.confidence);
+        voiceService.addEventListener('commandProcessed', (_event) => {
+          if (_event.result) {
+            setLastCommand(_event.result);
+            setConfidence(_event.result.confidence);
           }
         });
 
@@ -98,7 +98,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
           await voiceService.startListening();
         }
 
-      } catch (err) {
+      } catch (_err) {
         setError({
           type: 'initialization_error',
           message: 'Failed to initialize voice service',
@@ -131,7 +131,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
       setError(null);
       await voiceServiceRef.current.startListening();
       return true;
-    } catch (err) {
+    } catch (_err) {
       setError({
         type: 'recognition_error',
         message: 'Failed to start listening',
@@ -156,7 +156,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
       setError(null);
       await voiceServiceRef.current.speak(text, options);
       return true;
-    } catch (err) {
+    } catch (_err) {
       setError({
         type: 'synthesis_error',
         message: 'Failed to speak text',
@@ -207,7 +207,7 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
       setLastCommand(result);
       setConfidence(result.confidence);
       return result;
-    } catch (err) {
+    } catch (_err) {
               const errorResult: VoiceCommandResult = {
           success: false,
           action: 'unknown',

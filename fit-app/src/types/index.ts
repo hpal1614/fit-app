@@ -1,3 +1,5 @@
+import type * as React from 'react';
+
 // Re-export all types from individual modules
 export * from './workout';
 export * from './voice';
@@ -140,7 +142,7 @@ export interface AppError {
   recoverable: boolean;
   reported: boolean;
   userAction?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 export interface PerformanceMetrics {
@@ -177,7 +179,7 @@ export interface AnalyticsEvent {
   action: string;
   label?: string;
   value?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: Date;
   sessionId: string;
   userId?: string;

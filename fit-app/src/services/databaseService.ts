@@ -67,8 +67,8 @@ export class DatabaseService {
       
       
       return true;
-    } catch (error) {
-      console.error('Failed to initialize database:', error);
+    } catch (_error) {
+      console.error('Failed to initialize database:', _error);
       return false;
     }
   }
@@ -84,8 +84,8 @@ export class DatabaseService {
       
       const id = await this.db.workouts.put(dbWorkout);
       return id.toString();
-    } catch (error) {
-      console.error('Failed to save workout:', error);
+    } catch (_error) {
+      console.error('Failed to save workout:', _error);
       throw new Error('Failed to save workout');
     }
   }
@@ -100,8 +100,8 @@ export class DatabaseService {
         startTime: new Date(dbWorkout.startTime),
         endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : undefined
       };
-    } catch (error) {
-      console.error('Failed to get workout:', error);
+    } catch (_error) {
+      console.error('Failed to get workout:', _error);
       return null;
     }
   }
@@ -119,8 +119,8 @@ export class DatabaseService {
         startTime: new Date(dbWorkout.startTime),
         endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : undefined
       }));
-    } catch (error) {
-      console.error('Failed to get workout history:', error);
+    } catch (_error) {
+      console.error('Failed to get workout history:', _error);
       return [];
     }
   }
@@ -129,8 +129,8 @@ export class DatabaseService {
     try {
       await this.db.workouts.delete(id);
       return true;
-    } catch (error) {
-      console.error('Failed to delete workout:', error);
+    } catch (_error) {
+      console.error('Failed to delete workout:', _error);
       return false;
     }
   }
@@ -147,8 +147,8 @@ export class DatabaseService {
         startTime: new Date(dbWorkout.startTime),
         endTime: dbWorkout.endTime ? new Date(dbWorkout.endTime) : undefined
       }));
-    } catch (error) {
-      console.error('Failed to get workouts by date range:', error);
+    } catch (_error) {
+      console.error('Failed to get workouts by date range:', _error);
       return [];
     }
   }
@@ -163,8 +163,8 @@ export class DatabaseService {
       
       const id = await this.db.personalRecords.put(dbRecord);
       return id.toString();
-    } catch (error) {
-      console.error('Failed to save personal record:', error);
+    } catch (_error) {
+      console.error('Failed to save personal record:', _error);
       throw new Error('Failed to save personal record');
     }
   }
@@ -183,8 +183,8 @@ export class DatabaseService {
         ...dbRecord,
         date: new Date(dbRecord.date)
       }));
-    } catch (error) {
-      console.error('Failed to get personal records:', error);
+    } catch (_error) {
+      console.error('Failed to get personal records:', _error);
       return [];
     }
   }
@@ -197,8 +197,8 @@ export class DatabaseService {
       return records.reduce((best, current) => 
         current.oneRepMax > best.oneRepMax ? current : best
       );
-    } catch (error) {
-      console.error('Failed to get best personal record:', error);
+    } catch (_error) {
+      console.error('Failed to get best personal record:', _error);
       return null;
     }
   }
@@ -208,8 +208,8 @@ export class DatabaseService {
     try {
       const id = await this.db.workoutTemplates.put(template);
       return id.toString();
-    } catch (error) {
-      console.error('Failed to save workout template:', error);
+    } catch (_error) {
+      console.error('Failed to save workout template:', _error);
       throw new Error('Failed to save workout template');
     }
   }
@@ -217,8 +217,8 @@ export class DatabaseService {
   async getWorkoutTemplates(): Promise<WorkoutTemplate[]> {
     try {
       return await this.db.workoutTemplates.toArray();
-    } catch (error) {
-      console.error('Failed to get workout templates:', error);
+    } catch (_error) {
+      console.error('Failed to get workout templates:', _error);
       return [];
     }
   }
@@ -226,8 +226,8 @@ export class DatabaseService {
   async getWorkoutTemplate(id: string): Promise<WorkoutTemplate | null> {
     try {
       return await this.db.workoutTemplates.get(id) || null;
-    } catch (error) {
-      console.error('Failed to get workout template:', error);
+    } catch (_error) {
+      console.error('Failed to get workout template:', _error);
       return null;
     }
   }
@@ -236,8 +236,8 @@ export class DatabaseService {
     try {
       await this.db.workoutTemplates.delete(id);
       return true;
-    } catch (error) {
-      console.error('Failed to delete workout template:', error);
+    } catch (_error) {
+      console.error('Failed to delete workout template:', _error);
       return false;
     }
   }
@@ -247,8 +247,8 @@ export class DatabaseService {
     try {
       const id = await this.db.exercises.put(exercise);
       return id.toString();
-    } catch (error) {
-      console.error('Failed to save exercise:', error);
+    } catch (_error) {
+      console.error('Failed to save exercise:', _error);
       throw new Error('Failed to save exercise');
     }
   }
@@ -256,8 +256,8 @@ export class DatabaseService {
   async getExercises(): Promise<Exercise[]> {
     try {
       return await this.db.exercises.toArray();
-    } catch (error) {
-      console.error('Failed to get exercises:', error);
+    } catch (_error) {
+      console.error('Failed to get exercises:', _error);
       return [];
     }
   }
@@ -265,8 +265,8 @@ export class DatabaseService {
   async getExercise(id: string): Promise<Exercise | null> {
     try {
       return await this.db.exercises.get(id) || null;
-    } catch (error) {
-      console.error('Failed to get exercise:', error);
+    } catch (_error) {
+      console.error('Failed to get exercise:', _error);
       return null;
     }
   }
@@ -281,8 +281,8 @@ export class DatabaseService {
           exercise.muscleGroups.some((muscle: string) => muscle.toLowerCase().includes(lowerQuery))
         )
         .toArray();
-    } catch (error) {
-      console.error('Failed to search exercises:', error);
+    } catch (_error) {
+      console.error('Failed to search exercises:', _error);
       return [];
     }
   }
@@ -292,8 +292,8 @@ export class DatabaseService {
     try {
       await this.db.userSettings.put(settings);
       return true;
-    } catch (error) {
-      console.error('Failed to save user settings:', error);
+    } catch (_error) {
+      console.error('Failed to save user settings:', _error);
       return false;
     }
   }
@@ -302,8 +302,8 @@ export class DatabaseService {
     try {
       const settings = await this.db.userSettings.toCollection().first();
       return settings || null;
-    } catch (error) {
-      console.error('Failed to get user settings:', error);
+    } catch (_error) {
+      console.error('Failed to get user settings:', _error);
       return null;
     }
   }
@@ -313,8 +313,8 @@ export class DatabaseService {
     try {
       await this.db.userProfile.put(profile);
       return true;
-    } catch (error) {
-      console.error('Failed to save user profile:', error);
+    } catch (_error) {
+      console.error('Failed to save user profile:', _error);
       return false;
     }
   }
@@ -323,8 +323,8 @@ export class DatabaseService {
     try {
       const profile = await this.db.userProfile.toCollection().first();
       return profile || null;
-    } catch (error) {
-      console.error('Failed to get user profile:', error);
+    } catch (_error) {
+      console.error('Failed to get user profile:', _error);
       return null;
     }
   }
@@ -365,8 +365,8 @@ export class DatabaseService {
         : 0;
 
       return stats;
-    } catch (error) {
-      console.error('Failed to get workout stats:', error);
+    } catch (_error) {
+      console.error('Failed to get workout stats:', _error);
       return {
         totalWorkouts: 0,
         totalDuration: 0,
@@ -405,8 +405,8 @@ export class DatabaseService {
         settings,
         profile
       };
-    } catch (error) {
-      console.error('Failed to export data:', error);
+    } catch (_error) {
+      console.error('Failed to export data:', _error);
       throw new Error('Failed to export data');
     }
   }
@@ -421,8 +421,8 @@ export class DatabaseService {
         this.db.userProfile.clear()
       ]);
       return true;
-    } catch (error) {
-      console.error('Failed to clear all data:', error);
+    } catch (_error) {
+      console.error('Failed to clear all data:', _error);
       return false;
     }
   }
@@ -436,8 +436,8 @@ export class DatabaseService {
       
       // Could implement cleanup logic here if needed
       return true;
-    } catch (error) {
-      console.error('Failed to vacuum database:', error);
+    } catch (_error) {
+      console.error('Failed to vacuum database:', _error);
       return false;
     }
   }
@@ -451,8 +451,8 @@ export class DatabaseService {
         // This would be implemented based on the EXERCISE_DATABASE constant
         console.log('Seeding initial exercise data...');
       }
-    } catch (error) {
-      console.error('Failed to seed initial data:', error);
+    } catch (_error) {
+      console.error('Failed to seed initial data:', _error);
     }
   }
 
@@ -470,8 +470,8 @@ export class DatabaseService {
   async close(): Promise<void> {
     try {
       await this.db.close();
-    } catch (error) {
-      console.error('Failed to close database:', error);
+    } catch (_error) {
+      console.error('Failed to close database:', _error);
     }
   }
 }
