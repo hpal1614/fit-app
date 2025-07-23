@@ -1,80 +1,24 @@
-// Enums for categorization
-export enum ExerciseCategory {
-  COMPOUND = 'compound',
-  ISOLATION = 'isolation',
-  CARDIO = 'cardio',
-  FLEXIBILITY = 'flexibility',
-  PLYOMETRIC = 'plyometric',
-  FUNCTIONAL = 'functional'
-}
-
-export enum MuscleGroup {
-  CHEST = 'chest',
-  BACK = 'back',
-  SHOULDERS = 'shoulders',
-  BICEPS = 'biceps',
-  TRICEPS = 'triceps',
-  FOREARMS = 'forearms',
-  CORE = 'core',
-  QUADS = 'quad',
-  HAMSTRINGS = 'hamstrings',
-  GLUTES = 'glutes',
-  CALVES = 'calves',
-  FULL_BODY = 'full_body'
-}
-
-export enum EquipmentType {
-  BARBELL = 'barbell',
-  DUMBBELL = 'dumbbell',
-  CABLE = 'cable',
-  MACHINE = 'machine',
-  BODYWEIGHT = 'bodyweight',
-  KETTLEBELL = 'kettlebell',
-  RESISTANCE_BAND = 'resistance_band',
-  CARDIO_MACHINE = 'cardio_machine'
-}
-
-export enum WorkoutType {
-  STRENGTH = 'strength',
-  CARDIO = 'cardio',
-  HYBRID = 'hybrid',
-  FLEXIBILITY = 'flexibility',
-  SPORTS = 'sports'
-}
-
-// Core data structures
 export interface Exercise {
   id: string;
   name: string;
   category: ExerciseCategory;
-  primaryMuscles: MuscleGroup[];
-  secondaryMuscles: MuscleGroup[];
   muscleGroups: MuscleGroup[];
-  equipment: EquipmentType[];
+  equipment: Equipment[];
   instructions: string[];
   tips: string[];
-  difficulty: 1 | 2 | 3 | 4 | 5;
-  estimatedDuration?: number;
-  defaultSets?: Set[];
   videoUrl?: string;
   imageUrl?: string;
-  variations?: string[];
-  warnings?: string[];
 }
 
 export interface Set {
   id: string;
   reps: number;
-  weight: number; // in kg or lbs based on user preference
+  weight: number;
   restTime?: number; // in seconds
-  perceived_difficulty?: 1 | 2 | 3 | 4 | 5; // RPE scale
   notes?: string;
-  timestamp: Date;
-  isWarmup?: boolean;
-  isFailure?: boolean;
-  tempo?: string; // e.g., "3-1-2-1" (eccentric-pause-concentric-pause)
-  isCompleted?: boolean;
-  completedAt?: Date;
+  completedAt: Date;
+  difficulty?: 1 | 2 | 3 | 4 | 5;
+  form?: FormRating;
 }
 
 export interface WorkoutExercise {
@@ -82,209 +26,177 @@ export interface WorkoutExercise {
   exerciseId: string;
   exercise: Exercise;
   sets: Set[];
-  completedSets: Set[];
-  startTime?: Date;
-  endTime?: Date;
   targetSets?: number;
   targetReps?: number;
   targetWeight?: number;
-  restTimeBetweenSets?: number;
   notes?: string;
-  orderIndex: number;
+  order: number;
 }
 
 export interface Workout {
   id: string;
   name: string;
-  type: WorkoutType;
-  exercises: WorkoutExercise[];
+  date: Date;
   startTime: Date;
   endTime?: Date;
-  duration?: number; // in seconds
-  totalDuration?: number; // in seconds
-  totalSets?: number;
-  totalReps?: number;
-  totalWeight?: number;
+  exercises: WorkoutExercise[];
   notes?: string;
-  templateId?: string;
-  totalVolume?: number; // calculated: sum of sets * reps * weight
-  personalRecords?: PersonalRecord[];
-  isCompleted: boolean;
+  workoutTemplateId?: string;
+  totalVolume: number;
+  duration?: number; // in minutes
+  mood?: WorkoutMood;
+  energy?: EnergyLevel;
 }
 
 export interface WorkoutTemplate {
   id: string;
   name: string;
   description?: string;
-  type: WorkoutType;
-  exercises: {
-    exerciseId: string;
-    targetSets: number;
-    targetReps: number;
-    targetWeight?: number;
-    restTime?: number;
-    orderIndex: number;
-  }[];
-  estimatedDuration?: number; // in minutes
-  difficulty: 1 | 2 | 3 | 4 | 5;
-  tags: string[];
-  isCustom: boolean;
+  exercises: Omit<WorkoutExercise, 'id' | 'sets'>[];
+  category: WorkoutCategory;
+  difficulty: DifficultyLevel;
+  estimatedDuration: number; // in minutes
   createdAt: Date;
-  lastUsed?: Date;
+  updatedAt: Date;
 }
 
 export interface WorkoutHistory {
   workouts: Workout[];
+  personalRecords: PersonalRecord[];
   totalWorkouts: number;
-  totalDuration: number; // in seconds
   totalVolume: number;
-  averageWorkoutDuration: number;
-  favoriteExercises: string[]; // exercise IDs
-  strongestLifts: PersonalRecord[];
-  consistency: {
-    currentStreak: number;
-    longestStreak: number;
-    weeklyAverage: number;
-  };
+  averageDuration: number;
+  streaks: WorkoutStreak[];
 }
 
 export interface PersonalRecord {
   id: string;
   exerciseId: string;
-  exerciseName: string;
-  type: 'one_rep_max' | 'volume' | 'endurance' | 'time';
+  exercise: Exercise;
+  type: 'max_weight' | 'max_reps' | 'max_volume' | 'best_time';
   value: number;
-  weight: number;
-  reps: number;
-  oneRepMax: number;
-  unit: string; // kg, lbs, minutes, seconds, etc.
   date: Date;
   workoutId: string;
-  isEstimated?: boolean; // if calculated from multiple reps
-  notes?: string;
 }
 
-// Context and state management
-export interface WorkoutContext {
-  activeWorkout?: Workout;
-  currentExercise?: WorkoutExercise;
-  currentSet?: number;
-  totalSets?: number;
-  isResting?: boolean;
-  restTimeRemaining?: number;
-  workoutDuration?: number;
-  lastPersonalRecord?: PersonalRecord;
-  recentExercises?: Exercise[];
-  userPreferences: WorkoutPreferences;
-}
-
-export interface WorkoutPreferences {
-  defaultWeightUnit: 'kg' | 'lbs';
-  defaultRestTime: number; // seconds
-  autoRestTimer: boolean;
-  showPersonalRecords: boolean;
-  enableVoiceCommands: boolean;
-  warmupRequired: boolean;
-  trackRPE: boolean; // Rate of Perceived Exertion
-  roundingPreference: 'exact' | 'nearest_2_5' | 'nearest_5';
-  plateCalculation: boolean;
-  notifications: {
-    restComplete: boolean;
-    personalRecord: boolean;
-    workoutReminders: boolean;
-  };
-}
-
-// Voice integration types
-export interface VoiceWorkoutCommand {
-  type: 'start_workout' | 'end_workout' | 'log_set' | 'add_exercise' | 'rest_timer' | 'next_exercise' | 'repeat_last';
-  parameters: Record<string, any>;
-  confidence: number;
-  timestamp: Date;
-}
-
-// Progress tracking
-export interface ProgressMetrics {
-  volumeProgress: {
-    current: number;
-    previous: number;
-    change: number;
-    changePercent: number;
-  };
-  strengthProgress: {
-    exerciseId: string;
-    exerciseName: string;
-    current: number;
-    previous: number;
-    change: number;
-    changePercent: number;
-  }[];
-  consistencyMetrics: {
-    workoutsThisWeek: number;
-    workoutsLastWeek: number;
-    averageWorkoutsPerWeek: number;
-    currentStreak: number;
-  };
-  bodyComposition?: {
-    weight: number;
-    bodyFat?: number;
-    muscleMass?: number;
-    date: Date;
-  }[];
-}
-
-export interface WorkoutSplit {
+export interface WorkoutStreak {
   id: string;
-  name: string;
-  description?: string;
-  days: {
-    dayOfWeek: number; // 0-6 (Sunday-Saturday)
-    templateId: string;
-    isRestDay: boolean;
-  }[];
-  weeksToComplete: number;
+  startDate: Date;
+  endDate?: Date;
+  count: number;
+  type: 'daily' | 'weekly';
   isActive: boolean;
 }
 
-// New interfaces for Workout Plans feature
-export interface WorkoutPlan {
-  id: string;
-  name: string;
+export interface WorkoutContext {
+  activeWorkout: Workout | null;
+  currentExercise: WorkoutExercise | null;
+  currentSet: number;
+  isRecording: boolean;
+  userLevel: UserLevel;
+  preferences: WorkoutPreferences;
+}
+
+export interface WorkoutPreferences {
+  defaultRestTime: number;
+  weightUnit: 'lbs' | 'kg';
+  voiceCoaching: boolean;
+  autoStartTimer: boolean;
+  motivationalMessages: boolean;
+  formReminders: boolean;
+}
+
+// Enums and Types
+export type ExerciseCategory = 
+  | 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'cardio' | 'full-body';
+
+export type MuscleGroup = 
+  | 'chest' | 'triceps' | 'shoulders' | 'biceps' | 'lats' | 'traps' | 'rhomboids'
+  | 'lower-back' | 'quads' | 'hamstrings' | 'glutes' | 'calves' | 'abs' | 'obliques';
+
+export type Equipment = 
+  | 'barbell' | 'dumbbell' | 'kettlebell' | 'machine' | 'cable' | 'bodyweight'
+  | 'resistance-band' | 'suspension' | 'medicine-ball' | 'foam-roller';
+
+export type WorkoutCategory = 
+  | 'strength' | 'cardio' | 'flexibility' | 'powerlifting' | 'bodybuilding'
+  | 'crossfit' | 'yoga' | 'pilates' | 'sports' | 'rehabilitation';
+
+export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
+
+export type UserLevel = 'beginner' | 'intermediate' | 'advanced';
+
+export type WorkoutMood = 'excellent' | 'good' | 'average' | 'poor' | 'terrible';
+
+export type EnergyLevel = 'high' | 'medium' | 'low';
+
+export type FormRating = 'perfect' | 'good' | 'needs-work' | 'poor';
+
+// Progress and Analytics
+export interface ProgressMetrics {
+  strengthProgress: StrengthProgress[];
+  volumeProgress: VolumeProgress[];
+  frequencyMetrics: FrequencyMetrics;
+  bodyComposition?: BodyComposition[];
+  performanceMetrics: PerformanceMetrics;
+}
+
+export interface StrengthProgress {
+  exerciseId: string;
+  exercise: Exercise;
+  maxWeight: number;
+  date: Date;
+  improvement: number; // percentage
+}
+
+export interface VolumeProgress {
+  date: Date;
+  totalVolume: number;
+  exercises: { [exerciseId: string]: number };
+}
+
+export interface FrequencyMetrics {
+  workoutsPerWeek: number;
+  averageSessionDuration: number;
+  consistency: number; // percentage
+  lastWorkout: Date;
+}
+
+export interface BodyComposition {
+  date: Date;
+  weight: number;
+  bodyFat?: number;
+  muscleMass?: number;
+  measurements?: BodyMeasurements;
+}
+
+export interface BodyMeasurements {
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  biceps?: number;
+  thighs?: number;
+  calves?: number;
+}
+
+export interface PerformanceMetrics {
+  averageRestTime: number;
+  setCompletionRate: number;
+  workoutCompletionRate: number;
+  injuryRate: number;
+}
+
+// Progression and Planning
+export interface Progression {
+  exerciseId: string;
+  suggestion: ProgressionSuggestion;
+  reasoning: string;
+  confidence: number;
+}
+
+export interface ProgressionSuggestion {
+  type: 'weight' | 'reps' | 'sets' | 'form' | 'rest';
+  change: number;
   description: string;
-  type: 'ai_generated' | 'custom' | 'pdf_imported';
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  daysPerWeek: number;
-  estimatedDuration: number; // minutes per session
-  targetGoals: string[];
-  equipment: string[];
-  schedule: WorkoutDay[];
-  createdAt: Date;
-  lastUsed?: Date;
-  timesCompleted: number;
-  userRating?: number;
-  notes?: string;
-  originalSource?: {
-    type: 'pdf' | 'template' | 'ai';
-    source: string;
-  };
-}
-
-export interface WorkoutDay {
-  name: string; // "Day 1: Push", "Monday: Upper Body"
-  description?: string;
-  exercises: WorkoutExercise[];
-  restDayAfter?: boolean;
-  notes?: string;
-  estimatedDuration: number;
-  warmup?: Exercise[];
-  cooldown?: Exercise[];
-}
-
-export interface WorkoutPlanMetadata {
-  totalWorkouts: number;
-  averageRating: number;
-  completionRate: number;
-  popularGoals: string[];
-  commonEquipment: string[];
-  difficultyDistribution: Record<string, number>;
+  timeframe: string;
 }

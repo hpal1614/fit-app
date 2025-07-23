@@ -1,9 +1,5 @@
-import type { WorkoutContext } from './workout';
+import { WorkoutContext } from './workout';
 
-// Re-export commonly used types
-export type { WorkoutContext } from './workout';
-
-// Voice configuration
 export interface VoiceConfig {
   // Speech Recognition (Input)
   recognition: {
@@ -12,103 +8,51 @@ export interface VoiceConfig {
     interimResults: boolean;
     language: string;
     noiseReduction: boolean;
-    maxAlternatives: number;
-    timeout: number; // milliseconds
+    confidenceThreshold: number;
   };
   
   // Speech Synthesis (Output)
   synthesis: {
     voice: 'neural' | 'standard';
-    rate: number; // 0.1 to 10
-    pitch: number; // 0 to 2
-    volume: number; // 0 to 1
+    rate: number;
+    pitch: number;
+    volume: number;
     ssmlSupport: boolean;
-    voiceName?: string;
+    preferredVoice?: string;
   };
   
   // Voice Commands
   commands: VoiceCommand[];
   wakeWord?: string; // "Hey Coach"
-  wakeWordEnabled: boolean;
-  confidenceThreshold: number; // 0 to 1
+  timeoutDuration: number; // ms
+  maxRetries: number;
 }
 
-// Voice command structure
 export interface VoiceCommand {
-  patterns: string[]; // regex patterns or natural language templates
+  id: string;
+  patterns: string[];
   action: VoiceAction;
-  parameters?: VoiceParameter[];
-  confidence: number; // minimum confidence level
-  context?: VoiceContext[]; // when this command is valid
+  parameters?: Record<string, any>;
+  confidence: number;
+  context?: VoiceCommandContext[];
+  aliases?: string[];
   description: string;
   examples: string[];
-  requiresConfirmation?: boolean;
-  aliases?: string[];
 }
 
-export type VoiceAction = 
-  | 'LOG_EXERCISE'
-  | 'START_WORKOUT'
-  | 'END_WORKOUT'
-  | 'ADD_EXERCISE'
-  | 'REST_TIMER'
-  | 'START_REST_TIMER'
-  | 'NEXT_EXERCISE'
-  | 'PREVIOUS_EXERCISE'
-  | 'REPEAT_LAST'
-  | 'GET_PROGRESS'
-  | 'AI_COACHING'
-  | 'SESSION_CONTROL'
-  | 'WEIGHT_CALCULATION'
-  | 'EXERCISE_INFO'
-  | 'NUTRITION_QUERY'
-  | 'MOTIVATION_REQUEST'
-  | 'FORM_ANALYSIS'
-  | 'WORKOUT_PLANNING'
-  | 'PERSONAL_RECORD'
-  | 'SET_PREFERENCE'
-  | 'CANCEL_COMMAND'
-  | 'CLARIFY'
-  | 'HELP'
-  | 'SHOW_STATS'
-  | 'SHOW_HISTORY'
-  | 'SHOW_SETTINGS'
-  | 'unknown';
-
-export type VoiceContext = 
-  | 'workout_active'
-  | 'workout_idle'
-  | 'exercise_selection'
-  | 'set_logging'
-  | 'rest_period'
-  | 'workout_complete'
-  | 'ai_conversation'
-  | 'any';
-
-export interface VoiceParameter {
-  name: string;
-  type: 'string' | 'number' | 'exercise' | 'weight' | 'reps' | 'time' | 'boolean';
-  required: boolean;
-  validation?: RegExp | ((value: any) => boolean);
-  defaultValue?: any;
-  aliases?: string[];
+export interface VoiceCommandContext {
+  type: 'workout_active' | 'exercise_selected' | 'rest_period' | 'session_ended';
+  required?: boolean;
 }
 
-// Voice command processing
 export interface VoiceCommandResult {
-  success: boolean;
   action: VoiceAction;
   parameters: Record<string, any>;
   confidence: number;
-  originalTranscript: string;
-  transcript: string; // Alias for originalTranscript for backwards compatibility
-  processedText: string;
-  response?: string;
+  transcript: string;
   timestamp: Date;
-  context?: WorkoutContext;
-  errors?: string[];
-  suggestions?: string[];
-  reasoning?: string; // For AI-generated reasoning
+  success: boolean;
+  error?: string;
 }
 
 export interface VoiceInput {
@@ -116,154 +60,277 @@ export interface VoiceInput {
   confidence: number;
   isFinal: boolean;
   timestamp: Date;
-  alternatives?: Array<{
-    transcript: string;
-    confidence: number;
-  }>;
-}
-
-// Voice state management
-export type VoiceMode = 'idle' | 'listening' | 'processing' | 'speaking' | 'error';
-
-export interface VoiceState {
-  mode: VoiceMode;
-  isInitialized: boolean;
-  isListening: boolean;
-  isSpeaking: boolean;
-  isProcessing: boolean;
-  currentTranscript?: string;
-  lastTranscript?: string;
-  confidence?: number;
-  lastCommand?: VoiceCommandResult;
-  error?: VoiceError;
   context?: WorkoutContext;
-  wakeWordDetected?: boolean;
-  continuousMode: boolean;
 }
 
-// Speech synthesis options
 export interface SpeechOptions {
+  priority: SpeechPriority;
+  interrupt: boolean;
+  ssml?: boolean;
   voice?: string;
   rate?: number;
   pitch?: number;
   volume?: number;
-  emotion?: VoiceEmotion;
-  priority?: 'low' | 'normal' | 'high' | 'urgent';
-  interrupt?: boolean; // interrupt current speech
-  ssml?: boolean; // use SSML markup
-  language?: string;
 }
 
-export type VoiceEmotion = 
-  | 'neutral'
-  | 'encouraging'
-  | 'celebratory'
-  | 'motivational'
-  | 'instructional'
-  | 'questioning'
-  | 'apologetic'
-  | 'concerned'
-  | 'excited'
-  | 'calm'
-  | 'focused';
-
-// Voice response structure
 export interface VoiceResponse {
   text: string;
-  ssml?: string; // SSML markup version
-  emotion: VoiceEmotion;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  context?: WorkoutContext;
-  followUpAction?: VoiceAction;
-  expectsResponse?: boolean;
-  timeout?: number; // milliseconds to wait for response
+  ssml?: string;
+  emotion?: VoiceEmotion;
+  priority: SpeechPriority;
+  context?: any;
 }
 
-// Error handling
-export interface VoiceError {
-  type: VoiceErrorType;
-  message: string;
-  code?: string;
-  recoverable: boolean;
-  suggestedAction?: string;
-  timestamp: Date;
+export interface VoiceState {
+  mode: VoiceMode;
+  isListening: boolean;
+  isSpeaking: boolean;
+  isProcessing: boolean;
+  currentTranscript: string;
+  confidence: number;
+  error?: VoiceError;
+  lastActivity: Date;
+  sessionActive: boolean;
 }
 
-export type VoiceErrorType = 
-  | 'recognition_failed'
-  | 'synthesis_failed'
-  | 'no_microphone'
-  | 'permission_denied'
-  | 'network_error'
-  | 'unsupported_browser'
-  | 'command_not_recognized'
-  | 'low_confidence'
-  | 'context_mismatch'
-  | 'parameter_validation_failed'
-  | 'timeout'
-  | 'service_unavailable'
-  | 'initialization_error'
-  | 'recognition_error'
-  | 'synthesis_error';
-
-// Voice analytics and training
-export interface VoiceUsageMetrics {
+export interface VoiceSession {
+  id: string;
+  startTime: Date;
+  endTime?: Date;
+  commands: VoiceCommandResult[];
   totalCommands: number;
   successfulCommands: number;
-  failedCommands: number;
   averageConfidence: number;
-  mostUsedCommands: Array<{
-    action: VoiceAction;
-    count: number;
-    averageConfidence: number;
-  }>;
-  errorFrequency: Array<{
-    type: VoiceErrorType;
-    count: number;
-  }>;
+  context: WorkoutContext;
+}
+
+export interface VoiceAnalytics {
+  totalSessions: number;
+  totalCommands: number;
+  successRate: number;
+  averageConfidence: number;
+  mostUsedCommands: VoiceCommandUsage[];
+  errorPatterns: VoiceErrorPattern[];
   improvementSuggestions: string[];
 }
 
-// Voice personalization
-export interface VoicePersonalization {
-  preferredVoice: string;
-  speechRate: number;
-  customCommands: VoiceCommand[];
-  trainingData: Array<{
-    spoken: string;
-    intended: VoiceAction;
-    parameters: Record<string, any>;
-    timestamp: Date;
-  }>;
-  contextPreferences: {
-    [key in VoiceContext]?: {
-      enabledCommands: VoiceAction[];
-      customResponses: Record<string, string>;
-    };
-  };
+export interface VoiceCommandUsage {
+  action: VoiceAction;
+  count: number;
+  successRate: number;
+  averageConfidence: number;
 }
 
-// Event system
-export type VoiceEventType = 
-  | 'listening_started'
-  | 'listening_stopped'
-  | 'speech_detected'
-  | 'command_recognized'
-  | 'command_executed'
-  | 'synthesis_started'
-  | 'synthesis_ended'
-  | 'error_occurred'
-  | 'wake_word_detected'
-  | 'context_changed';
+export interface VoiceErrorPattern {
+  type: VoiceErrorType;
+  count: number;
+  contexts: string[];
+  suggestions: string[];
+}
 
-export interface VoiceEvent {
-  type: VoiceEventType;
-  data?: any;
-  state?: VoiceState;
-  error?: VoiceError;
-  result?: VoiceCommandResult;
+export interface VoiceError {
+  type: VoiceErrorType;
+  message: string;
   timestamp: Date;
-  context?: WorkoutContext;
+  context?: any;
+  recovery?: VoiceRecovery;
 }
 
-export type VoiceEventListener = (event: VoiceEvent) => void;
+export interface VoiceRecovery {
+  strategy: RecoveryStrategy;
+  message: string;
+  action?: () => void;
+}
+
+// Voice Recognition Interfaces
+export interface SpeechRecognitionConfig {
+  continuous: boolean;
+  interimResults: boolean;
+  language: string;
+  maxAlternatives: number;
+  serviceURI?: string;
+}
+
+export interface SpeechRecognitionResult {
+  transcript: string;
+  confidence: number;
+  isFinal: boolean;
+  alternatives: SpeechAlternative[];
+}
+
+export interface SpeechAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+// Speech Synthesis Interfaces
+export interface SpeechSynthesisConfig {
+  voice?: SpeechSynthesisVoice;
+  volume: number;
+  rate: number;
+  pitch: number;
+  lang: string;
+}
+
+export interface VoiceTraining {
+  userId: string;
+  personalizedCommands: PersonalizedCommand[];
+  adaptedPatterns: string[];
+  confidenceAdjustments: Record<string, number>;
+  lastTraining: Date;
+}
+
+export interface PersonalizedCommand {
+  originalPattern: string;
+  userPattern: string;
+  frequency: number;
+  confidence: number;
+}
+
+// Enums and Types
+export type VoiceAction = 
+  // Workout Logging
+  | 'LOG_EXERCISE'
+  | 'ADD_SET'
+  | 'COMPLETE_SET'
+  | 'SKIP_EXERCISE'
+  | 'END_WORKOUT'
+  | 'START_WORKOUT'
+  | 'PAUSE_WORKOUT'
+  | 'RESUME_WORKOUT'
+  
+  // Progress Queries
+  | 'GET_PROGRESS'
+  | 'GET_PERSONAL_RECORD'
+  | 'GET_WORKOUT_HISTORY'
+  | 'GET_EXERCISE_STATS'
+  
+  // AI Coaching
+  | 'AI_COACHING'
+  | 'FORM_ANALYSIS'
+  | 'NUTRITION_ADVICE'
+  | 'MOTIVATION'
+  | 'WORKOUT_SUGGESTION'
+  | 'REST_GUIDANCE'
+  
+  // Session Control
+  | 'SESSION_CONTROL'
+  | 'TIMER_START'
+  | 'TIMER_STOP'
+  | 'TIMER_RESET'
+  | 'NEXT_EXERCISE'
+  | 'PREVIOUS_EXERCISE'
+  
+  // Navigation
+  | 'NAVIGATE'
+  | 'SHOW_STATS'
+  | 'SHOW_HISTORY'
+  | 'SHOW_SETTINGS'
+  
+  // Settings
+  | 'CHANGE_SETTINGS'
+  | 'ADJUST_VOLUME'
+  | 'CHANGE_VOICE'
+  | 'TOGGLE_COACHING'
+  
+  // Error Handling
+  | 'CLARIFY'
+  | 'REPEAT'
+  | 'CANCEL'
+  | 'HELP';
+
+export type VoiceMode = 'listening' | 'speaking' | 'processing' | 'idle' | 'error';
+
+export type SpeechPriority = 'high' | 'medium' | 'low';
+
+export type VoiceEmotion = 
+  | 'encouraging' | 'motivational' | 'calm' | 'excited' | 'focused' | 'supportive';
+
+export type VoiceErrorType = 
+  | 'recognition_failed'
+  | 'low_confidence'
+  | 'command_not_found'
+  | 'context_invalid'
+  | 'synthesis_failed'
+  | 'permission_denied'
+  | 'network_error'
+  | 'timeout'
+  | 'noise_interference';
+
+export type RecoveryStrategy = 
+  | 'retry'
+  | 'clarify'
+  | 'fallback_text'
+  | 'context_switch'
+  | 'manual_override';
+
+// Advanced Voice Features
+export interface VoicePersonality {
+  tone: 'professional' | 'friendly' | 'motivational' | 'casual';
+  enthusiasm: number; // 1-10
+  formality: number; // 1-10
+  humor: boolean;
+  encouragement: boolean;
+  personalizedGreeting: string;
+}
+
+export interface VoiceAccessibility {
+  visualIndicators: boolean;
+  hapticFeedback: boolean;
+  alternativeInputs: boolean;
+  textFallback: boolean;
+  slowSpeech: boolean;
+  clearEnunciation: boolean;
+}
+
+export interface VoicePrivacy {
+  localProcessing: boolean;
+  dataRetention: number; // days
+  anonymization: boolean;
+  optOut: boolean;
+  encryptTranscripts: boolean;
+}
+
+// Context-Aware Voice Features
+export interface ContextualResponse {
+  context: WorkoutContext;
+  response: VoiceResponse;
+  followUpSuggestions: string[];
+  adaptiveParameters: Record<string, any>;
+}
+
+export interface VoiceWorkoutGuide {
+  exerciseInstructions: ExerciseVoiceGuide[];
+  restPeriodGuidance: RestPeriodGuide[];
+  motivationalCues: MotivationalCue[];
+  formReminders: FormReminder[];
+}
+
+export interface ExerciseVoiceGuide {
+  exerciseId: string;
+  setupInstructions: string[];
+  executionCues: string[];
+  breathingGuidance: string[];
+  commonMistakes: string[];
+  encouragement: string[];
+}
+
+export interface RestPeriodGuide {
+  duration: number;
+  encouragement: string[];
+  preparation: string[];
+  timeReminders: string[];
+}
+
+export interface MotivationalCue {
+  context: 'start' | 'middle' | 'struggle' | 'finish' | 'achievement';
+  messages: string[];
+  timing: 'immediate' | 'delayed';
+}
+
+export interface FormReminder {
+  exerciseCategory: string;
+  checkpoints: string[];
+  corrections: string[];
+  frequency: 'every_set' | 'as_needed' | 'periodic';
+}

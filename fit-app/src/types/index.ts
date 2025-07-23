@@ -1,321 +1,381 @@
-// Re-export all types from individual modules
+// Workout Types
 export * from './workout';
+
+// Voice Types
 export * from './voice';
+
+// AI Types
 export * from './ai';
 
-// Import specific types needed in this file
-import type { 
-  WorkoutPreferences
-} from './workout';
-import type { 
-  AIPersonality, 
-  AIResponseStyle, 
-  AIExpertiseLevel,
-  UserProfile
-} from './ai';
-import type { VoiceConfig } from './voice';
-import type { AICoachConfig } from './ai';
-
-// Application-wide types
+// App State Types
 export interface AppState {
-  user: User | null;
-  isOnline: boolean;
+  isInitialized: boolean;
   isLoading: boolean;
-  error: AppError | null;
+  error: string | null;
+  user: User | null;
   settings: AppSettings;
-  navigation: NavigationState;
-  performance: PerformanceMetrics;
-  analytics: AnalyticsEvent[];
-  sync: SyncState;
-  theme: Theme;
-  features: FeatureFlags;
-  device: DeviceInfo;
+  connectivity: ConnectivityState;
 }
 
 export interface User {
   id: string;
-  email?: string;
-  name?: string;
+  email: string;
+  displayName: string;
   avatar?: string;
-  profile: UserProfile;
   preferences: UserPreferences;
-  subscription?: {
-    plan: 'free' | 'premium' | 'pro';
-    expiresAt?: Date;
-    features: string[];
-  };
+  subscription: Subscription;
+  stats: UserStats;
   createdAt: Date;
-  lastLoginAt: Date;
-  isVerified: boolean;
+  lastActive: Date;
 }
 
 export interface UserPreferences {
-  // Workout preferences
-  workout: WorkoutPreferences;
-  
-  // Voice preferences
-  voice: {
-    enabled: boolean;
-    wakeWordEnabled: boolean;
-    continuousListening: boolean;
-    voiceSelection: string;
-    speechRate: number;
-    autoSpeak: boolean;
-  };
-  
-  // AI preferences
-  ai: {
-    personalityProfile: AIPersonality;
-    responseStyle: AIResponseStyle;
-    expertiseLevel: AIExpertiseLevel;
-    enableAnalytics: boolean;
-    enablePersonalization: boolean;
-  };
-  
-  // App preferences
-  app: {
-    theme: 'light' | 'dark' | 'auto';
-    language: string;
-    units: 'metric' | 'imperial';
-    privacy: {
-      shareData: boolean;
-      enableAnalytics: boolean;
-      enableCrashReporting: boolean;
-    };
-    notifications: {
-      workoutReminders: boolean;
-      restTimers: boolean;
-      personalRecords: boolean;
-      motivationalMessages: boolean;
-    };
-  };
+  theme: 'light' | 'dark' | 'auto';
+  language: string;
+  timezone: string;
+  units: 'metric' | 'imperial';
+  notifications: NotificationSettings;
+  privacy: PrivacySettings;
+  accessibility: AccessibilitySettings;
+}
+
+export interface NotificationSettings {
+  workoutReminders: boolean;
+  progressUpdates: boolean;
+  motivationalMessages: boolean;
+  formReminders: boolean;
+  achievementCelebrations: boolean;
+  restTimerAlerts: boolean;
+  emailDigest: boolean;
+  pushNotifications: boolean;
+}
+
+export interface PrivacySettings {
+  dataSharing: boolean;
+  analytics: boolean;
+  voiceDataRetention: number; // days
+  shareProgress: boolean;
+  publicProfile: boolean;
+}
+
+export interface AccessibilitySettings {
+  largeText: boolean;
+  highContrast: boolean;
+  voiceNavigation: boolean;
+  screenReader: boolean;
+  reducedMotion: boolean;
+  hapticFeedback: boolean;
+}
+
+export interface Subscription {
+  tier: 'free' | 'pro' | 'coach';
+  status: 'active' | 'inactive' | 'trial' | 'cancelled';
+  expiresAt?: Date;
+  features: SubscriptionFeature[];
+  billingCycle: 'monthly' | 'yearly';
+}
+
+export interface SubscriptionFeature {
+  name: string;
+  description: string;
+  enabled: boolean;
+  category: 'voice' | 'ai' | 'analytics' | 'sync' | 'support';
+}
+
+export interface UserStats {
+  totalWorkouts: number;
+  totalSets: number;
+  totalReps: number;
+  totalVolume: number; // lbs or kg
+  totalDuration: number; // minutes
+  streak: number;
+  achievementCount: number;
+  joinDate: Date;
+  lastWorkout: Date;
+  favoriteExercises: string[];
+  strengthRecords: number;
 }
 
 export interface AppSettings {
-  version: string;
-  environment: 'development' | 'staging' | 'production';
-  apiBaseUrl: string;
-  features: FeatureFlags;
-  debug: boolean;
-  maintenance: {
-    enabled: boolean;
-    message?: string;
-    estimatedDuration?: number;
-  };
-  limits: {
-    maxWorkoutDuration: number; // minutes
-    maxSetsPerExercise: number;
-    maxExercisesPerWorkout: number;
-    maxCacheSize: number; // MB
-  };
+  apiEndpoint: string;
+  offlineMode: boolean;
+  syncEnabled: boolean;
+  debugMode: boolean;
+  betaFeatures: boolean;
+  cacheSize: number; // MB
+  autoBackup: boolean;
+  backupFrequency: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface ConnectivityState {
   isOnline: boolean;
   connectionType: 'wifi' | 'cellular' | 'ethernet' | 'unknown';
-  effectiveType: 'slow-2g' | '2g' | '3g' | '4g' | '5g' | 'unknown';
-  downlink: number; // Mbps
-  rtt: number; // milliseconds
-  saveData: boolean;
+  networkSpeed: 'slow' | 'medium' | 'fast';
+  lastSync: Date | null;
+  pendingSync: number;
+  apiStatus: 'connected' | 'degraded' | 'offline';
 }
 
+// Navigation Types
 export interface NavigationState {
   currentRoute: string;
-  previousRoute?: string;
-  routeParams: Record<string, string>;
+  history: string[];
   canGoBack: boolean;
-  tabIndex: number;
-  modalStack: string[];
-  drawerOpen: boolean;
+  params: Record<string, any>;
 }
 
+export interface Route {
+  path: string;
+  component: React.ComponentType;
+  name: string;
+  requiresAuth: boolean;
+  requiresSubscription?: SubscriptionTier;
+  breadcrumb?: string;
+  meta?: RouteMeta;
+}
+
+export interface RouteMeta {
+  title: string;
+  description?: string;
+  keywords?: string[];
+  voiceNavigable: boolean;
+  gestureSupport: boolean;
+}
+
+export type SubscriptionTier = 'free' | 'pro' | 'coach';
+
+// Error Types
 export interface AppError {
   id: string;
-  type: 'validation' | 'network' | 'auth' | 'permission' | 'unknown';
-  code?: string;
+  type: ErrorType;
   message: string;
   details?: string;
-  stack?: string;
   timestamp: Date;
-  recoverable: boolean;
-  reported: boolean;
-  userAction?: string;
   context?: Record<string, any>;
+  severity: ErrorSeverity;
+  recoverable: boolean;
+  reportable: boolean;
 }
 
+export type ErrorType = 
+  | 'network' | 'voice' | 'ai' | 'storage' | 'validation' 
+  | 'permission' | 'subscription' | 'sync' | 'unknown';
+
+export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+// Performance Types
 export interface PerformanceMetrics {
-  appStartTime: number;
-  firstRenderTime: number;
-  interactionReadyTime: number;
-  memoryUsage: {
-    total: number;
-    used: number;
-    available: number;
-  };
-  bundleSize: {
-    initial: number;
-    loaded: number;
-    cached: number;
-  };
-  apiMetrics: {
-    averageResponseTime: number;
-    successRate: number;
-    errorRate: number;
-    totalRequests: number;
-  };
-  renderMetrics: {
-    averageFps: number;
-    slowFrames: number;
-    totalFrames: number;
-  };
+  renderTime: number;
+  bundleSize: number;
+  memoryUsage: number;
+  apiLatency: number;
+  voiceLatency: number;
+  cacheHitRate: number;
+  errorRate: number;
+  crashRate: number;
 }
 
+// Analytics Types
 export interface AnalyticsEvent {
-  id: string;
-  type: string;
-  category: 'workout' | 'voice' | 'ai' | 'navigation' | 'error' | 'performance';
-  action: string;
-  label?: string;
-  value?: number;
-  metadata?: Record<string, any>;
+  name: string;
+  properties: Record<string, any>;
   timestamp: Date;
-  sessionId: string;
   userId?: string;
+  sessionId: string;
+  category: EventCategory;
+  value?: number;
 }
 
+export type EventCategory = 
+  | 'workout' | 'voice' | 'ai' | 'navigation' | 'engagement' 
+  | 'error' | 'performance' | 'monetization';
+
+// Sync Types
 export interface SyncState {
-  lastSyncAt?: Date;
-  isSyncing: boolean;
-  syncProgress: number; // 0 to 1
+  lastSync: Date | null;
   pendingChanges: number;
-  conflicts: Array<{
-    id: string;
-    type: string;
-    localData: any;
-    remoteData: any;
-    timestamp: Date;
-  }>;
-  syncErrors: Array<{
-    type: string;
-    message: string;
-    timestamp: Date;
-    retryCount: number;
-  }>;
+  conflictCount: number;
+  status: SyncStatus;
+  nextSync: Date | null;
 }
 
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'conflict';
+
+export interface SyncConflict {
+  id: string;
+  type: 'workout' | 'exercise' | 'settings' | 'progress';
+  localData: any;
+  remoteData: any;
+  timestamp: Date;
+  resolution?: ConflictResolution;
+}
+
+export type ConflictResolution = 'local' | 'remote' | 'merge' | 'manual';
+
+// Theme Types
 export interface Theme {
   name: string;
-  mode: 'light' | 'dark';
+  colors: ThemeColors;
+  fonts: ThemeFonts;
+  spacing: ThemeSpacing;
+  animations: ThemeAnimations;
+  breakpoints: ThemeBreakpoints;
+}
+
+export interface ThemeColors {
   primary: string;
   secondary: string;
   accent: string;
   background: string;
   surface: string;
   text: string;
-  customColors?: Record<string, string>;
+  textSecondary: string;
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
 }
 
+export interface ThemeFonts {
+  body: string;
+  heading: string;
+  monospace: string;
+  sizes: {
+    xs: string;
+    sm: string;
+    md: string;
+    lg: string;
+    xl: string;
+    xxl: string;
+  };
+}
+
+export interface ThemeSpacing {
+  xs: string;
+  sm: string;
+  md: string;
+  lg: string;
+  xl: string;
+  xxl: string;
+}
+
+export interface ThemeAnimations {
+  duration: {
+    fast: string;
+    normal: string;
+    slow: string;
+  };
+  easing: {
+    ease: string;
+    easeIn: string;
+    easeOut: string;
+    easeInOut: string;
+  };
+}
+
+export interface ThemeBreakpoints {
+  sm: string;
+  md: string;
+  lg: string;
+  xl: string;
+  xxl: string;
+}
+
+// Feature Flags
 export interface FeatureFlags {
   voiceCommands: boolean;
   aiCoaching: boolean;
+  advancedAnalytics: boolean;
   socialFeatures: boolean;
-  premiumFeatures: boolean;
+  offlineSync: boolean;
   betaFeatures: boolean;
-  debugMode: boolean;
-  offlineMode: boolean;
-  analytics: boolean;
-  crashReporting: boolean;
-  performanceMonitoring: boolean;
   experimentalUI: boolean;
-  advancedWorkoutPlanning: boolean;
-  nutritionTracking: boolean;
-  socialChallenges: boolean;
-  wearableIntegration: boolean;
+  premiumFeatures: boolean;
 }
 
+// Device Types
 export interface DeviceInfo {
-  platform: 'web' | 'ios' | 'android' | 'desktop';
-  operatingSystem: string;
-  browser?: string;
-  version: string;
-  screenSize: {
-    width: number;
-    height: number;
-    pixelRatio: number;
-  };
-  capabilities: {
-    speechRecognition: boolean;
-    speechSynthesis: boolean;
-    camera: boolean;
-    microphone: boolean;
-    geolocation: boolean;
-    notifications: boolean;
-    localStorage: boolean;
-    indexedDB: boolean;
-    webWorkers: boolean;
-    webAssembly: boolean;
-  };
-  performance: {
-    hardwareConcurrency: number;
-    memory?: number; // GB
-    connection?: ConnectivityState;
+  platform: 'web' | 'ios' | 'android';
+  userAgent: string;
+  screenSize: ScreenSize;
+  capabilities: DeviceCapabilities;
+  performance: DevicePerformance;
+}
+
+export interface ScreenSize {
+  width: number;
+  height: number;
+  devicePixelRatio: number;
+  orientation: 'portrait' | 'landscape';
+}
+
+export interface DeviceCapabilities {
+  touchSupport: boolean;
+  voiceSupport: boolean;
+  cameraSupport: boolean;
+  bluetoothSupport: boolean;
+  gpsSupport: boolean;
+  accelerometerSupport: boolean;
+  gyroscopeSupport: boolean;
+  pushNotificationSupport: boolean;
+}
+
+export interface DevicePerformance {
+  memoryLimit: number; // MB
+  cpuCores: number;
+  gpuSupport: boolean;
+  storageQuota: number; // MB
+  networkSpeed: 'slow' | 'medium' | 'fast';
+}
+
+export interface Message {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  age: number;
+  experienceLevel: 'beginner' | 'intermediate' | 'advanced';
+  goals: string[];
+  equipment: string[];
+  injuries?: string[];
+  preferences?: {
+    workoutTime?: string;
+    workoutDuration?: number;
+    restDays?: string[];
   };
 }
 
-// Utility types
-export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-};
+export interface WorkoutContext {
+  currentExercise?: string;
+  intensity: 'low' | 'medium' | 'high';
+  duration: number;
+  caloriesBurned: number;
+  heartRate?: number;
+  sets?: number;
+  reps?: number;
+  weight?: number;
+}
 
-export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export interface FitnessGoals {
+  primaryGoal: 'muscle_gain' | 'weight_loss' | 'strength' | 'endurance' | 'general_fitness';
+  targetWeight?: number;
+  targetBodyFat?: number;
+  weeklyWorkoutTarget: number;
+  specificGoals?: string[];
+  timeline?: string;
+}
 
-export type RequiredKeys<T> = {
-  [K in keyof T]-?: {} extends Pick<T, K> ? never : K;
-}[keyof T];
-
-export type OptionalKeys<T> = {
-  [K in keyof T]-?: {} extends Pick<T, K> ? K : never;
-}[keyof T];
-
-// API response wrapper
-export interface APIResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: any;
-  };
+export interface AIResponse {
+  message: string;
+  suggestions?: string[];
   metadata?: {
-    timestamp: string;
-    requestId: string;
-    version: string;
-  };
-}
-
-// Configuration types
-export interface AppConfig {
-  api: {
-    baseUrl: string;
-    timeout: number;
-    retryAttempts: number;
-    retryDelay: number;
-  };
-  voice: VoiceConfig;
-  ai: AICoachConfig;
-  storage: {
-    quota: number; // MB
-    compressionEnabled: boolean;
-    encryptionEnabled: boolean;
-  };
-  analytics: {
-    enabled: boolean;
-    sampleRate: number;
-    debugMode: boolean;
-  };
-  performance: {
-    enableMetrics: boolean;
-    reportingInterval: number; // milliseconds
-    maxEventQueue: number;
+    cached?: boolean;
+    similarity?: number;
+    responseTime?: number;
+    error?: boolean;
   };
 }
