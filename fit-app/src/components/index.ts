@@ -1,14 +1,19 @@
-export { AIChatInterface } from './AIChatInterface';
-export { ExerciseCard } from './ExerciseCard';
-export { RestTimer } from './RestTimer';
-export { SetLogger } from './SetLogger';
-export { VoiceButton } from './VoiceButton';
 export { WorkoutDashboard } from './WorkoutDashboard';
+export { AIChatInterface } from './AIChatInterface';
+export { VoiceButton } from './VoiceButton';
 export { WorkoutStats } from './WorkoutStats';
-export { VoiceCoachInterface } from './VoiceCoachInterface';
-export { FormAnalysisInterface } from './FormAnalysisInterface';
+export { ExerciseCard } from './ExerciseCard';
+export { SetLogger } from './SetLogger';
+export { RestTimer } from './RestTimer';
 export { BiometricsDashboard } from './BiometricsDashboard';
+export { FormAnalysisInterface } from './FormAnalysisInterface';
 export { MonitoringDashboard } from './MonitoringDashboard';
 export { MobileWorkoutInterface } from './MobileWorkoutInterface';
-export { BottomNavigation } from './BottomNavigation';
+export { VoiceCoachInterface } from './VoiceCoachInterface';
 export { WorkoutsTab } from './WorkoutsTab';
+export { BottomNavigation } from './BottomNavigation';
+
+// New components for updated UI
+export { UserProfileCard } from './UserProfileCard';
+export { WorkoutLoggerTab } from './WorkoutLoggerTab';
+export { AnalyticsDashboard } from './AnalyticsDashboard';

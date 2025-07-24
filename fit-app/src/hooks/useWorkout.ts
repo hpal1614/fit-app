@@ -526,7 +526,7 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
     totalMinutesThisWeek: 320,
     caloriesBurnedThisWeek: 1840,
     currentStreak: 7,
-    isActive: !!activeWorkout,
+    isActive: !!currentWorkout,
     duration: workoutDuration,
     getContext: () => workoutContext
   };
