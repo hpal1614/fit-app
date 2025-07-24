@@ -841,3 +841,6 @@ export function getAIService(config?: Partial<AICoachConfig>): AICoachService {
   }
   return aiServiceInstance;
 }
+
+// Ready-to-use singleton instance
+export const aiService = getAIService();

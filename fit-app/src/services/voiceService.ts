@@ -599,11 +599,11 @@ export class VoiceService {
 let voiceServiceInstance: VoiceService | null = null;
 
 export function getVoiceService(config?: Partial<VoiceConfig>): VoiceService {
-  if (!voiceServiceInstance) {
-    voiceServiceInstance = new VoiceService(config);
-  }
-  return voiceServiceInstance;
+  return VoiceService.getInstance(config);
 }
+
+// Singleton instance for easy imports
+export const voiceService = VoiceService.getInstance();
 
 // Speech API type definitions
 interface SpeechRecognitionAlternative {

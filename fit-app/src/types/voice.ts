@@ -53,6 +53,9 @@ export interface VoiceCommandResult {
   timestamp: Date;
   success: boolean;
   error?: string;
+  originalTranscript?: string;
+  processedText?: string;
+  response?: string;
 }
 
 export interface VoiceInput {
@@ -87,6 +90,7 @@ export interface VoiceState {
   isSpeaking: boolean;
   isProcessing: boolean;
   currentTranscript: string;
+  lastTranscript?: string;
   confidence: number;
   error?: VoiceError;
   lastActivity: Date;
@@ -134,6 +138,7 @@ export interface VoiceError {
   timestamp: Date;
   context?: any;
   recovery?: VoiceRecovery;
+  recoverable?: boolean;
 }
 
 export interface VoiceRecovery {
@@ -212,32 +217,29 @@ export type VoiceAction =
   | 'MOTIVATION'
   | 'WORKOUT_SUGGESTION'
   | 'REST_GUIDANCE'
-  
-  // Session Control
   | 'SESSION_CONTROL'
   | 'TIMER_START'
   | 'TIMER_STOP'
   | 'TIMER_RESET'
   | 'NEXT_EXERCISE'
   | 'PREVIOUS_EXERCISE'
-  
-  // Navigation
   | 'NAVIGATE'
   | 'SHOW_STATS'
   | 'SHOW_HISTORY'
   | 'SHOW_SETTINGS'
-  
-  // Settings
   | 'CHANGE_SETTINGS'
   | 'ADJUST_VOLUME'
   | 'CHANGE_VOICE'
   | 'TOGGLE_COACHING'
-  
-  // Error Handling
   | 'CLARIFY'
   | 'REPEAT'
   | 'CANCEL'
-  | 'HELP';
+  | 'HELP'
+  | 'NUTRITION_QUERY'
+  | 'MOTIVATION_REQUEST'
+  | 'START_REST_TIMER'
+  | 'EXERCISE_INFO'
+  | 'unknown';
 
 export type VoiceMode = 'listening' | 'speaking' | 'processing' | 'idle' | 'error';
 
@@ -334,3 +336,5 @@ export interface FormReminder {
   corrections: string[];
   frequency: 'every_set' | 'as_needed' | 'periodic';
 }
+
+export type { WorkoutContext } from './workout';

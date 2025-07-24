@@ -7,7 +7,7 @@ import type {
 
 interface VoiceCommandIntent {
   action: VoiceAction;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
   confidence: number;
   reasoning: string;
 }
@@ -411,13 +411,8 @@ export class FitnessNLP {
     }
   }
 
-  private parseSetComponents(components: string[]): {
-    exercise?: string;
-    reps?: number;
-    weight?: number;
-    unit?: string;
-  } {
-    const result: unknown = {};
+  private parseSetComponents(components: string[]): any {
+    const result: any = {};
     
     // Try to identify which component is which based on context
     for (const component of components) {

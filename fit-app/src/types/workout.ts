@@ -8,6 +8,8 @@ export interface Exercise {
   tips: string[];
   videoUrl?: string;
   imageUrl?: string;
+  primaryMuscles?: string[];
+  defaultSets?: Set[];
 }
 
 export interface Set {
@@ -19,6 +21,7 @@ export interface Set {
   completedAt: Date;
   difficulty?: 1 | 2 | 3 | 4 | 5;
   form?: FormRating;
+  timestamp?: Date; // alias used in some services
 }
 
 export interface WorkoutExercise {
@@ -26,11 +29,17 @@ export interface WorkoutExercise {
   exerciseId: string;
   exercise: Exercise;
   sets: Set[];
+  completedSets?: Set[];
   targetSets?: number;
   targetReps?: number;
   targetWeight?: number;
   notes?: string;
+  restTimeBetweenSets?: number;
   order: number;
+  orderIndex?: number;
+  startTime?: Date;
+  endTime?: Date;
+  formNotes?: string;
 }
 
 export interface Workout {
@@ -46,6 +55,13 @@ export interface Workout {
   duration?: number; // in minutes
   mood?: WorkoutMood;
   energy?: EnergyLevel;
+  type?: WorkoutType;
+  totalDuration?: number;
+  totalSets?: number;
+  totalReps?: number;
+  totalWeight?: number;
+  isCompleted?: boolean;
+  personalRecords?: PersonalRecord[];
 }
 
 export interface WorkoutTemplate {
@@ -77,6 +93,7 @@ export interface PersonalRecord {
   value: number;
   date: Date;
   workoutId: string;
+  oneRepMax?: number;
 }
 
 export interface WorkoutStreak {
@@ -95,6 +112,8 @@ export interface WorkoutContext {
   isRecording: boolean;
   userLevel: UserLevel;
   preferences: WorkoutPreferences;
+  workoutDuration?: number;
+  totalSets?: number;
 }
 
 export interface WorkoutPreferences {
@@ -202,3 +221,82 @@ export interface ProgressionSuggestion {
 }
 
 export type { WorkoutPlan } from './ai';
+
+export interface WorkoutMetrics {
+  duration: number;
+  caloriesBurned: number;
+  averageHeartRate: number;
+  maxHeartRate: number;
+  minHeartRate: number;
+  steps: number;
+  distance: number;
+  pace: number;
+  activeDuration: number;
+  restDuration: number;
+  intensity: 'low' | 'moderate' | 'high';
+  timestamp: Date;
+}
+
+export interface BiometricData {
+  heartRate?: number;
+  heartRateVariability?: number;
+  stressLevel?: number;
+  temperature?: number;
+  bloodOxygen?: number;
+  hydrationLevel?: number;
+  timestamp: Date;
+}
+
+// Enum variants for compatibility with constant datasets that use enum-like access
+export enum ExerciseCategory {
+  COMPOUND = 'compound',
+  ISOLATION = 'isolation',
+  CARDIO = 'cardio',
+  BODYWEIGHT = 'bodyweight',
+  STRETCHING = 'stretching'
+}
+
+export enum MuscleGroup {
+  CHEST = 'chest',
+  BACK = 'back',
+  SHOULDERS = 'shoulders',
+  TRICEPS = 'triceps',
+  BICEPS = 'biceps',
+  CORE = 'core',
+  LEGS = 'legs',
+  QUADS = 'quads',
+  HAMSTRINGS = 'hamstrings',
+  GLUTES = 'glutes',
+  CALVES = 'calves',
+  LATS = 'lats',
+  TRAPS = 'traps',
+  RHOMBOIDS = 'rhomboids',
+  FOREARMS = 'forearms'
+}
+
+export enum EquipmentType {
+  BARBELL = 'barbell',
+  DUMBBELL = 'dumbbell',
+  KETTLEBELL = 'kettlebell',
+  MACHINE = 'machine',
+  CABLE = 'cable',
+  BODYWEIGHT = 'bodyweight',
+  RESISTANCE_BAND = 'resistance-band',
+  SUSPENSION = 'suspension',
+  MEDICINE_BALL = 'medicine-ball',
+  FOAM_ROLLER = 'foam-roller'
+}
+
+export enum WorkoutType {
+  STRENGTH = 'strength',
+  CARDIO = 'cardio',
+  FLEXIBILITY = 'flexibility',
+  POWERLIFTING = 'powerlifting',
+  BODYBUILDING = 'bodybuilding',
+  CROSSFIT = 'crossfit',
+  YOGA = 'yoga',
+  PILATES = 'pilates',
+  SPORTS = 'sports',
+  REHABILITATION = 'rehabilitation',
+  OTHER = 'other'
+}

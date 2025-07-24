@@ -67,12 +67,15 @@ export interface AIResponse {
 }
 
 export interface AIResponseMetadata {
+  provider?: string;
   model: string;
+  tokensUsed?: number;
   tokens: TokenUsage;
   timestamp: Date;
   requestId: string;
   category: ResponseCategory;
   safety: SafetyCheck;
+  processingTime?: number;
 }
 
 export interface TokenUsage {
@@ -425,7 +428,8 @@ export type ResponseStyle = 'conversational' | 'technical' | 'educational' | 'mo
 export type AIRequestType = 
   | 'form-analysis' | 'nutrition' | 'motivation' | 'progression'
   | 'injury-prevention' | 'exercise-explanation' | 'workout-planning'
-  | 'goal-setting' | 'troubleshooting' | 'general-advice';
+  | 'goal-setting' | 'troubleshooting' | 'general-advice'
+  | 'nutrition-advice';
 
 export type RequestPriority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -496,3 +500,5 @@ export interface AdaptedResponse {
   improvement: number;
   feedback: string;
 }
+
+export type { WorkoutContext } from './workout';
