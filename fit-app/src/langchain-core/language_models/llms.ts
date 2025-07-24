@@ -1,0 +1,1 @@
+export class BaseLLM { async call(_prompt: string): Promise<string> { return ''; } }

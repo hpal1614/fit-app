@@ -17,6 +17,8 @@ export default defineConfig({
       '@langchain/core/setup': resolve(__dirname, 'src/langchain-core/singletons.ts'),
       '@langchain/core/utils/env': resolve(__dirname, 'src/langchain-core/utils/env.ts'),
       '@langchain/core/utils': resolve(__dirname, 'src/langchain-core/utils'),
+      '@langchain/core/language_models/base': resolve(__dirname, 'src/langchain-core/language_models/base.ts'),
+      '@langchain/core/language_models/llms': resolve(__dirname, 'src/langchain-core/language_models/llms.ts'),
     }
   },
 })
