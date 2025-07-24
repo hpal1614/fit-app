@@ -88,7 +88,7 @@ export class VoiceService {
       // Check microphone permissions
       try {
         await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (error) {
+      } catch (_error) {
         this.handleError({
           type: 'permission_denied',
           message: 'Microphone permission denied',
@@ -106,10 +106,10 @@ export class VoiceService {
       this.emitEvent('listening_started', { initialized: true });
       return true;
 
-    } catch (error) {
+    } catch (_error) {
       this.handleError({
         type: 'recognition_failed',
-        message: `Failed to initialize voice service: ${error}`,
+        message: `Failed to initialize voice service: ${_error || "Unknown error"}`,
         recoverable: false,
         timestamp: new Date()
       });
@@ -140,11 +140,11 @@ export class VoiceService {
       }
     };
 
-    this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+    this.recognition.onresult = (_event: SpeechRecognitionEvent) => {
       this.clearRecognitionTimeout();
       
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
+      for (let i = _event.resultIndex; i < _event.results.length; i++) {
+        const result = _event.results[i];
         const transcript = result[0].transcript;
         const confidence = result[0].confidence;
         
@@ -153,7 +153,7 @@ export class VoiceService {
           confidence,
           isFinal: result.isFinal,
           timestamp: new Date(),
-          alternatives: Array.from(result).map((alt: SpeechRecognitionAlternative) => ({
+          alternatives: Array.from(result as ArrayLike<SpeechRecognitionAlternative>).map((alt: SpeechRecognitionAlternative) => ({
             transcript: alt.transcript,
             confidence: alt.confidence
           }))
@@ -167,11 +167,11 @@ export class VoiceService {
       }
     };
 
-    this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    this.recognition.onerror = (_event: SpeechRecognitionErrorEvent) => {
       this.clearRecognitionTimeout();
       let errorType: VoiceErrorType = 'recognition_failed';
       
-      switch (event.error) {
+      switch (__event.error || "Unknown") {
         case 'no-speech':
           errorType = 'timeout';
           break;
@@ -190,7 +190,7 @@ export class VoiceService {
 
       this.handleError({
         type: errorType,
-        message: `Speech recognition error: ${event.error}`,
+        message: `Speech recognition error: ${__event.error || "Unknown"}`,
         recoverable: true,
         timestamp: new Date()
       });
@@ -226,10 +226,10 @@ export class VoiceService {
       this.state.context = context;
       this.state.error = undefined;
       this.recognition.start();
-    } catch (error) {
+    } catch (_error) {
       this.handleError({
         type: 'recognition_failed',
-        message: `Failed to start listening: ${error}`,
+        message: `Failed to start listening: ${_error || "Unknown error"}`,
         recoverable: true,
         timestamp: new Date()
       });
@@ -255,14 +255,14 @@ export class VoiceService {
 
         // Stop current speech if interruption is allowed
         if (options?.interrupt && this.state.isSpeaking) {
-          this.synthesis.cancel();
+          (this.synthesis as ExtendedSpeechSynthesis).cancel();
         }
 
         const utterance = new SpeechSynthesisUtterance(text);
         
         // Apply voice options
         if (options?.voice) {
-          const voices = this.synthesis.getVoices();
+          const voices = (this.synthesis as ExtendedSpeechSynthesis).getVoices();
           const selectedVoice = voices.find(voice => voice.name === options.voice);
           if (selectedVoice) {
             utterance.voice = selectedVoice;
@@ -289,29 +289,29 @@ export class VoiceService {
           resolve();
         };
 
-        utterance.onerror = (event) => {
+        utterance.onerror = (_event) => {
           this.state.isSpeaking = false;
           this.state.mode = 'idle';
           // this.currentUtterance = null;
           this.handleError({
             type: 'synthesis_failed',
-            message: `Speech synthesis failed: ${event.error}`,
+            message: `Speech synthesis failed: ${_event.error || "Unknown"}`,
             recoverable: true,
             timestamp: new Date()
           });
-          reject(new Error(`Speech synthesis failed: ${event.error}`));
+          reject(new Error(`Speech synthesis failed: ${_event.error || "Unknown"}`));
         };
 
         this.synthesis.speak(utterance);
 
-      } catch (error) {
+      } catch (_error) {
         this.handleError({
           type: 'synthesis_failed',
-          message: `Failed to speak: ${error}`,
+          message: `Failed to speak: ${_error || "Unknown error"}`,
           recoverable: true,
           timestamp: new Date()
         });
-        reject(error);
+        reject(_error);
       }
     });
   }
@@ -417,13 +417,13 @@ export class VoiceService {
     return normalized;
   }
 
-  private matchPattern(transcript: string, pattern: string): { confidence: number; parameters: Record<string, any> } | null {
+  private matchPattern(transcript: string, pattern: string): { confidence: number; parameters: Record<string, unknown> } | null {
     try {
       const regex = new RegExp(pattern, 'i');
       const match = transcript.match(regex);
       
       if (match) {
-        const parameters: Record<string, any> = {};
+        const parameters: Record<string, unknown> = {};
         
         // Extract parameters from regex groups
         if (match.length > 1) {
@@ -445,7 +445,7 @@ export class VoiceService {
         
         return { confidence, parameters };
       }
-    } catch (error) {
+    } catch (_error) {
       console.warn('Invalid regex pattern:', pattern);
     }
     
@@ -517,7 +517,7 @@ export class VoiceService {
         break;
       case 'synthesis_failed':
         // Clear current utterance and reset state
-        this.synthesis.cancel();
+        (this.synthesis as ExtendedSpeechSynthesis).cancel();
         this.state.isSpeaking = false;
         this.state.mode = 'idle';
         break;
@@ -574,12 +574,12 @@ export class VoiceService {
   }
 
   getAvailableVoices(): SpeechSynthesisVoice[] {
-    return this.synthesis.getVoices();
+    return (this.synthesis as ExtendedSpeechSynthesis).getVoices();
   }
 
   destroy(): void {
     this.stopListening();
-    this.synthesis.cancel();
+    (this.synthesis as ExtendedSpeechSynthesis).cancel();
     this.clearRecognitionTimeout();
     this.eventListeners.clear();
     this.isInitialized = false;
@@ -603,4 +603,40 @@ export function getVoiceService(config?: Partial<VoiceConfig>): VoiceService {
     voiceServiceInstance = new VoiceService(config);
   }
   return voiceServiceInstance;
+}
+
+// Speech API type definitions
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+  error?: string;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface ExtendedSpeechSynthesis extends SpeechSynthesis {
+  cancel(): void;
+  getVoices(): SpeechSynthesisVoice[];
+}
+
+interface SpeechSynthesisErrorEvent extends Event {
+  error: string;
 }

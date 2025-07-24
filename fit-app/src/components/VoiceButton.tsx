@@ -9,7 +9,7 @@ interface VoiceButtonProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showLabel?: boolean;
   autoStart?: boolean;
-  onCommandProcessed?: (command: string, result: any) => void;
+  onCommandProcessed?: (command: string, result: unknown) => void;
 }
 
 export const VoiceButton: React.FC<VoiceButtonProps> = ({
@@ -141,17 +141,17 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
           await speak('Unable to start voice recognition');
         }
       }
-    } catch (err) {
-      console.error('Voice control error:', err);
+    } catch (_err) {
+      console.error('Voice control error:', _err);
     } finally {
       setTimeout(() => setIsPressed(false), 150);
     }
   };
 
   // Keyboard support
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === ' ' || event.key === 'Enter') {
-      event.preventDefault();
+  const handleKeyDown = (_event: React.KeyboardEvent) => {
+    if (_event.key === ' ' || (_event as KeyboardEvent).key === 'Enter') {
+      (_event as KeyboardEvent).preventDefault();
       handlePress();
     }
   };

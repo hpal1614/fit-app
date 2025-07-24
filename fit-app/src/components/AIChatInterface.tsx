@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, X, Mic, Volume2, Bot, User, Loader2 } from 'lucide-react';
 import { useAI } from '../hooks/useAI';
 import { useVoice } from '../hooks/useVoice';
@@ -24,7 +24,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   onClose,
   className = ''
 }) => {
-  const { askCoach, isLoading, loadingProvider, teamStatus, error, isAvailable } = useAI();
+  const { askCoach, isLoading, error, isAvailable } = useAI();
   const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -66,7 +66,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   }, [workoutContext]);
 
   // Handle sending messages
-  const sendMessage = async (content: string, isVoice: boolean = false) => {
+  const sendMessage = useCallback(async (content: string, isVoice: boolean = false) => {
     if (!content.trim() || !isAvailable) return;
 
     const userMessage: Message = {
@@ -98,7 +98,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         await speak(response.content);
       }
 
-    } catch (error) {
+    } catch (_error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
@@ -107,7 +107,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       };
       setMessages(prev => [...prev, errorMessage]);
     }
-  };
+  }, [askCoach, workoutContext, isAvailable, speak]);
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
@@ -331,7 +331,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
         {error && (
           <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-            {error.message}
+            {error}
           </div>
         )}
 

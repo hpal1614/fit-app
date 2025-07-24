@@ -268,6 +268,7 @@ export interface SupplementAdvice {
 export interface WorkoutPlan {
   id: string;
   name: string;
+  description: string;
   duration: number; // weeks
   goal: FitnessGoal;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
@@ -495,4 +496,10 @@ export interface AdaptedResponse {
   adaptedResponse: string;
   improvement: number;
   feedback: string;
+}
+
+export interface LearningMetrics {
+  accuracy: number;
+  improvement: number;
+  // Add more fields as needed
 }

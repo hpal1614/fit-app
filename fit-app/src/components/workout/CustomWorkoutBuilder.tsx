@@ -4,13 +4,15 @@ import type { WorkoutPlan } from '../../types/workout';
 export const CustomWorkoutBuilder: React.FC<{
   onSave: (plan: WorkoutPlan) => void;
   onBack: () => void;
-  aiService: any;
-}> = ({ onSave, onBack }) => {
+  aiService: {
+    getCoachingResponse: (prompt: string, context: unknown, type: string) => Promise<{ content: string }>;
+  };
+}> = ({ onSave: _onSave, onBack }) => {
   return (
-    <div className="p-4 text-center">
-      <h2 className="text-xl font-bold mb-4">Custom Workout Builder</h2>
-      <p className="text-gray-500">This feature will be available soon!</p>
-      <button onClick={onBack} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">Back</button>
+    <div className="p-4">
+      <button onClick={onBack} className="mb-4 text-blue-600">← Back</button>
+      <h2 className="text-2xl font-bold mb-4">Custom Workout Builder</h2>
+      <p className="text-gray-600">Custom workout builder coming soon...</p>
     </div>
   );
 };

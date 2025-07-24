@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
+import { Home, MessageCircle, Mic } from 'lucide-react';
 import { AIChatInterface } from './components/AIChatInterface';
 import { useAI } from './hooks/useAI';
 import { useVoice } from './hooks/useVoiceEmergency';
-import { Mic, MessageCircle, Home, Settings } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');

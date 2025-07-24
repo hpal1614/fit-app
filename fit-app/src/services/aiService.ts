@@ -97,7 +97,7 @@ export class AITeamService {
       
       return response;
       
-    } catch (error) {
+    } catch (_error) {
       // ALL providers failed - use intelligent fallback
       return this.getIntelligentFallback(context, requestType);
     } finally {
@@ -153,11 +153,11 @@ export class AITeamService {
           }
         };
         
-      } catch (error) {
+      } catch (_error) {
         retryCount++;
         if (retryCount > maxRetries) {
           this.teamStatus[provider as keyof TeamStatus] = 'failed';
-          throw error;
+          throw new Error("AI service error");
         }
         
         // Exponential backoff: 500ms, 1s, 2s
@@ -528,8 +528,8 @@ export class AICoachService {
       
       // Team service handles all AI providers
       return true;
-    } catch (error) {
-      console.error('Failed to initialize AI service:', error);
+    } catch (_error) {
+      console.error('Failed to initialize AI service:', _error);
       return false;
     }
   }
@@ -570,8 +570,8 @@ export class AICoachService {
       } finally {
         this.requestQueue.delete(requestKey);
       }
-    } catch (error) {
-      return this.handleError(error, query, context, requestType);
+    } catch (_error) {
+      return this.handleError(new Error("Request failed"), query, context, requestType);
     }
   }
 
@@ -608,8 +608,8 @@ export class AICoachService {
         },
         recommendedProgression: 'Focus on mastering current weight before increasing load'
       };
-    } catch (error) {
-      throw new Error(`Form analysis failed: ${error}`);
+    } catch (_error) {
+      throw new Error("Form analysis failed");
     }
   }
 
@@ -744,7 +744,7 @@ export class AICoachService {
     _context: WorkoutContext, 
     requestType: AIRequestType
   ): AIResponse {
-    console.error('AI service error:', error);
+    console.error('AI service error:', _error);
 
     // Return a helpful error response
     return {
@@ -796,39 +796,39 @@ export class AICoachService {
   }
 
   // Method aliases for compatibility with useAI hook
-  async getResponse(request: any): Promise<AIResponse> {
-    return this.getCoachingResponse(request.message, request.context);
+  async getResponse(request: unknown): Promise<AIResponse> {
+    return this.getCoachingResponse((request as any).message, (request as any).context);
   }
 
-  async getNutritionAdvice(request: any): Promise<AIResponse> {
+  async getNutritionAdvice(request: unknown): Promise<AIResponse> {
     const response = await this.getCoachingResponse(
-      request.query,
-      request.context,
+      (request as any).query,
+      (request as any).context,
       'nutrition'
     );
     return response;
   }
 
-  async getMotivation(request: any): Promise<AIResponse> {
+  async getMotivation(request: unknown): Promise<AIResponse> {
     const response = await this.getCoachingResponse(
       'motivate me',
-      request.context,
+      (request as any).context,
       'motivation'
     );
     return response;
   }
 
-  async planWorkout(request: any): Promise<AIResponse> {
+  async planWorkout(request: unknown): Promise<AIResponse> {
     const response = await this.getCoachingResponse(
-      `Plan a workout for ${request.workoutType || 'strength training'}`,
-      request.context,
+      `Plan a workout for ${(request as any).workoutType || 'strength training'}`,
+      (request as any).context,
       'workout_planning'
     );
     return response;
   }
 
-  async getProgression(request: any): Promise<Progression> {
-    return this.suggestProgression(request.history, 0, 0);
+  async getProgression(request: unknown): Promise<Progression> {
+    return this.suggestProgression((request as any).history, 0, 0);
   }
 }
 

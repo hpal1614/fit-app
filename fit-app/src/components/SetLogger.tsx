@@ -75,8 +75,8 @@ export const SetLogger: React.FC<SetLoggerProps> = ({
         setReps(prev => Math.max(8, prev - 2));
       }
       
-    } catch (error) {
-      console.error('Failed to log set:', error);
+    } catch (_error) {
+      console.error('Failed to log set:', _error);
       alert('Failed to log set. Please try again.');
     } finally {
       setIsLogging(false);

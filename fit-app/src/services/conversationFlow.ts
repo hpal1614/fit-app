@@ -9,7 +9,7 @@ import { FitnessNLP } from './naturalLanguageProcessor';
 interface ConversationFlow {
   type: 'SET_LOGGING' | 'WORKOUT_SETUP' | 'FORM_DISCUSSION' | 'NUTRITION_CHAT' | 'MOTIVATION_SESSION';
   step: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   startedAt: Date;
   timeout?: number;
   expectedResponses?: string[];

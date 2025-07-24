@@ -29,8 +29,8 @@ export class WorkoutService {
       await this.db.initialize();
       
       return true;
-    } catch (error) {
-      console.error('Failed to initialize WorkoutService:', error);
+    } catch (_error) {
+      console.error('Failed to initialize WorkoutService:', _error);
       return false;
     }
   }
@@ -105,8 +105,8 @@ export class WorkoutService {
       await this.db.saveWorkout(this.currentWorkout);
 
       return this.currentWorkout;
-    } catch (error) {
-      console.error('Failed to start workout:', error);
+    } catch (_error) {
+      console.error('Failed to start workout:', _error);
       throw new Error('Failed to start workout');
     }
   }
@@ -142,8 +142,8 @@ export class WorkoutService {
       this.stopWorkoutTimer();
 
       return completedWorkout;
-    } catch (error) {
-      console.error('Failed to end workout:', error);
+    } catch (_error) {
+      console.error('Failed to end workout:', _error);
       throw new Error('Failed to end workout');
     }
   }
@@ -319,8 +319,8 @@ export class WorkoutService {
       );
 
       return oneRepMax > bestRecord;
-    } catch (error) {
-      console.error('Failed to check personal record:', error);
+    } catch (_error) {
+      console.error('Failed to check personal record:', _error);
       return false;
     }
   }
@@ -369,8 +369,8 @@ export class WorkoutService {
   async getWorkoutHistory(limit: number = 10): Promise<Workout[]> {
     try {
       return await this.db.getWorkoutHistory(limit);
-    } catch (error) {
-      console.error('Failed to get workout history:', error);
+    } catch (_error) {
+      console.error('Failed to get workout history:', _error);
       return [];
     }
   }
@@ -378,8 +378,8 @@ export class WorkoutService {
   async getPersonalRecords(exerciseId?: string): Promise<PersonalRecord[]> {
     try {
       return await this.db.getPersonalRecords(exerciseId);
-    } catch (error) {
-      console.error('Failed to get personal records:', error);
+    } catch (_error) {
+      console.error('Failed to get personal records:', _error);
       return [];
     }
   }
@@ -387,8 +387,8 @@ export class WorkoutService {
   async deleteWorkout(workoutId: string): Promise<boolean> {
     try {
       return await this.db.deleteWorkout(workoutId);
-    } catch (error) {
-      console.error('Failed to delete workout:', error);
+    } catch (_error) {
+      console.error('Failed to delete workout:', _error);
       return false;
     }
   }

@@ -41,8 +41,8 @@ export const useVoice = (options: any = {}) => {
         // Fallback timeout
         setTimeout(() => resolve(true), 5000);
       });
-    } catch (error) {
-      console.error('Speech failed:', error);
+    } catch (_error) {
+      console.error('Speech failed:', _error);
       return false;
     }
   };
@@ -69,7 +69,7 @@ export const useVoice = (options: any = {}) => {
       setIsListening(true);
       setError(null);
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (_event: any) => {
         const transcript = event.results[0][0].transcript;
         console.log('🎙️ Voice input:', transcript);
         setIsListening(false);
@@ -78,7 +78,7 @@ export const useVoice = (options: any = {}) => {
         // For now, just log it
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (_event: any) => {
         console.error('Speech recognition error:', event.error);
         setError(`Voice error: ${event.error}`);
         setIsListening(false);
@@ -90,8 +90,8 @@ export const useVoice = (options: any = {}) => {
 
       recognition.start();
       return true;
-    } catch (error) {
-      console.error('Voice listening failed:', error);
+    } catch (_error) {
+      console.error('Voice listening failed:', _error);
       setError('Failed to start listening');
       setIsListening(false);
       return false;
