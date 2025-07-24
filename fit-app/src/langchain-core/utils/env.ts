@@ -1,0 +1,1 @@
+export const getEnvironmentVariable = (_key: string): string | undefined => undefined;
