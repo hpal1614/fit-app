@@ -167,11 +167,11 @@ export class VoiceService {
       }
     };
 
-    this.recognition.onerror = (_event: SpeechRecognitionErrorEvent) => {
+    this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       this.clearRecognitionTimeout();
       let errorType: VoiceErrorType = 'recognition_failed';
       
-      switch (__event.error || "Unknown") {
+      switch (event.error || "Unknown") {
         case 'no-speech':
           errorType = 'timeout';
           break;
@@ -190,7 +190,7 @@ export class VoiceService {
 
       this.handleError({
         type: errorType,
-        message: `Speech recognition error: ${__event.error || "Unknown"}`,
+        message: `Speech recognition error: ${event.error || "Unknown"}`,
         recoverable: true,
         timestamp: new Date()
       });

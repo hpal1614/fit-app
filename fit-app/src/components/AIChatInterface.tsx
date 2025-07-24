@@ -143,23 +143,23 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         <div className="flex space-x-1">
           {/* OpenRouter Status */}
           <div className={`w-3 h-3 rounded-full ${
-            teamStatus.openrouter === 'trying' ? 'bg-blue-500 animate-pulse' :
-            teamStatus.openrouter === 'success' ? 'bg-green-500' :
-            teamStatus.openrouter === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+            status.openrouter === 'trying' ? 'bg-blue-500 animate-pulse' :
+            status.openrouter === 'success' ? 'bg-green-500' :
+            status.openrouter === 'failed' ? 'bg-red-500' : 'bg-gray-300'
           }`} title="OpenRouter (Claude)" />
           
           {/* Groq Status */}
           <div className={`w-3 h-3 rounded-full ${
-            teamStatus.groq === 'trying' ? 'bg-purple-500 animate-pulse' :
-            teamStatus.groq === 'success' ? 'bg-green-500' :
-            teamStatus.groq === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+            status.groq === 'trying' ? 'bg-purple-500 animate-pulse' :
+            status.groq === 'success' ? 'bg-green-500' :
+            status.groq === 'failed' ? 'bg-red-500' : 'bg-gray-300'
           }`} title="Groq (Llama)" />
           
           {/* Google Status */}
           <div className={`w-3 h-3 rounded-full ${
-            teamStatus.google === 'trying' ? 'bg-orange-500 animate-pulse' :
-            teamStatus.google === 'success' ? 'bg-green-500' :
-            teamStatus.google === 'failed' ? 'bg-red-500' : 'bg-gray-300'
+            status.google === 'trying' ? 'bg-orange-500 animate-pulse' :
+            status.google === 'success' ? 'bg-green-500' :
+            status.google === 'failed' ? 'bg-red-500' : 'bg-gray-300'
           }`} title="Google (Gemini)" />
         </div>
         

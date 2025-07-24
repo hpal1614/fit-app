@@ -28,18 +28,12 @@ function App() {
 
   // Voice button interactions are now handled by VoiceButton component internally
 
-  // Welcome message on app load
+  // Welcome message on app load - disabled to prevent auto-speak
   useEffect(() => {
     const welcomeUser = async () => {
       if (voiceRecognition.isSupported) {
-        setTimeout(async () => {
-          const welcomeResponse = await aiService.getCoachingResponse(
-            'Welcome message for new user opening the fitness app',
-            workoutLogger.workoutContext,
-            'motivation'
-          );
-          await voiceRecognition.speak(welcomeResponse.content, { emotion: 'encouraging' });
-        }, 2000);
+        // Don't auto-speak on load
+        console.log('Voice recognition is supported');
       }
     };
 
