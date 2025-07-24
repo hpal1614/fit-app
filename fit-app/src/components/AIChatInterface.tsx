@@ -164,7 +164,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         </div>
         
         <span className="text-sm text-gray-600">
-          {loadingProvider ? `${loadingProvider} is thinking...` : 'AI team is working...'}
+          AI is thinking...
         </span>
         
         {/* Progress indicator */}
@@ -242,17 +242,17 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
               className={`
                 max-w-xs lg:max-w-md px-4 py-2 rounded-lg
                 ${message.type === 'user' 
-                  ? 'bg-fitness-blue text-white' 
-                  : 'bg-gray-100 text-gray-900'
+                  ? 'bg-lime-400 text-black' 
+                  : 'bg-gray-800 text-white'
                 }
               `}
             >
               <div className="flex items-start space-x-2">
                 {message.type === 'ai' && (
-                  <Bot size={16} className="mt-1 flex-shrink-0 text-fitness-blue" />
+                  <Bot size={16} className="mt-1 flex-shrink-0 text-lime-400" />
                 )}
                 {message.type === 'user' && (
-                  <User size={16} className="mt-1 flex-shrink-0 text-white" />
+                  <User size={16} className="mt-1 flex-shrink-0 text-black" />
                 )}
                 
                 <div className="flex-1">
@@ -308,7 +308,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       </div>
 
       {/* Input Form */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-700">
         <form onSubmit={handleSubmit} className="flex space-x-2">
           <input
             ref={inputRef}
@@ -317,13 +317,13 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
             onChange={(e) => setInputText(e.target.value)}
             placeholder={isVoiceMode ? "Listening..." : "Ask me anything about fitness..."}
             disabled={isLoading || isVoiceMode}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fitness-blue disabled:bg-gray-100"
+            className="flex-1 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent disabled:bg-gray-900"
           />
           
           <button
             type="submit"
             disabled={!inputText.trim() || isLoading || isVoiceMode}
-            className="bg-fitness-blue text-white p-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-lime-400 text-black p-2 rounded-lg hover:bg-lime-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             <Send size={20} />
           </button>

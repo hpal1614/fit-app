@@ -71,9 +71,9 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="h-screen w-screen bg-black text-white relative overflow-hidden flex flex-col">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-lime-400 to-transparent rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-lime-400 to-transparent rounded-full blur-3xl" />
       </div>
@@ -122,7 +122,7 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 mx-6 mb-24">
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-24">
         {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
         {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
