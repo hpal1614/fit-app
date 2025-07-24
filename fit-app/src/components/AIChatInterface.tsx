@@ -201,13 +201,13 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   }
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg ${className}`}>
+    <div className={`bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-800 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <div className="flex items-center space-x-2">
-          <Bot size={24} className="text-fitness-blue" />
-          <h3 className="text-xl font-bold text-gray-900">AI Coach</h3>
-          {isLoading && <Loader2 size={16} className="animate-spin text-gray-500" />}
+          <Bot size={24} className="text-lime-400" />
+          <h3 className="text-xl font-bold text-white">AI Coach</h3>
+          {isLoading && <Loader2 size={16} className="animate-spin text-gray-400" />}
         </div>
         
         <div className="flex items-center space-x-2">
@@ -215,8 +215,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
             onClick={handleVoiceToggle}
             className={`p-2 rounded-lg transition-colors ${
               isVoiceMode 
-                ? 'bg-voice-listening text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-red-500 text-white animate-pulse' 
+                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
             }`}
           >
             <Mic size={16} />

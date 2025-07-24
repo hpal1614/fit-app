@@ -519,7 +519,16 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
     getTotalSets,
     getTotalReps,
     getTotalWeight,
-    getWorkoutProgress
+    getWorkoutProgress,
+    
+    // Additional stats for UI
+    workoutsThisWeek: 4, // Mock data for now
+    totalMinutesThisWeek: 320,
+    caloriesBurnedThisWeek: 1840,
+    currentStreak: 7,
+    isActive: !!activeWorkout,
+    duration: workoutDuration,
+    getContext: () => workoutContext
   };
 };
 
