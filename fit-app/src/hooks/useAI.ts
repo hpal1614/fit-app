@@ -22,7 +22,7 @@ export const useAI = () => {
       
       console.log('✅ AI Response:', response);
       return response;
-    } catch (_err) {
+    } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'AI request failed';
       console.error('❌ AI Error:', errorMsg);
       setError(errorMsg);

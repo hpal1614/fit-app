@@ -15,12 +15,14 @@ import {
   ChevronRight,
   Calendar,
   Target,
-  Heart
+  Heart,
+  Mic
 } from 'lucide-react';
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
 import { AIChatInterface } from './components/AIChatInterface';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
+import { VoiceAssistant } from './components/VoiceAssistant';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
 import './App.css';
@@ -36,6 +38,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState<'workouts' | 'coach' | 'analytics' | 'profile'>('workouts');
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
+  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   
   // Initialize hooks
   const workout = useWorkout();
@@ -152,6 +155,14 @@ function App() {
         )}
       </div>
 
+      {/* Voice Assistant Button */}
+      <button
+        onClick={() => setShowVoiceAssistant(true)}
+        className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-lime-400 to-green-500 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-40"
+      >
+        <Mic className="w-6 h-6 text-black" />
+      </button>
+
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800">
         <div className="flex items-center justify-around py-3">
@@ -174,6 +185,17 @@ function App() {
           ))}
         </div>
       </div>
+
+      {/* Voice Assistant */}
+      {showVoiceAssistant && (
+        <VoiceAssistant
+          workoutContext={workout.getContext()}
+          onClose={() => setShowVoiceAssistant(false)}
+          onCommand={(command, response) => {
+            console.log('Voice command:', command, 'Response:', response);
+          }}
+        />
+      )}
     </div>
   );
 }

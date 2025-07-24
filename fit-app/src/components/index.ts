@@ -17,3 +17,4 @@ export { BottomNavigation } from './BottomNavigation';
 export { UserProfileCard } from './UserProfileCard';
 export { WorkoutLoggerTab } from './WorkoutLoggerTab';
 export { AnalyticsDashboard } from './AnalyticsDashboard';
+export { VoiceAssistant } from './VoiceAssistant';
