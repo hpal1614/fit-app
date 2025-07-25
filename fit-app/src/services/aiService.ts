@@ -313,6 +313,8 @@ export class AITeamService {
     const userPrompt = this.buildUserPrompt(query, context, requestType);
     const startTime = Date.now();
 
+    console.log('OpenRouter API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
+
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -322,7 +324,7 @@ export class AITeamService {
         'X-Title': 'AI Fitness Coach'
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
+        model: 'anthropic/claude-3-haiku-20240307',  // Changed to a more reliable model
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -334,6 +336,8 @@ export class AITeamService {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenRouter error:', response.status, errorText);
       throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
     }
 
@@ -367,6 +371,8 @@ export class AITeamService {
     const userPrompt = this.buildUserPrompt(query, context, requestType);
     const startTime = Date.now();
 
+    console.log('Groq API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -374,7 +380,7 @@ export class AITeamService {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
+        model: 'mixtral-8x7b-32768',  // Changed to a more standard model
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -386,6 +392,8 @@ export class AITeamService {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Groq error:', response.status, errorText);
       throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
     }
 
