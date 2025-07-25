@@ -476,4 +476,5 @@ export class DatabaseService {
   }
 }
 
+export const databaseService = new DatabaseService();
 export default DatabaseService;
