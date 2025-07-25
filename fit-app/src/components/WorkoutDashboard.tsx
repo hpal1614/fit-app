@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Play, Pause, Square, Timer, MessageCircle, BarChart3 } from 'lucide-react';
+import { Play, Pause, Square, Timer, MessageCircle, BarChart3, Brain } from 'lucide-react';
 import { StrongInspiredLogger } from './workout/StrongInspiredLogger';
 import { LadderStatCard, LadderActionCard } from './interface/LadderInspiredCards';
+import { IntelligentAIChat } from './ai/IntelligentAIChat';
 import { useWorkout } from '../hooks/useWorkout';
 import { useVoice } from '../hooks/useVoice';
 
 export const WorkoutDashboard: React.FC = () => {
   const [showLogger, setShowLogger] = useState(false);
+  const [showIntelligentAI, setShowIntelligentAI] = useState(false);
   const { isWorkoutActive, currentWorkout, startWorkout, endWorkout } = useWorkout();
   const { speak } = useVoice();
 
@@ -130,6 +132,15 @@ export const WorkoutDashboard: React.FC = () => {
             console.log('Navigate to AI coach');
           }}
         />
+
+        <LadderActionCard
+          title="Intelligent AI Coach"
+          description="Advanced fitness AI with deep knowledge base and personalized guidance"
+          icon={<Brain size={24} />}
+          action="Access Knowledge Base"
+          color="purple"
+          onClick={() => setShowIntelligentAI(true)}
+        />
       </div>
 
       {/* Recent Activity */}
@@ -159,6 +170,14 @@ export const WorkoutDashboard: React.FC = () => {
           ))}
         </div>
       </div>
+      
+      {/* Intelligent AI Chat Modal */}
+      {showIntelligentAI && (
+        <IntelligentAIChat
+          workoutContext={currentWorkout}
+          onClose={() => setShowIntelligentAI(false)}
+        />
+      )}
     </div>
   );
 };

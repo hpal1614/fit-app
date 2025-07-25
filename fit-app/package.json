@@ -40,6 +40,7 @@
     "socket.io-client": "^4.8.1",
     "tailwindcss": "^3.4.0",
     "uuid": "^11.1.0",
+    "vectra": "^0.11.1",
     "webrtc-adapter": "^9.0.3",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WorkoutDashboard } from './components/WorkoutDashboard';
 import { AIChatInterface } from './components/AIChatInterface';
 import { EnhancedAIChatInterface } from './components/ai/EnhancedAIChatInterface';
+import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
 import { WorkoutsTab } from './components/WorkoutsTab';
 import { NutritionTab } from './components/NutritionTab';
 import { LadderInspiredNavigation } from './components/interface/LadderInspiredNavigation';
