@@ -16,15 +16,22 @@ import {
   Calendar,
   Target,
   Heart,
-  Mic
+  Mic,
+  Brain,
+  Apple,
+  Dumbbell
 } from 'lucide-react';
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
 import { AIChatInterface } from './components/AIChatInterface';
+import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
+import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
 import { VoiceAssistant } from './components/VoiceAssistant';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
+import { pwaService } from './services/pwaService';
+import { databaseService } from './services/databaseService';
 import './App.css';
 
 interface UserStats {
@@ -34,9 +41,11 @@ interface UserStats {
   currentStreak: number;
 }
 
+type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
+
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState<'workouts' | 'coach' | 'analytics' | 'profile'>('workouts');
+  const [activeTab, setActiveTab] = useState<TabType>('workouts');
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   
@@ -64,11 +73,27 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Initialize PWA features (Phase 3D)
+  useEffect(() => {
+    pwaService.init({
+      enableInstallPrompt: true,
+      enableNotifications: true,
+      enableOfflineSync: true,
+      cacheStrategies: {
+        '/api': 'network-first',
+        '/assets': 'cache-first',
+        '/': 'stale-while-revalidate'
+      }
+    });
+
+    // Initialize database service (Phase 3D)
+    databaseService.initialize();
+  }, []);
+
   // Check for onboarding
   useEffect(() => {
     const isOnboarded = localStorage.getItem('fitnessAppOnboarded');
     if (!isOnboarded) {
-      // Show onboarding in future
       console.log('User needs onboarding');
     }
   }, []);
@@ -114,24 +139,47 @@ function App() {
         </div>
       </div>
 
-      {/* User Profile Card - Show on all tabs */}
-      <div className="relative z-10 mx-6 mb-6">
-        <UserProfileCard 
-          userProfile={userProfile} 
-          userStats={userStats}
-          isActiveWorkout={workout.isActive}
-          workoutDuration={workout.duration}
-        />
-      </div>
+      {/* User Profile Card - Show on key tabs only */}
+      {['workouts', 'analytics', 'profile'].includes(activeTab) && (
+        <div className="relative z-10 mx-6 mb-6">
+          <UserProfileCard 
+            userProfile={userProfile} 
+            userStats={userStats}
+            isActiveWorkout={workout.isActive}
+            workoutDuration={workout.duration}
+          />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-24">
         {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
+        {activeTab === 'generator' && <WorkoutGenerator />}
+        {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
+        {activeTab === 'nutrition' && (
+          <div className="space-y-6">
+            <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800 text-center">
+              <Apple className="w-16 h-16 mx-auto mb-4 text-green-400" />
+              <h2 className="text-2xl font-bold mb-2">Nutrition Tracking</h2>
+              <p className="text-gray-400">AI-powered nutrition tracking coming soon!</p>
+              <div className="mt-6 space-y-3">
+                <div className="p-4 bg-gray-800/50 rounded-lg">
+                  <p className="text-sm">📸 Camera-based food logging</p>
+                </div>
+                <div className="p-4 bg-gray-800/50 rounded-lg">
+                  <p className="text-sm">🧠 AI nutritional analysis</p>
+                </div>
+                <div className="p-4 bg-gray-800/50 rounded-lg">
+                  <p className="text-sm">📊 Macro & calorie tracking</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
         {activeTab === 'profile' && (
           <div className="space-y-6">
-            {/* Profile content */}
             <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800">
               <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
               <div className="space-y-4">
@@ -149,6 +197,14 @@ function App() {
                     {voiceSupported ? "Enabled" : "Not Supported"}
                   </span>
                 </div>
+                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
+                  <span>PWA Features</span>
+                  <span className="text-green-400">Active</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
+                  <span>Offline Storage</span>
+                  <span className="text-green-400">Enabled</span>
+                </div>
               </div>
             </div>
           </div>
@@ -163,24 +219,27 @@ function App() {
         <Mic className="w-6 h-6 text-black" />
       </button>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - 7 tabs for all features */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800">
-        <div className="flex items-center justify-around py-3">
+        <div className="flex items-center justify-around py-2">
           {[
-            { icon: Trophy, label: 'Workouts', key: 'workouts' },
-            { icon: MessageCircle, label: 'AI Coach', key: 'coach' },
-            { icon: TrendingUp, label: 'Analytics', key: 'analytics' },
+            { icon: Dumbbell, label: 'Logger', key: 'workouts' },
+            { icon: Target, label: 'Generate', key: 'generator' },
+            { icon: Brain, label: 'Smart AI', key: 'intelligent-ai' },
+            { icon: Apple, label: 'Nutrition', key: 'nutrition' },
+            { icon: MessageCircle, label: 'Coach', key: 'coach' },
+            { icon: TrendingUp, label: 'Stats', key: 'analytics' },
             { icon: User, label: 'Profile', key: 'profile' }
           ].map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg transition-colors ${
+              onClick={() => setActiveTab(tab.key as TabType)}
+              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg transition-colors ${
                 activeTab === tab.key ? 'text-lime-400' : 'text-gray-400'
               }`}
             >
-              <tab.icon className="w-6 h-6" />
-              <span className="text-xs font-medium">{tab.label}</span>
+              <tab.icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium">{tab.label}</span>
             </button>
           ))}
         </div>
