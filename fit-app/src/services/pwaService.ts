@@ -1,4 +1,4 @@
-import { monitoring } from './monitoringService';
+import { monitoring } from './browserMonitoringService';
 
 interface PWAConfig {
   enableOffline: boolean;
