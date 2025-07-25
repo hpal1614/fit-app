@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, X, Mic, Volume2, Bot, User, Loader2 } from 'lucide-react';
 import { useStreamingAI } from '../hooks/useStreamingAI';
 import { useVoice } from '../hooks/useVoice';
+import { useAI } from '../hooks/useAI';
 import type { WorkoutContext } from '../types/workout';
 // Removed unused AIResponse import
 
@@ -26,6 +27,10 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>('');
+  const [isMuted, setIsMuted] = useState(false);
+  
+  // Get necessary state from useAI hook
+  const { isLoading, error, isAvailable } = useAI();
   
   const { streamResponse, isStreaming, stopStreaming } = useStreamingAI({
     onChunk: (chunk) => {
@@ -198,7 +203,19 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
                 : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
             }`}
           >
-            <Mic size={16} />
+            <Mic size={20} />
+          </button>
+          
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className={`p-2 rounded-lg transition-colors ${
+              isMuted 
+                ? 'bg-gray-700 text-gray-400' 
+                : 'bg-gray-700 text-lime-400 hover:bg-gray-600'
+            }`}
+            title={isMuted ? "Unmute voice" : "Mute voice"}
+          >
+            <Volume2 size={20} />
           </button>
           
           <button 
