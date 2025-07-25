@@ -204,9 +204,9 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   }
 
   return (
-    <div className={`bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-800 ${className}`}>
+    <div className={`bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-800 flex flex-col h-full ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Bot size={24} className="text-lime-400" />
           <h3 className="text-xl font-bold text-white">AI Coach</h3>
@@ -247,7 +247,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       </div>
 
       {/* Messages */}
-      <div className="h-96 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -274,21 +274,21 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
                   <p className="text-sm">{message.content}</p>
                   <div className="flex items-center justify-between mt-1">
                     <span className={`text-xs ${
-                      message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                      message.type === 'user' ? 'text-black/70' : 'text-gray-500'
                     }`}>
                       {message.timestamp.toLocaleTimeString()}
                     </span>
                     
                     {message.isVoice && (
                       <Volume2 size={12} className={
-                        message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                        message.type === 'user' ? 'text-black/70' : 'text-gray-500'
                       } />
                     )}
                     
                     {message.type === 'ai' && (
                       <button
                         onClick={() => speak(message.content)}
-                        className="text-gray-500 hover:text-gray-700 ml-2"
+                        className="text-gray-500 hover:text-lime-400 ml-2 transition-colors"
                       >
                         <Volume2 size={12} />
                       </button>
@@ -310,14 +310,14 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       </div>
 
       {/* Quick Actions */}
-      <div className="px-4 py-2 border-t border-gray-100">
+      <div className="px-4 py-2 border-t border-gray-700 flex-shrink-0">
         <div className="flex flex-wrap gap-2">
           {quickActions.map((action, index) => (
             <button
               key={index}
               onClick={action.action}
               disabled={isLoading}
-              className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="text-xs bg-gray-700 text-gray-300 px-3 py-1 rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50"
             >
               {action.label}
             </button>
@@ -326,7 +326,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       </div>
 
       {/* Input Form */}
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-gray-700 flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex space-x-2">
           <input
             ref={inputRef}
@@ -348,7 +348,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         </form>
 
         {error && (
-          <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+          <div className="mt-2 text-sm text-red-400 bg-red-900/20 border border-red-800 p-2 rounded">
             {error}
           </div>
         )}

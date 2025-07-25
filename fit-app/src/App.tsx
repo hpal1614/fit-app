@@ -144,7 +144,7 @@ function App() {
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-20">
+      <div className="relative z-10 flex-1 overflow-hidden px-4 pb-20 flex flex-col">
         {activeTab === 'logger' && <WorkoutLoggerTab workout={workout} />}
         {activeTab === 'workouts' && <WorkoutsTab workoutContext={workout.getContext()} aiService={aiService} />}
         {activeTab === 'nutrition' && (
@@ -167,7 +167,7 @@ function App() {
             </div>
           </div>
         )}
-        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} onClose={() => {}} />}
+        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} onClose={() => {}} className="flex-1" />}
       </div>
 
       {/* Voice Assistant Button */}
