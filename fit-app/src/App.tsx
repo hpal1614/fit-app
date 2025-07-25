@@ -30,7 +30,6 @@ import { UserProfileCard } from './components/UserProfileCard';
 import { VoiceAssistant } from './components/VoiceAssistant';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
-import { pwaService } from './services/pwaService';
 import { databaseService } from './services/databaseService';
 import './App.css';
 
@@ -73,20 +72,10 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Initialize PWA features (Phase 3D)
+  // Initialize database service (Phase 3D)
   useEffect(() => {
-    pwaService.init({
-      enableInstallPrompt: true,
-      enableNotifications: true,
-      enableOfflineSync: true,
-      cacheStrategies: {
-        '/api': 'network-first',
-        '/assets': 'cache-first',
-        '/': 'stale-while-revalidate'
-      }
-    });
-
-    // Initialize database service (Phase 3D)
+    // PWAService is initialized automatically in its constructor
+    // Just initialize the database service
     databaseService.initialize();
   }, []);
 
