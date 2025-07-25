@@ -59,6 +59,26 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Handle sending messages - MOVED BEFORE useEffect to avoid initialization error
+  const sendMessage = useCallback(async (content: string, isVoice: boolean = false) => {
+    if (!content.trim() || isStreaming) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: content.trim(),
+      timestamp: new Date(),
+      isVoice
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    setCurrentStreamingMessage(''); // Reset streaming message
+
+    // Start streaming response
+    await streamResponse(content);
+  }, [streamResponse, isStreaming]);
+
   // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -110,25 +130,10 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     setMessages([initialMessage]);
   }, [workoutContext]);
 
-  // Handle sending messages
-  const sendMessage = useCallback(async (content: string, isVoice: boolean = false) => {
-    if (!content.trim() || isStreaming) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: content.trim(),
-      timestamp: new Date(),
-      isVoice
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    setCurrentStreamingMessage(''); // Reset streaming message
-
-    // Start streaming response
-    await streamResponse(content);
-  }, [streamResponse, isStreaming]);
+  // Process voice commands (placeholder for future implementation)
+  useEffect(() => {
+    // Voice command handling would be implemented here
+  }, [sendMessage]);
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
@@ -149,11 +154,6 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       }
     }
   };
-
-  // Process voice commands (placeholder for future implementation)
-  useEffect(() => {
-    // Voice command handling would be implemented here
-  }, [sendMessage]);
 
   // Render streaming message
   const renderStreamingMessage = () => {
