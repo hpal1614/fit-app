@@ -48,7 +48,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       setCurrentStreamingMessage('');
       
       // Don't automatically speak - user can click the speaker icon if they want
-    }
+    },
+    workoutContext
   });
   
   const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
