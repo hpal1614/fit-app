@@ -117,7 +117,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     }
   }, [isLoading]);
 
-  // Initial greeting
+  // Initial greeting - only on mount
   useEffect(() => {
     const initialMessage: Message = {
       id: Date.now().toString(),
@@ -128,7 +128,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       timestamp: new Date()
     };
     setMessages([initialMessage]);
-  }, [workoutContext]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Process voice commands (placeholder for future implementation)
   useEffect(() => {
