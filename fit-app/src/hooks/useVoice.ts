@@ -1,9 +1,31 @@
 import { useState, useCallback, useRef } from 'react';
 
-export const useVoice = () => {
+// Extended types for voice state
+interface VoiceState {
+  lastTranscript: string;
+  interimTranscript?: string;
+  finalTranscript?: string;
+}
+
+interface UseVoiceOptions {
+  autoStart?: boolean;
+  enableWakeWord?: boolean;
+  workoutContext?: any;
+}
+
+export const useVoice = (options: UseVoiceOptions = {}) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confidence, setConfidence] = useState<number>(0);
+  const [lastCommand, setLastCommand] = useState<any>(null);
+  const [state, setState] = useState<VoiceState>({
+    lastTranscript: '',
+    interimTranscript: '',
+    finalTranscript: ''
+  });
+  
   const recognitionRef = useRef<any>(null);
 
   // Check if voice features are supported
@@ -44,6 +66,14 @@ export const useVoice = () => {
     }
   }, []);
 
+  // Stop speaking
+  const stopSpeaking = useCallback(() => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+  }, []);
+
   // Start listening with permission handling
   const startListening = useCallback(async (): Promise<boolean> => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -61,19 +91,51 @@ export const useVoice = () => {
 
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+      recognitionRef.current.interimResults = true;
 
       recognitionRef.current.onstart = () => {
         setIsListening(true);
         setError(null);
+        setIsProcessing(false);
+      };
+
+      recognitionRef.current.onresult = (event: any) => {
+        const current = event.resultIndex;
+        const transcript = event.results[current][0].transcript;
+        const isFinal = event.results[current].isFinal;
+        const confidence = event.results[current][0].confidence || 0.9;
+
+        setConfidence(confidence);
+        
+        setState(prev => ({
+          ...prev,
+          lastTranscript: transcript,
+          interimTranscript: !isFinal ? transcript : '',
+          finalTranscript: isFinal ? transcript : prev.finalTranscript
+        }));
+
+        if (isFinal) {
+          // Simulate command processing
+          setIsProcessing(true);
+          setTimeout(() => {
+            setLastCommand({ 
+              text: transcript, 
+              confidence, 
+              timestamp: new Date() 
+            });
+            setIsProcessing(false);
+          }, 500);
+        }
       };
 
       recognitionRef.current.onend = () => {
         setIsListening(false);
+        setIsProcessing(false);
       };
 
       recognitionRef.current.onerror = (event: any) => {
         setIsListening(false);
+        setIsProcessing(false);
         if (event.error === 'not-allowed') {
           setError('Microphone permission denied');
         } else {
@@ -85,6 +147,7 @@ export const useVoice = () => {
       return true;
     } catch (err) {
       setIsListening(false);
+      setIsProcessing(false);
       setError('Microphone permission required');
       return false;
     }
@@ -96,15 +159,26 @@ export const useVoice = () => {
       recognitionRef.current.stop();
     }
     setIsListening(false);
+    setIsProcessing(false);
   }, []);
 
   return {
+    // States
+    isListening,
+    isProcessing,
+    isSpeaking,
+    error,
+    confidence,
+    lastCommand,
+    state,
+    
+    // Actions
     speak,
+    stopSpeaking,
     startListening,
     stopListening,
-    isListening,
-    isSpeaking,
-    isSupported: isSupported(),
-    error
+    
+    // Utils
+    isSupported: isSupported()
   };
 };
