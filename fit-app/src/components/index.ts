@@ -1,23 +1,21 @@
-export { WorkoutDashboard } from './WorkoutDashboard';
-export { AIChatInterface } from './AIChatInterface';
-export { VoiceButton } from './VoiceButton';
-export { WorkoutStats } from './WorkoutStats';
-export { ExerciseCard } from './ExerciseCard';
-export { SetLogger } from './SetLogger';
-export { RestTimer } from './RestTimer';
-export { BiometricsDashboard } from './BiometricsDashboard';
-export { FormAnalysisInterface } from './FormAnalysisInterface';
-export { MonitoringDashboard } from './MonitoringDashboard';
-export { MobileWorkoutInterface } from './MobileWorkoutInterface';
-export { VoiceCoachInterface } from './VoiceCoachInterface';
-export { WorkoutsTab } from './WorkoutsTab';
+// Existing components
+export { default as WorkoutDashboard } from './WorkoutDashboard';
+export { default as AIChatInterface } from './AIChatInterface';
+export { default as VoiceButton } from './VoiceButton';
+export { default as ExerciseCard } from './ExerciseCard';
+export { default as SetLogger } from './SetLogger';
+export { default as RestTimer } from './RestTimer';
+export { default as WorkoutStats } from './WorkoutStats';
+export { default as WorkoutsTab } from './WorkoutsTab';
+
+// Phase 1 components
 export { BottomNavigation } from './BottomNavigation';
 
-// New components for updated UI
-export { UserProfileCard } from './UserProfileCard';
-export { WorkoutLoggerTab } from './WorkoutLoggerTab';
-export { AnalyticsDashboard } from './AnalyticsDashboard';
-export { VoiceAssistant } from './VoiceAssistant';
-
-export { BottomNavigation } from './BottomNavigation';
-export { WorkoutsTab } from './WorkoutsTab';
+// Phase 2 components - Industry Inspired
+export { StrongInspiredLogger } from './workout/StrongInspiredLogger';
+export { MyNetDiaryInspired } from './nutrition/MyNetDiaryInspired';
+export { LadderInspiredNavigation } from './interface/LadderInspiredNavigation';
+export { LadderStatCard, LadderActionCard, LadderProgressCard } from './interface/LadderInspiredCards';
+export { NutritionTab } from './NutritionTab';
+export { ErrorBoundary } from './ErrorBoundary';
+export { LoadingSpinner } from './LoadingSpinner';

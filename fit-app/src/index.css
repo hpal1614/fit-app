@@ -3,187 +3,279 @@
 @tailwind utilities;
 
 :root {
-  /* Primary Colors */
-  --fitness-blue: #3B82F6;
-  --fitness-green: #10B981;
-  --fitness-orange: #F59E0B;
-  --fitness-red: #EF4444;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   
-  /* Voice States */
-  --voice-listening: #8B5CF6;
-  --voice-speaking: #06B6D4;
-  --voice-processing: #F59E0B;
-  --voice-idle: #6B7280;
-  --voice-error: #EF4444;
-  
-  /* Neutral Scale */
-  --gray-50: #F9FAFB;
-  --gray-100: #F3F4F6;
-  --gray-200: #E5E7EB;
-  --gray-300: #D1D5DB;
-  --gray-400: #9CA3AF;
-  --gray-500: #6B7280;
-  --gray-600: #4B5563;
-  --gray-700: #374151;
-  --gray-800: #1F2937;
-  --gray-900: #111827;
+  /* Colors */
+  --color-primary: #3B82F6;
+  --color-secondary: #8B5CF6;
+  --color-accent: #10B981;
+  --color-warning: #F59E0B;
+  --color-success: #059669;
+  --color-error: #DC2626;
 }
 
-/* Dark mode variables */
-.dark {
-  --bg-primary: var(--gray-900);
-  --bg-secondary: var(--gray-800);
-  --bg-tertiary: var(--gray-700);
-  --text-primary: var(--gray-50);
-  --text-secondary: var(--gray-300);
-  --text-tertiary: var(--gray-400);
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* Light mode variables */
-.light {
-  --bg-primary: var(--gray-50);
-  --bg-secondary: var(--gray-100);
-  --bg-tertiary: var(--gray-200);
-  --text-primary: var(--gray-900);
-  --text-secondary: var(--gray-700);
-  --text-tertiary: var(--gray-600);
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }
 
-@layer components {
-  .voice-button {
-    @apply relative flex items-center justify-center w-16 h-16 rounded-full transition-all duration-300 ease-in-out;
+/* Support for iOS safe areas */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
   
-  .voice-button.listening {
-    @apply bg-voice-listening animate-pulse-slow;
+  .animation-delay-200 {
+    animation-delay: 200ms;
   }
   
-  .voice-button.speaking {
-    @apply bg-voice-speaking animate-bounce-subtle;
-  }
-  
-  .voice-button.processing {
-    @apply bg-voice-processing animate-spin;
-  }
-  
-  .voice-button.idle {
-    @apply bg-voice-idle hover:bg-fitness-blue;
-  }
-  
-  .voice-button.error {
-    @apply bg-voice-error animate-pulse;
-  }
-  
-  .voice-wave {
-    @apply bg-current opacity-60 mx-1 animate-voice-wave;
-    width: 4px;
-    height: 20px;
-    border-radius: 2px;
-  }
-  
-  .voice-wave:nth-child(2) {
-    animation-delay: 0.1s;
-  }
-  
-  .voice-wave:nth-child(3) {
-    animation-delay: 0.2s;
-  }
-  
-  .voice-wave:nth-child(4) {
-    animation-delay: 0.3s;
-  }
-  
-  .voice-wave:nth-child(5) {
-    animation-delay: 0.4s;
-  }
-  
-  .workout-card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-700;
-  }
-  
-  .exercise-item {
-    @apply p-3 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
-  }
-  
-  .stat-card {
-    @apply bg-gradient-to-br from-fitness-blue to-fitness-green text-white p-4 rounded-lg shadow-md;
-  }
-  
-  .chat-message {
-    @apply max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-sm;
-  }
-  
-  .chat-message.user {
-    @apply bg-fitness-blue text-white ml-auto;
-  }
-  
-  .chat-message.ai {
-    @apply bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mr-auto;
+  .animation-delay-400 {
+    animation-delay: 400ms;
   }
 }
 
-/* Scrollbar styling */
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: var(--gray-400) var(--gray-100);
+/* Loading animations */
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
 }
 
-.scrollbar-thin::-webkit-scrollbar {
+.animate-pulse-scale {
+  animation: pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Focus visible only for keyboard navigation */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Dark mode transitions */
+.dark-mode-transition {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Mobile tap highlight removal */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure full height on mobile */
+#root {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Fix for iOS rubber band scrolling */
+html {
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent text selection on UI elements */
+button,
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Improve touch responsiveness */
+button,
+a,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+/* Better focus styles for accessibility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+}
+
+/* Voice button pulsing animation */
+@keyframes voice-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.voice-recording {
+  animation: voice-pulse 1.5s infinite;
+}
+
+/* Ladder App inspired animations and styles */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Glassmorphism effects */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced focus states for accessibility */
+.focus-ring-enhanced {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-all duration-200;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: var(--gray-100);
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: var(--gray-400);
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
   border-radius: 3px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-500);
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8);
 }
 
-/* Focus states for accessibility */
-.focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-fitness-blue focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+/* Workout logger specific styles */
+.workout-set-row {
+  transition: all 0.2s ease;
 }
 
-/* Loading spinner */
-@keyframes spin-slow {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.workout-set-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.animate-spin-slow {
-  animation: spin-slow 2s linear infinite;
+.workout-set-active {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
 
-/* Full screen styles */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background-color: #000000;
+/* Nutrition tracker styles */
+.macro-bar {
+  transition: width 0.5s ease-in-out;
 }
 
-#root {
-  width: 100%;
-  height: 100vh;
-  overflow: auto;
-  background-color: #000000;
+.food-item-hover {
+  transition: all 0.2s ease;
 }
 
-/* Remove any default margins */
-* {
-  box-sizing: border-box;
+.food-item-hover:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Ensure full height for main app */
-.min-h-screen {
-  min-height: 100vh;
-  height: 100%;
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .touch-optimized {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .mobile-padding {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Dark mode enhancements */
+.dark .workout-set-row:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark .food-item-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
