@@ -100,6 +100,16 @@ export class BrowserMonitoringService {
     this.logs = [];
     localStorage.removeItem('fitness-app-logs');
   }
+
+  // Compatibility method for services expecting getLogger
+  getLogger() {
+    return {
+      info: (message: string, data?: any) => this.info(message, data),
+      warn: (message: string, data?: any) => this.warn(message, data),
+      error: (message: string, data?: any) => this.error(message, data),
+      debug: (message: string, data?: any) => this.debug(message, data)
+    };
+  }
 }
 
 // Export singleton instance
