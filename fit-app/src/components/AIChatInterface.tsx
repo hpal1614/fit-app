@@ -152,40 +152,6 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   // Smart loading indicator showing team status - NEVER HANGS
   const renderLoadingState = () => {
     return null; // Remove old loading state
-      <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
-        <div className="flex space-x-1">
-          {/* OpenRouter Status */}
-          <div className={`w-3 h-3 rounded-full ${
-            status.openrouter === 'trying' ? 'bg-blue-500 animate-pulse' :
-            status.openrouter === 'success' ? 'bg-green-500' :
-            status.openrouter === 'failed' ? 'bg-red-500' : 'bg-gray-300'
-          }`} title="OpenRouter (Claude)" />
-          
-          {/* Groq Status */}
-          <div className={`w-3 h-3 rounded-full ${
-            status.groq === 'trying' ? 'bg-purple-500 animate-pulse' :
-            status.groq === 'success' ? 'bg-green-500' :
-            status.groq === 'failed' ? 'bg-red-500' : 'bg-gray-300'
-          }`} title="Groq (Llama)" />
-          
-          {/* Google Status */}
-          <div className={`w-3 h-3 rounded-full ${
-            status.google === 'trying' ? 'bg-orange-500 animate-pulse' :
-            status.google === 'success' ? 'bg-green-500' :
-            status.google === 'failed' ? 'bg-red-500' : 'bg-gray-300'
-          }`} title="Google (Gemini)" />
-        </div>
-        
-        <span className="text-sm text-gray-600">
-          AI is thinking...
-        </span>
-        
-        {/* Progress indicator */}
-        <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
-          <div className="w-full h-full bg-fitness-blue animate-pulse" />
-        </div>
-      </div>
-    );
   };
 
   // Quick action buttons
