@@ -204,7 +204,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   }
 
   return (
-    <div className={`bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-800 flex flex-col h-full ${className}`}>
+    <div className={`bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-800 flex flex-col h-full w-full ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
         <div className="flex items-center space-x-2">
@@ -255,7 +255,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
           >
             <div
               className={`
-                max-w-xs lg:max-w-md px-4 py-2 rounded-lg
+                max-w-[80%] sm:max-w-xs lg:max-w-md px-4 py-2 rounded-lg
                 ${message.type === 'user' 
                   ? 'bg-lime-400 text-black' 
                   : 'bg-gray-800 text-white'
@@ -270,8 +270,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
                   <User size={16} className="mt-1 flex-shrink-0 text-black" />
                 )}
                 
-                <div className="flex-1">
-                  <p className="text-sm">{message.content}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm break-words whitespace-pre-wrap">{message.content}</p>
                   <div className="flex items-center justify-between mt-1">
                     <span className={`text-xs ${
                       message.type === 'user' ? 'text-black/70' : 'text-gray-500'
@@ -310,8 +310,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       </div>
 
       {/* Quick Actions */}
-      <div className="px-4 py-2 border-t border-gray-700 flex-shrink-0">
-        <div className="flex flex-wrap gap-2">
+      <div className="px-4 py-2 border-t border-gray-700 flex-shrink-0 overflow-hidden">
+        <div className="flex flex-wrap gap-2 w-full">
           {quickActions.map((action, index) => (
             <button
               key={index}

@@ -144,7 +144,7 @@ function App() {
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 overflow-hidden px-4 pb-20 flex flex-col">
+      <div className="relative z-10 flex-1 overflow-hidden px-4 pb-20 flex flex-col max-w-full">
         {activeTab === 'logger' && <WorkoutLoggerTab workout={workout} />}
         {activeTab === 'workouts' && <WorkoutsTab workoutContext={workout.getContext()} aiService={aiService} />}
         {activeTab === 'nutrition' && (
