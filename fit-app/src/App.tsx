@@ -167,7 +167,7 @@ function App() {
             </div>
           </div>
         )}
-        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} />}
+        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} onClose={() => {}} />}
       </div>
 
       {/* Voice Assistant Button */}
