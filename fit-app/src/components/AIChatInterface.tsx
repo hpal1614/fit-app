@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, X, Mic, Volume2, Bot, User, Loader2 } from 'lucide-react';
-import { useAI } from '../hooks/useAI';
+import { useStreamingAI } from '../hooks/useStreamingAI';
 import { useVoice } from '../hooks/useVoice';
 import type { WorkoutContext } from '../types/workout';
 // Removed unused AIResponse import
@@ -24,10 +24,32 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   onClose,
   className = ''
 }) => {
-  const { askCoach, isLoading, error, isAvailable } = useAI();
-  const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
-
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>('');
+  
+  const { streamResponse, isStreaming, stopStreaming } = useStreamingAI({
+    onChunk: (chunk) => {
+      setCurrentStreamingMessage(prev => prev + chunk);
+    },
+    onComplete: (fullResponse) => {
+      // Add complete message to messages
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}`,
+        type: 'ai',
+        content: fullResponse,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+      setCurrentStreamingMessage('');
+      
+      // Speak the response
+      if (!isMuted) {
+        speak(fullResponse);
+      }
+    }
+  });
+  
+  const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
   const [inputText, setInputText] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
 
@@ -67,7 +89,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
   // Handle sending messages
   const sendMessage = useCallback(async (content: string, isVoice: boolean = false) => {
-    if (!content.trim() || !isAvailable) return;
+    if (!content.trim() || isStreaming) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -79,35 +101,11 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
+    setCurrentStreamingMessage(''); // Reset streaming message
 
-    try {
-      // Use the new AI team system directly
-      const response = await askCoach(content, workoutContext);
-
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: response.content,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-
-      // Read AI response aloud if it was a voice message
-      if (isVoice) {
-        await speak(response.content);
-      }
-
-    } catch (_error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: "Sorry, I'm having trouble right now. The AI team is working to get back online. Please try again in a moment! 💪",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    }
-  }, [askCoach, workoutContext, isAvailable, speak]);
+    // Start streaming response
+    await streamResponse(content);
+  }, [streamResponse, isStreaming]);
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
@@ -134,11 +132,26 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     // Voice command handling would be implemented here
   }, [sendMessage]);
 
-  // Smart loading indicator showing team status - NEVER HANGS
-  const renderLoadingState = () => {
-    if (!isLoading) return null;
+  // Render streaming message
+  const renderStreamingMessage = () => {
+    if (!currentStreamingMessage) return null;
     
     return (
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-lime-400 to-green-500 flex items-center justify-center flex-shrink-0">
+          <Bot className="w-5 h-5 text-black" />
+        </div>
+        <div className="flex-1 bg-gray-800/50 backdrop-blur-lg rounded-lg p-3 border border-gray-700">
+          <p className="text-gray-100 leading-relaxed">{currentStreamingMessage}</p>
+          <span className="inline-block w-2 h-4 bg-lime-400 animate-pulse ml-1" />
+        </div>
+      </div>
+    );
+  };
+  
+  // Smart loading indicator showing team status - NEVER HANGS
+  const renderLoadingState = () => {
+    return null; // Remove old loading state
       <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
         <div className="flex space-x-1">
           {/* OpenRouter Status */}
@@ -284,6 +297,9 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
             </div>
           </div>
         ))}
+        
+        {/* Streaming message */}
+        {renderStreamingMessage()}
         
         {/* Smart loading state - never hangs */}
         {renderLoadingState()}

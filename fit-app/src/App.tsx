@@ -88,7 +88,7 @@ function App() {
   }, []);
 
   return (
-    <div className="h-screen w-screen bg-black text-white relative overflow-hidden flex flex-col">
+    <div className="h-screen w-screen bg-black text-white fixed inset-0 flex flex-col">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-lime-400 to-transparent rounded-full blur-3xl" />
@@ -141,7 +141,7 @@ function App() {
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-24">
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-20" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
         {activeTab === 'generator' && <WorkoutGenerator />}
         {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
