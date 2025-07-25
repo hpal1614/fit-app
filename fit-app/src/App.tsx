@@ -88,7 +88,7 @@ function App() {
   }, []);
 
   return (
-    <div className="h-screen w-screen bg-black text-white fixed inset-0 flex flex-col">
+    <div className="h-screen w-screen bg-black text-white relative overflow-hidden flex flex-col">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-lime-400 to-transparent rounded-full blur-3xl" />
@@ -141,7 +141,7 @@ function App() {
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-20" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
         {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
         {activeTab === 'generator' && <WorkoutGenerator />}
         {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
@@ -203,13 +203,13 @@ function App() {
       {/* Voice Assistant Button */}
       <button
         onClick={() => setShowVoiceAssistant(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-lime-400 to-green-500 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-40"
+        className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-lime-400 to-green-500 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-50"
       >
         <Mic className="w-6 h-6 text-black" />
       </button>
 
       {/* Bottom Navigation - 7 tabs for all features */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800">
+      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800 z-50">
         <div className="flex items-center justify-around py-2">
           {[
             { icon: Dumbbell, label: 'Logger', key: 'workouts' },
