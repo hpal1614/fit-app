@@ -47,16 +47,14 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       setMessages(prev => [...prev, aiMessage]);
       setCurrentStreamingMessage('');
       
-      // Speak the response
-      if (!isMuted) {
-        speak(fullResponse);
-      }
+      // Don't automatically speak - user can click the speaker icon if they want
     }
   });
   
   const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
   const [inputText, setInputText] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [lastTranscript, setLastTranscript] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +63,28 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Handle voice transcript changes
+  useEffect(() => {
+    if (isVoiceMode && isListening) {
+      // Import voice service
+      import('../services/voiceService').then(({ voiceService }) => {
+        const handleTranscript = (event: any) => {
+          if (event.detail?.transcript) {
+            setLastTranscript(event.detail.transcript);
+            if (event.detail.isFinal) {
+              sendMessage(event.detail.transcript);
+              setIsVoiceMode(false);
+              stopListening();
+            }
+          }
+        };
+        
+        voiceService.addEventListener('result', handleTranscript);
+        return () => voiceService.removeEventListener('result', handleTranscript);
+      });
+    }
+  }, [isVoiceMode, isListening, sendMessage, stopListening]);
 
   // Never show loading for more than 5 seconds - CRITICAL TIMEOUT PROTECTION
   useEffect(() => {
@@ -82,11 +102,9 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     const initialMessage: Message = {
       id: Date.now().toString(),
       type: 'ai',
-      content: `Hey there! I'm your AI fitness coach. ${
-        workoutContext?.activeWorkout 
-          ? `I see you're working on ${workoutContext.currentExercise?.exercise.name}. How can I help?`
-          : 'Ready to get started with your fitness journey? Ask me about workouts, nutrition, or form tips!'
-      }`,
+      content: workoutContext?.activeWorkout 
+        ? `Hey! I see you're crushing it with ${workoutContext.currentExercise?.exercise.name}! 💪 How's it going? Need any tips on form, or want me to count your reps?`
+        : `Hey there! Ready to get after it today? 🔥 I'm here to help with anything - workouts, form tips, nutrition advice, or just some good old motivation. What's on your mind?`,
       timestamp: new Date()
     };
     setMessages([initialMessage]);
@@ -161,10 +179,10 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
   // Quick action buttons
   const quickActions = [
-    { label: "Motivate me!", action: () => sendMessage("Give me some motivation!") },
-    { label: "Form check", action: () => sendMessage("How's my form looking?") },
-    { label: "Nutrition tip", action: () => sendMessage("Give me a nutrition tip") },
-    { label: "Rest time?", action: () => sendMessage("How long should I rest?") },
+    { label: "Need motivation 💪", action: () => sendMessage("I'm feeling a bit unmotivated today, can you help pump me up?") },
+    { label: "Check my form 👀", action: () => sendMessage("Can you watch my form and give me some tips?") },
+    { label: "What should I eat? 🥗", action: () => sendMessage("What should I eat today to support my workout goals?") },
+    { label: "How long to rest? ⏱️", action: () => sendMessage("How long should I rest between sets for this exercise?") },
   ];
 
   if (!isAvailable) {
@@ -335,9 +353,9 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         )}
 
         {isVoiceMode && (
-          <div className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded flex items-center space-x-2">
+          <div className="mt-2 text-sm text-lime-400 bg-gray-800 p-3 rounded-lg flex items-center space-x-2">
             <Mic size={16} className="animate-pulse" />
-            <span>Listening for your question...</span>
+            <span>{lastTranscript || "Listening... Just speak naturally!"}</span>
           </div>
         )}
       </div>
