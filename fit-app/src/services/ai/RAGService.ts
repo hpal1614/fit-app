@@ -1,4 +1,4 @@
-import { LocalIndex } from 'vectra';
+import { BrowserVectorStore, VectorItem } from './BrowserVectorStore';
 import { getAllKnowledgeItems } from '../../data/fitnessKnowledge';
 
 interface KnowledgeItem {
@@ -15,23 +15,31 @@ interface SearchResult {
 }
 
 export class RAGService {
-  private index: LocalIndex;
+  private vectorStore: BrowserVectorStore;
   private knowledgeMap: Map<string, KnowledgeItem> = new Map();
   private initialized = false;
   private embeddingCache = new Map<string, number[]>();
 
   constructor() {
-    this.index = new LocalIndex('fitness-knowledge-index');
+    this.vectorStore = new BrowserVectorStore('fitness-knowledge');
   }
 
   async initialize() {
     if (this.initialized) return;
 
     try {
-      // Create or load the index
-      if (!(await this.index.isIndexCreated())) {
-        await this.index.createIndex();
+      // Check if we need to seed the knowledge base
+      if (!this.vectorStore.hasData()) {
         await this.seedKnowledgeBase();
+      } else {
+        // Load knowledge map from existing items
+        const items = this.vectorStore.getAllItems();
+        for (const item of items) {
+          const knowledgeItem = item.metadata.knowledgeItem;
+          if (knowledgeItem) {
+            this.knowledgeMap.set(knowledgeItem.id, knowledgeItem);
+          }
+        }
       }
 
       this.initialized = true;
@@ -45,6 +53,7 @@ export class RAGService {
   private async seedKnowledgeBase() {
     console.log('Seeding knowledge base...');
     const items = getAllKnowledgeItems();
+    const vectorItems: VectorItem[] = [];
     
     for (const item of items) {
       const embedding = await this.generateEmbedding(item.content);
@@ -53,14 +62,19 @@ export class RAGService {
         vector: embedding
       };
       
-      await this.index.insertItem({
+      vectorItems.push({
+        id: item.id,
         vector: embedding,
-        metadata: { id: item.id }
+        metadata: { 
+          id: item.id,
+          knowledgeItem: knowledgeItem
+        }
       });
       
       this.knowledgeMap.set(item.id, knowledgeItem);
     }
     
+    await this.vectorStore.addItems(vectorItems);
     console.log(`Seeded ${items.length} knowledge items`);
   }
 
@@ -71,10 +85,10 @@ export class RAGService {
 
     try {
       const queryEmbedding = await this.generateEmbedding(query);
-      const results = await this.index.queryItems(queryEmbedding, topK);
+      const results = await this.vectorStore.query(queryEmbedding, topK);
       
       return results.map(result => ({
-        item: this.knowledgeMap.get(result.item.metadata.id)!,
+        item: this.knowledgeMap.get(result.item.id)!,
         score: result.score
       })).filter(result => result.item != null);
     } catch (error) {
@@ -285,19 +299,28 @@ export class RAGService {
 
   // Check if index needs updating
   async updateKnowledge(newItems: KnowledgeItem[]) {
+    const vectorItems: VectorItem[] = [];
+    
     for (const item of newItems) {
       const embedding = await this.generateEmbedding(item.content);
-      
-      await this.index.insertItem({
-        vector: embedding,
-        metadata: { id: item.id }
-      });
-      
-      this.knowledgeMap.set(item.id, {
+      const knowledgeItem = {
         ...item,
         vector: embedding
+      };
+      
+      vectorItems.push({
+        id: item.id,
+        vector: embedding,
+        metadata: { 
+          id: item.id,
+          knowledgeItem: knowledgeItem
+        }
       });
+      
+      this.knowledgeMap.set(item.id, knowledgeItem);
     }
+    
+    await this.vectorStore.addItems(vectorItems);
   }
 
   // Export for debugging
