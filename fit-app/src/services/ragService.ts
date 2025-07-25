@@ -18,7 +18,7 @@ interface RetrievalResult {
   id: string;
   content: string;
   score: number;
-  metadata: any;
+  metadata: unknown;
 }
 
 interface CachedResponse {
@@ -31,7 +31,7 @@ interface CachedResponse {
 export class FitnessRAGService {
   private pinecone: Pinecone;
   private openai: OpenAI;
-  private index: any;
+  private index: unknown;
   private cache: Map<string, CachedResponse> = new Map();
 
   constructor() {
@@ -88,7 +88,7 @@ export class FitnessRAGService {
   // Implement speculative RAG with conversation trajectory prediction
   async speculativeRetrieve(
     query: string, 
-    conversationHistory: any[]
+    conversationHistory: unknown[]
   ): Promise<RetrievalResult[]> {
     try {
       // Generate query embedding
@@ -111,7 +111,7 @@ export class FitnessRAGService {
   }
 
   // Predict conversation trajectory for pre-fetching
-  private async predictTrajectory(conversationHistory: any[]): Promise<number[]> {
+  private async predictTrajectory(conversationHistory: unknown[]): Promise<number[]> {
     if (conversationHistory.length === 0) {
       return new Array(1536).fill(0);
     }

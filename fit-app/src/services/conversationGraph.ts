@@ -5,7 +5,7 @@ import { fitnessRAG } from './ragService';
 import { WorkoutContext, FitnessGoals, UserProfile } from '../types';
 
 interface ConversationState {
-  messages: any[];
+  messages: unknown[];
   userProfile: UserProfile;
   workoutContext: WorkoutContext;
   fitnessGoals: FitnessGoals;
@@ -16,7 +16,7 @@ interface ConversationState {
 }
 
 interface ContextLayers {
-  sessionLevel: any[];  // Recent conversation
+  sessionLevel: unknown[];  // Recent conversation
   userLevel: UserProfile;  // User preferences and history
   domainLevel: string[];  // Fitness knowledge
 }
@@ -36,7 +36,7 @@ export class FitnessConversationGraph {
     this.graph = new StateGraph<ConversationState>({
       channels: {
         messages: {
-          value: (x: any[], y: any[]) => [...x, ...y],
+          value: (x: unknown[], y: unknown[]) => [...x, ...y],
           default: () => [],
         },
         userProfile: {
@@ -325,7 +325,7 @@ export class FitnessConversationGraph {
     userProfile: UserProfile,
     workoutContext: WorkoutContext,
     fitnessGoals: FitnessGoals,
-    conversationHistory: any[] = []
+    conversationHistory: unknown[] = []
   ): Promise<string> {
     const humanMessage = new HumanMessage(message);
     

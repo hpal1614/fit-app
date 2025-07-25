@@ -1,201 +1,70 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Trophy, 
-  MessageCircle, 
-  Users, 
-  User,
-  Flame,
-  Clock,
-  Zap,
-  Bell,
-  Search,
-  Settings,
-  TrendingUp,
-  Plus,
-  ChevronRight,
-  Calendar,
-  Target,
-  Heart,
-  Mic
-} from 'lucide-react';
-import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
+import React, { useState } from 'react';
+import { Sun, Moon } from 'lucide-react';
+import { WorkoutDashboard } from './components/WorkoutDashboard';
 import { AIChatInterface } from './components/AIChatInterface';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { UserProfileCard } from './components/UserProfileCard';
-import { VoiceAssistant } from './components/VoiceAssistant';
+import { WorkoutsTab } from './components/WorkoutsTab';
+import { BottomNavigation } from './components/BottomNavigation';
 import { useWorkout } from './hooks/useWorkout';
-import { useVoice } from './hooks/useVoice';
-import './App.css';
-
-interface UserStats {
-  workoutsThisWeek: number;
-  totalMinutes: number;
-  caloriesBurned: number;
-  currentStreak: number;
-}
 
 function App() {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState<'workouts' | 'coach' | 'analytics' | 'profile'>('workouts');
-  const [showNotificationBadge, setShowNotificationBadge] = useState(true);
-  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
-  
-  // Initialize hooks
-  const workout = useWorkout();
-  const { isSupported: voiceSupported } = useVoice();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('logger');
+  const { isWorkoutActive } = useWorkout();
 
-  // Mock user data - replace with real data later
-  const userProfile = {
-    name: "Himanshu P",
-    level: "Intermediate",
-    team: "Transform"
-  };
-
-  const userStats: UserStats = {
-    workoutsThisWeek: workout.workoutsThisWeek || 4,
-    totalMinutes: workout.totalMinutesThisWeek || 320,
-    caloriesBurned: workout.caloriesBurnedThisWeek || 1840,
-    currentStreak: workout.currentStreak || 7
-  };
-
-  // Update time every second
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Check for onboarding
-  useEffect(() => {
-    const isOnboarded = localStorage.getItem('fitnessAppOnboarded');
-    if (!isOnboarded) {
-      // Show onboarding in future
-      console.log('User needs onboarding');
-    }
-  }, []);
-
-  return (
-    <div className="h-screen w-screen bg-black text-white relative overflow-hidden flex flex-col">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-lime-400 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-lime-400 to-transparent rounded-full blur-3xl" />
-      </div>
-
-      {/* Header */}
-      <div className="relative z-10 flex items-center justify-between p-6 pt-12">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-lime-400 rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold text-black">
-              {userProfile.name.charAt(0)}
-            </span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">FIT APP</h1>
-            <p className="text-gray-400 text-sm">{currentTime.toLocaleTimeString()}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <button className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
-            <Search className="w-5 h-5" />
-          </button>
-          <button 
-            className="p-2 bg-gray-800 rounded-full relative hover:bg-gray-700 transition-colors"
-            onClick={() => setShowNotificationBadge(false)}
-          >
-            <Bell className="w-5 h-5" />
-            {showNotificationBadge && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-lime-400 rounded-full" />
-            )}
-          </button>
-          <button className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
-            <Settings className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* User Profile Card - Show on all tabs */}
-      <div className="relative z-10 mx-6 mb-6">
-        <UserProfileCard 
-          userProfile={userProfile} 
-          userStats={userStats}
-          isActiveWorkout={workout.isActive}
-          workoutDuration={workout.duration}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-24">
-        {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
-        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} />}
-        {activeTab === 'analytics' && <AnalyticsDashboard />}
-        {activeTab === 'profile' && (
-          <div className="space-y-6">
-            {/* Profile content */}
-            <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800">
-              <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Fitness Level</span>
-                  <span className="text-lime-400">{userProfile.level}</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Team</span>
-                  <span className="text-lime-400">{userProfile.team}</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Voice Commands</span>
-                  <span className={voiceSupported ? "text-green-400" : "text-red-400"}>
-                    {voiceSupported ? "Enabled" : "Not Supported"}
-                  </span>
-                </div>
-              </div>
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'logger':
+        return <WorkoutDashboard />;
+      case 'workouts':
+        return <WorkoutsTab />;
+      case 'nutrition':
+        return (
+          <div className="flex items-center justify-center h-full text-center p-8">
+            <div>
+              <div className="text-6xl mb-4">🍎</div>
+              <h2 className="text-xl font-semibold mb-2">Nutrition Tracking</h2>
+              <p className="text-gray-600 dark:text-gray-400">Coming soon!</p>
             </div>
           </div>
-        )}
-      </div>
+        );
+      case 'coach':
+        return <AIChatInterface onClose={() => setActiveTab('logger')} />;
+      default:
+        return <WorkoutDashboard />;
+    }
+  };
 
-      {/* Voice Assistant Button */}
-      <button
-        onClick={() => setShowVoiceAssistant(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-lime-400 to-green-500 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-40"
-      >
-        <Mic className="w-6 h-6 text-black" />
-      </button>
+  return (
+    <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white sticky top-0 z-40">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold">AI Fitness Coach</h1>
+              <p className="text-blue-100 text-sm">Your personal training companion</p>
+            </div>
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Content Area */}
+      <main className="pb-16 min-h-[calc(100vh-80px)]">
+        {renderTabContent()}
+      </main>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800">
-        <div className="flex items-center justify-around py-3">
-          {[
-            { icon: Trophy, label: 'Workouts', key: 'workouts' },
-            { icon: MessageCircle, label: 'AI Coach', key: 'coach' },
-            { icon: TrendingUp, label: 'Analytics', key: 'analytics' },
-            { icon: User, label: 'Profile', key: 'profile' }
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`flex flex-col items-center space-y-1 px-4 py-2 rounded-lg transition-colors ${
-                activeTab === tab.key ? 'text-lime-400' : 'text-gray-400'
-              }`}
-            >
-              <tab.icon className="w-6 h-6" />
-              <span className="text-xs font-medium">{tab.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Voice Assistant */}
-      {showVoiceAssistant && (
-        <VoiceAssistant
-          workoutContext={workout.getContext()}
-          onClose={() => setShowVoiceAssistant(false)}
-          onCommand={(command, response) => {
-            console.log('Voice command:', command, 'Response:', response);
-          }}
-        />
-      )}
+      <BottomNavigation
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        isWorkoutActive={isWorkoutActive}
+      />
     </div>
   );
 }

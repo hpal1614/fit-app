@@ -300,3 +300,33 @@ export enum WorkoutType {
   REHABILITATION = 'rehabilitation',
   OTHER = 'other'
 }
+// Missing WorkoutPlan interfaces (CRITICAL FIX)
+export interface WorkoutPlan {
+  id: string;
+  name: string;
+  description: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  duration: number; // in minutes
+  exercises: WorkoutDay[];
+  metadata: WorkoutPlanMetadata;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WorkoutDay {
+  dayNumber: number;
+  name: string;
+  exercises: Exercise[];
+  restTime: number; // seconds between exercises
+  notes?: string;
+}
+
+export interface WorkoutPlanMetadata {
+  createdBy: 'ai' | 'user' | 'template';
+  createdAt: Date;
+  tags: string[];
+  equipment: string[];
+  targetMuscleGroups: string[];
+  estimatedCalories?: number;
+  difficultyRating?: number; // 1-10
+}

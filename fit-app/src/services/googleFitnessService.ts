@@ -9,7 +9,7 @@ interface GoogleFitnessConfig {
 interface FitnessDataPoint {
   startTimeNanos: string;
   endTimeNanos: string;
-  value: any[];
+  value: unknown[];
   dataTypeName: string;
 }
 
@@ -398,6 +398,6 @@ class GoogleFitnessService {
 const googleFitnessService = new GoogleFitnessService();
 
 // Declare gapi types
-declare const gapi: any;
+declare const gapi: unknown;
 
 export default googleFitnessService;

@@ -351,7 +351,7 @@ export class MonitoringService {
     response: string;
     latency: number;
     tokens?: { prompt: number; completion: number };
-    metadata?: any;
+    metadata?: unknown;
   }): Promise<void> {
     const { model, prompt, response, latency, tokens, metadata } = params;
     
@@ -408,7 +408,7 @@ export class MonitoringService {
     model: string;
     error: Error;
     prompt?: string;
-    metadata?: any;
+    metadata?: unknown;
   }): void {
     const { model, error, prompt, metadata } = params;
     
@@ -442,7 +442,7 @@ export class MonitoringService {
     type: 'speech' | 'synthesis' | 'streaming';
     duration: number;
     success: boolean;
-    metadata?: any;
+    metadata?: unknown;
   }): void {
     const { provider, type, duration, success, metadata } = params;
     
@@ -601,7 +601,7 @@ export class MonitoringService {
     endpoint: string;
     status: number;
     duration: number;
-    metadata?: any;
+    metadata?: unknown;
   }): void {
     const { method, endpoint, status, duration, metadata } = params;
     

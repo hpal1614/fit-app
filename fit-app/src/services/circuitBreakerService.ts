@@ -258,7 +258,7 @@ export class CircuitBreakerService {
   ): T {
     const breaker = this.getBreaker(name, fn, config);
     
-    return (async (...args: any[]) => {
+    return (async (...args: unknown[]) => {
       try {
         return await breaker.fire(...args);
       } catch (error) {

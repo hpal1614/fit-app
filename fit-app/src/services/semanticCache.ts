@@ -22,7 +22,7 @@ interface CacheMetrics {
 }
 
 export class SemanticCacheService {
-  private supabase: any;
+  private supabase: unknown;
   private openai: OpenAI;
   private metrics: {
     hits: number;

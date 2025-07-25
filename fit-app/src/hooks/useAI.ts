@@ -1,51 +1,129 @@
 import { useState, useCallback } from 'react';
-import { AICoachService } from '../services/aiService';
 
-const aiService = AICoachService.getInstance();
-
+// Emergency AI Hook with 5-second timeout and fallbacks
 export const useAI = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const askCoach = useCallback(async (message: string, context?: Record<string, unknown>) => {
-    console.log('🤖 AI Request:', message);
+  // Timeout wrapper to prevent hanging requests
+  const withTimeout = <T>(promise: Promise<T>, ms: number = 5000): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), ms)
+      ),
+    ]);
+  };
+
+  // Fallback responses for when AI fails
+  const getFallbackResponse = (type: string): string => {
+    const fallbacks = {
+      motivation: "Keep pushing! You're doing great. Every rep counts toward your goals!",
+      workout: "Try 3 sets of 8-12 reps with proper form. Rest 60-90 seconds between sets.",
+      nutrition: "Focus on whole foods: lean proteins, complex carbs, and healthy fats.",
+      form: "Keep your core engaged, maintain proper posture, and control the movement.",
+      general: "I'm here to help with your fitness journey. What specific area would you like guidance on?"
+    };
+    return fallbacks[type as keyof typeof fallbacks] || fallbacks.general;
+  };
+
+  // Main AI query function with timeout and fallback
+  const askCoach = useCallback(async (
+    question: string,
+    context?: any,
+    type: string = 'general'
+  ): Promise<{ content: string; success: boolean }> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await Promise.race([
-        aiService.getCoachingResponse(message, context || { userPreferences: { defaultWeightUnit: 'kg', defaultRestTime: 60, autoRestTimer: true, showPersonalRecords: true, enableVoiceCommands: true, warmupRequired: true, trackRPE: true, roundingPreference: 'exact', plateCalculation: true, notifications: { restComplete: true, personalRecord: true, workoutReminders: true } } }, 'general-advice'),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('AI timeout')), 5000)
-        )
-      ]);
-      
-      console.log('✅ AI Response:', response);
-      return response;
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'AI request failed';
-      console.error('❌ AI Error:', errorMsg);
-      setError(errorMsg);
-      
-      // Emergency fallback response
-      return {
-        content: "I'm here to help with your fitness journey! Ask me about workouts, exercises, or nutrition.",
-        type: 'general-advice',
-        confidence: 0.5,
-        timestamp: new Date(),
-        isComplete: true,
-        metadata: { provider: 'error-fallback' }
-      };
-    } finally {
+      // Try each provider with timeout
+      const providers = [
+        { name: 'OpenRouter', url: 'https://openrouter.ai/api/v1/chat/completions' },
+        { name: 'Groq', url: 'https://api.groq.com/openai/v1/chat/completions' }
+      ];
+
+      for (const provider of providers) {
+        try {
+          const apiKey = provider.name === 'OpenRouter' 
+            ? import.meta.env.VITE_OPENROUTER_API_KEY
+            : import.meta.env.VITE_GROQ_API_KEY;
+
+          if (!apiKey) continue;
+
+          const response = await withTimeout(
+            fetch(provider.url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': window.location.origin
+              },
+              body: JSON.stringify({
+                model: provider.name === 'OpenRouter' ? 'gpt-3.5-turbo' : 'llama3-8b-8192',
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are a helpful AI fitness coach. Provide practical, safe fitness advice.'
+                  },
+                  {
+                    role: 'user', 
+                    content: question
+                  }
+                ],
+                max_tokens: 500,
+                temperature: 0.7
+              })
+            }),
+            5000 // 5 second timeout
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const content = data.choices?.[0]?.message?.content || getFallbackResponse(type);
+            
+            console.log(`✅ ${provider.name} AI response successful`);
+            setIsLoading(false);
+            return { content, success: true };
+          }
+        } catch (providerError) {
+          console.warn(`⚠️ ${provider.name} failed:`, providerError);
+          continue; // Try next provider
+        }
+      }
+
+      // All providers failed - use fallback
+      console.log('⚠️ All AI providers failed, using fallback response');
+      const fallback = getFallbackResponse(type);
       setIsLoading(false);
+      return { content: fallback, success: false };
+
+    } catch (error) {
+      console.error('❌ AI request failed:', error);
+      setError('AI temporarily unavailable');
+      const fallback = getFallbackResponse(type);
+      setIsLoading(false);
+      return { content: fallback, success: false };
     }
   }, []);
 
+  // Voice-enabled AI response
+  const askCoachWithVoice = useCallback(async (
+    question: string,
+    speak?: (text: string) => Promise<void>
+  ) => {
+    const response = await askCoach(question);
+    if (speak) {
+      await speak(response.content);
+    }
+    return response;
+  }, [askCoach]);
+
   return {
     askCoach,
+    askCoachWithVoice,
     isLoading,
     error,
     isAvailable: true // Always available with fallbacks
   };
 };
-export type UseAIReturn = ReturnType<typeof useAI>;

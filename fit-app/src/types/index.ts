@@ -204,8 +204,8 @@ export type SyncStatus = 'idle' | 'syncing' | 'error' | 'conflict';
 export interface SyncConflict {
     id: string;
   type: 'workout' | 'exercise' | 'settings' | 'progress';
-    localData: any;
-    remoteData: any;
+    localData: unknown;
+    remoteData: unknown;
     timestamp: Date;
   resolution?: ConflictResolution;
 }

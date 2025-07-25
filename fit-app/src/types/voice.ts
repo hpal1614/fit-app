@@ -81,7 +81,7 @@ export interface VoiceResponse {
   ssml?: string;
   emotion?: VoiceEmotion;
   priority: SpeechPriority;
-  context?: any;
+  context?: unknown;
 }
 
 export interface VoiceState {
@@ -136,7 +136,7 @@ export interface VoiceError {
   type: VoiceErrorType;
   message: string;
   timestamp: Date;
-  context?: any;
+  context?: unknown;
   recovery?: VoiceRecovery;
   recoverable?: boolean;
 }

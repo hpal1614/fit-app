@@ -13,7 +13,7 @@ interface ServiceHealth {
   status: 'healthy' | 'degraded' | 'unhealthy';
   latency?: number;
   error?: string;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 interface SystemHealth {
@@ -22,7 +22,7 @@ interface SystemHealth {
   services: ServiceHealth[];
   metrics: {
     uptime: number;
-    memory: any;
+    memory: unknown;
     cpu?: number;
   };
 }

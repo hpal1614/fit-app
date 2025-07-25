@@ -18,7 +18,7 @@ interface UseBiometricsReturn {
   // Real-time data
   currentBiometrics: BiometricData | null;
   heartRateTrend: { timestamps: Date[]; values: number[] };
-  insights: any[];
+  insights: unknown[];
   
   // Recovery data
   recoveryMetrics: RecoveryMetrics | null;
@@ -32,7 +32,7 @@ interface UseBiometricsReturn {
   getSleepAnalysis: () => Promise<any>;
   
   // Zone tracking
-  zoneTargets: any[];
+  zoneTargets: unknown[];
   updateZoneTargets: (workoutType: string) => void;
 }
 

@@ -12,10 +12,10 @@ export function getCurrentHub(): any { return null; }
 // Stub for AsyncLocalStorage used by langgraph when bundled for browser
 export class AsyncLocalStorage<T = unknown> {
   getStore(): T | undefined { return undefined; }
-  run<R, TCallback extends (...args: any[]) => R>(_store: T, callback: TCallback, ...args: Parameters<TCallback>): R {
+  run<R, TCallback extends (...args: unknown[]) => R>(_store: T, callback: TCallback, ...args: Parameters<TCallback>): R {
     return callback(...args);
   }
-  exit<R, TCallback extends (...args: any[]) => R>(callback: TCallback, ...args: Parameters<TCallback>): R {
+  exit<R, TCallback extends (...args: unknown[]) => R>(callback: TCallback, ...args: Parameters<TCallback>): R {
     return callback(...args);
   }
   enterWith(_store: T): void {}

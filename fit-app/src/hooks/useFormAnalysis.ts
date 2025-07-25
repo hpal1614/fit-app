@@ -14,7 +14,7 @@ interface FormMetrics {
   formScore: number;
   repCount: number;
   tempo: number;
-  errors: any[];
+  errors: unknown[];
   suggestions: string[];
 }
 

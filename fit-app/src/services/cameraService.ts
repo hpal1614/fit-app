@@ -225,7 +225,7 @@ export class CameraService {
     });
   }
 
-  private drawAngleIndicator(keypoints: any[], error: any): void {
+  private drawAngleIndicator(keypoints: unknown[], error: any): void {
     if (!this.ctx) return;
 
     // Map joint names to keypoint indices

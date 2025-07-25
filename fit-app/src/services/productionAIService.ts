@@ -405,8 +405,8 @@ export class ProductionAIService {
     requestCount: number;
     totalTokens: { prompt: number; completion: number };
     averageTokensPerRequest: { prompt: number; completion: number };
-    circuitBreakerStatus: any;
-    rateLimiterStatus: any;
+    circuitBreakerStatus: unknown;
+    rateLimiterStatus: unknown;
   } {
     const cbStatus = circuitBreaker.getMetrics('ai_sendMessage');
     const rlStatus = rateLimiter.getUsage('ai_chat');

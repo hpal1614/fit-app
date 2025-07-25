@@ -21,7 +21,7 @@ interface UseRealtimeVoiceReturn {
   currentMode: VoiceMode['provider'];
   transcript: string;
   response: string;
-  metrics: any;
+  metrics: unknown;
   startListening: () => Promise<void>;
   stopListening: () => void;
   speak: (text: string) => Promise<void>;

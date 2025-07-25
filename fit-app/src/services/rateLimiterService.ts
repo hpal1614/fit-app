@@ -233,11 +233,11 @@ export class RateLimiterService {
   }
 
   // Decorator for class methods
-  limit(limiterName: string, keyExtractor?: (args: any[]) => string) {
+  limit(limiterName: string, keyExtractor?: (args: unknown[]) => string) {
     return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
       const originalMethod = descriptor.value;
 
-      descriptor.value = async function(...args: any[]) {
+      descriptor.value = async function(...args: unknown[]) {
         const key = keyExtractor ? keyExtractor(args) : undefined;
         const result = await this.checkLimit(limiterName, key);
 

@@ -305,7 +305,7 @@ export const FITNESS_KNOWLEDGE_BASE = {
 
 // Helper function to convert knowledge base to indexable documents
 export function convertToIndexableDocuments() {
-  const documents: any[] = [];
+  const documents: unknown[] = [];
   
   // Convert exercises
   Object.values(FITNESS_KNOWLEDGE_BASE.exercises).forEach(exercise => {

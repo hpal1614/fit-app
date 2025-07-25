@@ -16,8 +16,8 @@ import { VOICE_COMMAND_CONFIG, EXERCISE_ALIASES, WEIGHT_UNITS } from '../constan
 // Extend the global interface for Web Speech API
 declare global {
   interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
+    SpeechRecognition: unknown;
+    webkitSpeechRecognition: unknown;
   }
   
   interface SpeechRecognitionEvent extends Event {
