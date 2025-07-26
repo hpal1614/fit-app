@@ -77,7 +77,7 @@ export const useStreamingAI = (options: StreamingAIOptions = {}) => {
       
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to get AI response';
-      console.error('AI Service Error:', err);
+      console.error('AI Service Error - Using fallback response');  // Removed detailed error to avoid exposing sensitive data
       setError(errorMsg);
       
       // Provide a fallback response when all providers fail

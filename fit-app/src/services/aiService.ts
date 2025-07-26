@@ -313,8 +313,6 @@ export class AITeamService {
     const userPrompt = this.buildUserPrompt(query, context, requestType);
     const startTime = Date.now();
 
-    console.log('OpenRouter API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
-
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -337,7 +335,7 @@ export class AITeamService {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenRouter error:', response.status, errorText);
+      console.error('OpenRouter error:', response.status);  // Removed errorText to avoid exposing sensitive data
       throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
     }
 
@@ -371,8 +369,6 @@ export class AITeamService {
     const userPrompt = this.buildUserPrompt(query, context, requestType);
     const startTime = Date.now();
 
-    console.log('Groq API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
-
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -380,7 +376,7 @@ export class AITeamService {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'mixtral-8x7b-32768',  // Changed to a more standard model
+        model: 'llama2-70b-4096',  // Updated to currently supported model
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -393,7 +389,7 @@ export class AITeamService {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Groq error:', response.status, errorText);
+      console.error('Groq error:', response.status);  // Removed errorText to avoid exposing sensitive data
       throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
     }
 
