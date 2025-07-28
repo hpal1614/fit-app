@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from '../../utils/EventEmitter';
 import type { MCPServer, MCPTool, MCPResource } from '../../types/ai';
 
 interface MCPServerConfig {

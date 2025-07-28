@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BottomNavigation } from './BottomNavigation';
+import { BottomNavigation } from '../BottomNavigation';
 import { Header } from './Header';
 import { WorkoutTab } from '../tabs/WorkoutTab';
 import { NutritionTab } from '../tabs/NutritionTab';

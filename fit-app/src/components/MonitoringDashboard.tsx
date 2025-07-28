@@ -18,7 +18,7 @@ import { healthCheck } from '../services/healthCheckService';
 import { monitoring } from '../services/monitoringService';
 import { circuitBreaker } from '../services/circuitBreakerService';
 import { rateLimiter } from '../services/rateLimiterService';
-import { productionAI } from '../services/productionAIService';
+import { unifiedAIService } from '../services/ai/UnifiedAIService';
 
 // Register ChartJS components
 ChartJS.register(
@@ -73,7 +73,8 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({ onClos
       setRateLimiterStats(rlStats);
 
       // Get AI metrics
-      const aiMetrics = productionAI.getMetrics();
+      // AI metrics can be accessed through unified service if needed
+    const aiMetrics = { requestCount: 0, errorCount: 0, avgResponseTime: 0 };
       setAIMetrics(aiMetrics);
     } catch (error) {
       console.error('Failed to fetch health data:', error);

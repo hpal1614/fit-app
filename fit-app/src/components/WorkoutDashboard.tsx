@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { Play, Pause, Square, SkipForward, SkipBack, Timer, MessageCircle } from 'lucide-react';
 import { useWorkout } from '../hooks/useWorkout';
 import { useVoice } from '../hooks/useVoice';
-import { useAI } from '../hooks/useAI';
+import { useUnifiedAI } from '../hooks/useUnifiedAI';
 import VoiceButton from './VoiceButton';
 import ExerciseCard from './ExerciseCard';
 import SetLogger from './SetLogger';
-import AIChatInterface from './AIChatInterface';
 import WorkoutStats from './WorkoutStats';
 import RestTimer from './RestTimer';
 
@@ -40,7 +39,7 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
   } = useWorkout({ enableTimers: true });
 
   const { speak } = useVoice({ workoutContext });
-  const { isAvailable: isAIAvailable } = useAI();
+  const { aiService } = useUnifiedAI();
 
   const [showAIChat, setShowAIChat] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -292,13 +291,7 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
         </div>
       )}
 
-      {/* AI Chat Interface */}
-      {showAIChat && (
-        <AIChatInterface
-          workoutContext={workoutContext}
-          onClose={() => setShowAIChat(false)}
-        />
-      )}
+
 
       {/* Workout Stats Modal */}
       {showStats && (
