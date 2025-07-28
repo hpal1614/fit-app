@@ -14,9 +14,9 @@ export const WorkoutsTab: React.FC<{
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
 
   const handleGenerateAIWorkout = async (userProfile: any) => {
-    const prompt = \`Generate a personalized workout plan:
+    const prompt = `Generate a personalized workout plan:
     
-    User Profile: \${JSON.stringify(userProfile)}
+    User Profile: ${JSON.stringify(userProfile)}
     
     Create a complete workout plan with:
     - Day-by-day breakdown
@@ -24,7 +24,7 @@ export const WorkoutsTab: React.FC<{
     - Exercise alternatives
     - Form cues and safety notes
     
-    Target the user's specific goals and equipment availability.\`;
+    Target the user's specific goals and equipment availability.`;
     
     const response = await aiService.getCoachingResponse(prompt, workoutContext, 'workout-planning');
     const generatedPlan = parseAIWorkoutPlan(response.content);
