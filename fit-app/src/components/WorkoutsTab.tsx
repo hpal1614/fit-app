@@ -1,32 +1,22 @@
 import React, { useState } from 'react';
-import { Sparkles, User, FileText } from 'lucide-react';
+import { Plus, Download, Sparkles, User, FileText } from 'lucide-react';
 import { AIWorkoutGenerator } from './workout/AIWorkoutGenerator';
 import { CustomWorkoutBuilder } from './workout/CustomWorkoutBuilder';
 import { PDFWorkoutUploader } from './workout/PDFWorkoutUploader';
 import { WorkoutPlanCard } from './workout/WorkoutPlanCard';
-import type { WorkoutPlan, WorkoutContext } from '../types/workout';
-
-interface UserProfile {
-  fitnessLevel: string;
-  goals: string[];
-  equipment: string[];
-  preferredDuration: number;
-  injuries?: string[];
-}
+import type { WorkoutPlan } from '../types/workout';
 
 export const WorkoutsTab: React.FC<{
-  workoutContext: WorkoutContext;
-  aiService: {
-    getCoachingResponse: (prompt: string, context: WorkoutContext, type: string) => Promise<{ content: string }>;
-  };
+  workoutContext: any;
+  aiService: any;
 }> = ({ workoutContext, aiService }) => {
   const [activeSection, setActiveSection] = useState<'browse' | 'generate' | 'custom' | 'upload'>('browse');
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
 
-  const handleGenerateAIWorkout = async (userProfile: UserProfile) => {
-    const prompt = `Generate a personalized workout plan:
+  const handleGenerateAIWorkout = async (userProfile: any) => {
+    const prompt = \`Generate a personalized workout plan:
     
-    User Profile: ${JSON.stringify(userProfile)}
+    User Profile: \${JSON.stringify(userProfile)}
     
     Create a complete workout plan with:
     - Day-by-day breakdown
@@ -34,7 +24,7 @@ export const WorkoutsTab: React.FC<{
     - Exercise alternatives
     - Form cues and safety notes
     
-    Target the user's specific goals and equipment availability.`;
+    Target the user's specific goals and equipment availability.\`;
     
     const response = await aiService.getCoachingResponse(prompt, workoutContext, 'workout-planning');
     const generatedPlan = parseAIWorkoutPlan(response.content);
@@ -138,7 +128,7 @@ export const WorkoutsTab: React.FC<{
         
         {activeSection === 'custom' && (
           <CustomWorkoutBuilder 
-            onSave={(plan: WorkoutPlan) => {
+            onSave={(plan) => {
               setWorkoutPlans(prev => [plan, ...prev]);
               setActiveSection('browse');
             }}
@@ -149,7 +139,7 @@ export const WorkoutsTab: React.FC<{
         
         {activeSection === 'upload' && (
           <PDFWorkoutUploader 
-            onUpload={(plan: WorkoutPlan) => {
+            onUpload={(plan) => {
               setWorkoutPlans(prev => [plan, ...prev]);
               setActiveSection('browse');
             }}

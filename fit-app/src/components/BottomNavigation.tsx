@@ -42,14 +42,14 @@ export const BottomNavigation: React.FC<{
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`
+            className={\`
               flex flex-col items-center py-2 px-4 rounded-lg transition-all duration-200
-              ${activeTab === tab.id
+              \${activeTab === tab.id
                 ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20'
                 : 'text-gray-500 dark:text-gray-400 hover:text-blue-600'
               }
-              ${tab.id === 'logger' && workoutActive ? 'animate-pulse' : ''}
-            `}
+              \${tab.id === 'logger' && workoutActive ? 'animate-pulse' : ''}
+            \`}
           >
             <div className="relative">
               {tab.icon}
