@@ -36,7 +36,7 @@ function App() {
   }, []);
 
   return (
-    <div className={\`min-h-screen \${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}\`}>
+    <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
@@ -62,7 +62,7 @@ function App() {
       <main className="pb-20">
         {activeTab === 'logger' && (
           <WorkoutDashboard 
-            className={\`\${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}\`}
+            className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}
           />
         )}
         
