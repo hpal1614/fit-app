@@ -76,24 +76,29 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     }
   }, [isLoading]);
 
-  // Initial greeting
+  // Initial greeting - only set once when component mounts
   useEffect(() => {
-    const initialMessage: Message = {
-      id: Date.now().toString(),
-      type: 'ai',
-      content: `Hey there! I'm your AI fitness coach. ${
-        workoutContext?.activeWorkout 
-          ? `I see you're working on ${workoutContext.currentExercise?.exercise.name}. How can I help?`
-          : 'Ready to get started with your fitness journey? Ask me about workouts, nutrition, or form tips!'
-      }`,
-      timestamp: new Date()
-    };
-    setMessages([initialMessage]);
-  }, [workoutContext]);
+    if (messages.length === 0) {
+      const initialMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `Hey there! I'm your AI fitness coach. ${
+          workoutContext?.activeWorkout 
+            ? `I see you're working on ${workoutContext.currentExercise?.exercise.name}. How can I help?`
+            : 'Ready to get started with your fitness journey? Ask me about workouts, nutrition, or form tips!'
+        }`,
+        timestamp: new Date()
+      };
+      setMessages([initialMessage]);
+    }
+  }, []); // Empty dependency array - only run once on mount
 
   // Handle sending messages
   const sendMessage = useCallback(async (content: string, isVoice: boolean = false) => {
     if (!content.trim() || isStreaming) return;
+
+    console.log('Sending message:', content);
+    console.log('Current messages before send:', messages.length);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -103,7 +108,12 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       isVoice
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => {
+      console.log('Adding user message, previous count:', prev.length);
+      const newMessages = [...prev, userMessage];
+      console.log('New messages count:', newMessages.length);
+      return newMessages;
+    });
     setInputText('');
     setCurrentStreamingMessage(''); // Reset streaming message
 
@@ -190,6 +200,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         <div className="flex items-center space-x-2">
           <Bot size={24} className="text-lime-400" />
           <h3 className="text-xl font-bold text-white">AI Coach</h3>
+          <span className="text-xs text-gray-400">({messages.length} messages)</span>
           {isLoading && <Loader2 size={16} className="animate-spin text-gray-400" />}
         </div>
         
