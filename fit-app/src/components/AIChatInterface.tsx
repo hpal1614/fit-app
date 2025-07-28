@@ -29,6 +29,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const isAvailable = true; // Streaming AI is always available
+  const [error, setError] = useState<string | null>(null);
   
   const { streamResponse, isStreaming, stopStreaming } = useStreamingAI({
     onChunk: (chunk) => {
