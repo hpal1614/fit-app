@@ -1,264 +1,243 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, X, Mic, Volume2, Bot, User, Loader2 } from 'lucide-react';
-import { useStreamingAI } from '../hooks/useStreamingAI';
-import { useVoice } from '../hooks/useVoice';
-import type { WorkoutContext } from '../types/workout';
-// Removed unused AIResponse import
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, Mic, MicOff, Volume2, Bot, User, Loader } from 'lucide-react';
 
 interface Message {
   id: string;
-  type: 'user' | 'ai';
   content: string;
+  isUser: boolean;
   timestamp: Date;
-  isVoice?: boolean;
 }
 
 interface AIChatInterfaceProps {
-  workoutContext?: WorkoutContext;
-  onClose: () => void;
-  className?: string;
+  aiService?: any;
+  voiceService?: any;
+  workoutContext?: any;
 }
 
 export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
-  workoutContext,
-  onClose,
-  className = ''
+  aiService,
+  voiceService,
+  workoutContext
 }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const isAvailable = true; // Streaming AI is always available
-  const [error, setError] = useState<string | null>(null);
-  
-  const { streamResponse, isStreaming, stopStreaming } = useStreamingAI({
-    onChunk: (chunk) => {
-      setCurrentStreamingMessage(prev => prev + chunk);
-    },
-    onComplete: (fullResponse) => {
-      // Add complete message to messages
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        type: 'ai',
-        content: fullResponse,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, aiMessage]);
-      setCurrentStreamingMessage('');
-      
-      // Speak the response
-      if (!isMuted) {
-        speak(fullResponse);
-      }
+  // Initialize messages with welcome message - using functional update to prevent re-initialization
+  const [messages, setMessages] = useState<Message[]>(() => [
+    {
+      id: 'welcome-' + Date.now(),
+      content: "Hi! I'm your AI fitness coach. I can help you with workouts, nutrition, form tips, and motivation. What would you like to know?",
+      isUser: false,
+      timestamp: new Date()
     }
-  });
+  ]);
   
-  const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
   const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
-
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom of messages
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
-  // Never show loading for more than 5 seconds - CRITICAL TIMEOUT PROTECTION
+  // Clear error after 5 seconds
   useEffect(() => {
-    if (isLoading) {
-      const timeout = setTimeout(() => {
-        // Force stop loading if it takes too long
-        console.warn('AI loading timeout - forcing stop');
-      }, 5000);
-      return () => clearTimeout(timeout);
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
     }
-  }, [isLoading]);
+  }, [error]);
 
-  // Initial greeting
-  useEffect(() => {
-    const initialMessage: Message = {
-      id: Date.now().toString(),
-      type: 'ai',
-      content: `Hey there! I'm your AI fitness coach. ${
-        workoutContext?.activeWorkout 
-          ? `I see you're working on ${workoutContext.currentExercise?.exercise.name}. How can I help?`
-          : 'Ready to get started with your fitness journey? Ask me about workouts, nutrition, or form tips!'
-      }`,
+  // ✅ FIX: Use useCallback to prevent function recreation and state issues
+  const addMessage = useCallback((content: string, isUser: boolean) => {
+    const newMessage: Message = {
+      id: (isUser ? 'user-' : 'ai-') + Date.now() + Math.random(),
+      content,
+      isUser,
       timestamp: new Date()
     };
-    setMessages([initialMessage]);
-  }, [workoutContext]);
+    
+    // ✅ FIX: Use functional update to ensure we get the latest state
+    setMessages(prevMessages => {
+      console.log('Adding message:', newMessage);
+      const newMessages = [...prevMessages, newMessage];
+      console.log('Total messages:', newMessages.length);
+      return newMessages;
+    });
+  }, []);
 
-  // Handle sending messages
-  const sendMessage = useCallback(async (content: string, isVoice: boolean = false) => {
-    if (!content.trim() || isStreaming) return;
+  // ✅ FIX: Separate function to speak a message (manual trigger)
+  const speakMessage = async (text: string) => {
+    if (!voiceService || !voiceService.speak) {
+      setError('Voice service not available');
+      return;
+    }
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: content.trim(),
-      timestamp: new Date(),
-      isVoice
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    setCurrentStreamingMessage(''); // Reset streaming message
-
-    // Start streaming response
-    await streamResponse(content);
-  }, [streamResponse, isStreaming]);
-
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    sendMessage(inputText);
-  };
-
-  // Handle voice input
-  const handleVoiceToggle = async () => {
-    if (isListening) {
-      stopListening();
-      setIsVoiceMode(false);
-    } else {
-      setIsVoiceMode(true);
-      const started = await startListening();
-      if (!started) {
-        setIsVoiceMode(false);
-      }
+    try {
+      await voiceService.speak(text);
+    } catch (err) {
+      console.error('Voice synthesis error:', err);
+      setError('Voice synthesis failed');
     }
   };
 
-  // Process voice commands (placeholder for future implementation)
-  useEffect(() => {
-    // Voice command handling would be implemented here
-  }, [sendMessage]);
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim()) return;
 
-  // Render streaming message
-  const renderStreamingMessage = () => {
-    if (!currentStreamingMessage) return null;
+    console.log('Sending message:', text);
+
+    // Clear any previous errors
+    setError(null);
     
-    return (
-      <div className="flex items-start gap-3 mb-4">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-lime-400 to-green-500 flex items-center justify-center flex-shrink-0">
-          <Bot className="w-5 h-5 text-black" />
-        </div>
-        <div className="flex-1 bg-gray-800/50 backdrop-blur-lg rounded-lg p-3 border border-gray-700">
-          <p className="text-gray-100 leading-relaxed">{currentStreamingMessage}</p>
-          <span className="inline-block w-2 h-4 bg-lime-400 animate-pulse ml-1" />
-        </div>
-      </div>
-    );
-  };
-  
-  // Smart loading indicator showing team status - NEVER HANGS
-  const renderLoadingState = () => {
-    return null; // Remove old loading state
+    // Add user message
+    addMessage(text, true);
+    setInputText('');
+    setIsLoading(true);
+
+    try {
+      let response = '';
+      
+      if (aiService) {
+        // Try to get AI response with timeout
+        const aiResponse = await Promise.race([
+          aiService.getCoachingResponse(text, workoutContext, 'general'),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('AI response timeout')), 10000)
+          )
+        ]);
+        
+        response = aiResponse?.content || aiResponse?.response || aiResponse?.message || 'I received your message but had trouble generating a response.';
+      } else {
+        // Fallback responses when AI service isn't available
+        response = getFallbackResponse(text);
+      }
+
+      console.log('AI response:', response);
+
+      // Add AI response
+      addMessage(response, false);
+
+      // ✅ FIX: Don't automatically speak - let user choose
+
+    } catch (err) {
+      console.error('Chat error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+      setError(errorMessage);
+      
+      // Add fallback response
+      const fallbackResponse = "I'm having trouble right now, but I'm still here to help! Try asking me something else.";
+      addMessage(fallbackResponse, false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Quick action buttons
-  const quickActions = [
-    { label: "Motivate me!", action: () => sendMessage("Give me some motivation!") },
-    { label: "Form check", action: () => sendMessage("How's my form looking?") },
-    { label: "Nutrition tip", action: () => sendMessage("Give me a nutrition tip") },
-    { label: "Rest time?", action: () => sendMessage("How long should I rest?") },
+  const getFallbackResponse = (text: string): string => {
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('workout') || lowerText.includes('exercise')) {
+      return "For workouts, I recommend starting with compound movements like squats, deadlifts, and push-ups. These target multiple muscle groups efficiently!";
+    }
+    
+    if (lowerText.includes('nutrition') || lowerText.includes('diet')) {
+      return "Good nutrition is key! Focus on whole foods: lean proteins, complex carbs, healthy fats, and plenty of vegetables. Stay hydrated too!";
+    }
+    
+    if (lowerText.includes('motivation') || lowerText.includes('tired')) {
+      return "Remember why you started! Every workout counts, even if it's just 10 minutes. Progress, not perfection!";
+    }
+    
+    if (lowerText.includes('form') || lowerText.includes('technique')) {
+      return "Great form is crucial! Start light, focus on controlled movements, and gradually increase intensity. Quality over quantity always!";
+    }
+    
+    return "That's a great question! While I'm having some technical difficulties, I encourage you to keep moving and stay consistent with your fitness goals!";
+  };
+
+  const handleVoiceToggle = async () => {
+    if (!voiceService) {
+      setError('Voice service not available');
+      return;
+    }
+
+    try {
+      if (isVoiceMode) {
+        if (voiceService.stopListening) {
+          voiceService.stopListening();
+        }
+        setIsVoiceMode(false);
+      } else {
+        if (voiceService.startListening) {
+          await voiceService.startListening();
+          setIsVoiceMode(true);
+        }
+      }
+    } catch (err) {
+      console.error('Voice error:', err);
+      setError('Voice not available in this browser');
+      setIsVoiceMode(false);
+    }
+  };
+
+  const quickReplies = [
+    "Create a workout plan",
+    "Nutrition tips", 
+    "Motivation boost",
+    "Form check tips"
   ];
 
-  if (!isAvailable) {
-    return (
-      <div className={`bg-white rounded-xl shadow-lg p-6 ${className}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">AI Coach</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X size={24} />
-          </button>
-        </div>
-        <div className="text-center py-8">
-          <Bot size={48} className="mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600">AI Coach is currently unavailable</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-800 ${className}`}>
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
-        <div className="flex items-center space-x-2">
-          <Bot size={24} className="text-lime-400" />
-          <h3 className="text-xl font-bold text-white">AI Coach</h3>
-          {isLoading && <Loader2 size={16} className="animate-spin text-gray-400" />}
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleVoiceToggle}
-            className={`p-2 rounded-lg transition-colors ${
-              isVoiceMode 
-                ? 'bg-red-500 text-white animate-pulse' 
-                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-            }`}
-          >
-            <Mic size={16} />
-          </button>
-          
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-2"
-          >
-            <X size={20} />
-          </button>
+      <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="flex items-center space-x-3">
+          <Bot className="w-8 h-8" />
+          <div>
+            <h2 className="text-lg font-semibold">AI Fitness Coach</h2>
+            <p className="text-sm opacity-90">Your personal training assistant</p>
+          </div>
+          <div className="ml-auto text-xs bg-black/20 px-2 py-1 rounded">
+            {messages.length} messages
+          </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="h-96 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`
-                max-w-xs lg:max-w-md px-4 py-2 rounded-lg
-                ${message.type === 'user' 
-                  ? 'bg-lime-400 text-black' 
-                  : 'bg-gray-800 text-white'
-                }
-              `}
-            >
+            <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+              message.isUser 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+            }`}>
               <div className="flex items-start space-x-2">
-                {message.type === 'ai' && (
-                  <Bot size={16} className="mt-1 flex-shrink-0 text-lime-400" />
+                {!message.isUser && (
+                  <Bot className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-600" />
                 )}
-                {message.type === 'user' && (
-                  <User size={16} className="mt-1 flex-shrink-0 text-black" />
+                {message.isUser && (
+                  <User className="w-4 h-4 mt-0.5 flex-shrink-0 text-white" />
                 )}
-                
                 <div className="flex-1">
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   <div className="flex items-center justify-between mt-1">
-                    <span className={`text-xs ${
-                      message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                    }`}>
+                    <p className="text-xs opacity-70">
                       {message.timestamp.toLocaleTimeString()}
-                    </span>
-                    
-                    {message.isVoice && (
-                      <Volume2 size={12} className={
-                        message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                      } />
-                    )}
-                    
-                    {message.type === 'ai' && (
+                    </p>
+                    {!message.isUser && (
                       <button
-                        onClick={() => speak(message.content)}
-                        className="text-gray-500 hover:text-gray-700 ml-2"
+                        onClick={() => speakMessage(message.content)}
+                        className="ml-2 text-xs opacity-70 hover:opacity-100 transition-opacity"
+                        title="Read aloud"
                       >
-                        <Volume2 size={12} />
+                        <Volume2 className="w-3 h-3" />
                       </button>
                     )}
                   </div>
@@ -267,35 +246,49 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
             </div>
           </div>
         ))}
-        
-        {/* Streaming message */}
-        {renderStreamingMessage()}
-        
-        {/* Smart loading state - never hangs */}
-        {renderLoadingState()}
-        
+
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Bot className="w-4 h-4 text-blue-600" />
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions */}
-      <div className="px-4 py-2 border-t border-gray-100">
-        <div className="flex flex-wrap gap-2">
-          {quickActions.map((action, index) => (
-            <button
-              key={index}
-              onClick={action.action}
-              disabled={isLoading}
-              className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
-            >
-              {action.label}
-            </button>
-          ))}
+      {!isLoading && messages.length <= 2 && (
+        <div className="px-4 pb-2">
+          <div className="flex flex-wrap gap-2">
+            {quickReplies.map((reply) => (
+              <button
+                key={reply}
+                onClick={() => handleSendMessage(reply)}
+                className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Input Form */}
-      <div className="p-4 border-t border-gray-700">
-        <form onSubmit={handleSubmit} className="flex space-x-2">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage(inputText);
+          }}
+          className="flex space-x-2"
+        >
           <input
             ref={inputRef}
             type="text"
@@ -303,26 +296,39 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
             onChange={(e) => setInputText(e.target.value)}
             placeholder={isVoiceMode ? "Listening..." : "Ask me anything about fitness..."}
             disabled={isLoading || isVoiceMode}
-            className="flex-1 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent disabled:bg-gray-900"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700"
           />
+          
+          <button
+            type="button"
+            onClick={handleVoiceToggle}
+            className={`p-2 rounded-lg transition-colors ${
+              isVoiceMode 
+                ? 'bg-red-600 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+            title={isVoiceMode ? "Stop listening" : "Start voice input"}
+          >
+            {isVoiceMode ? <MicOff size={20} /> : <Mic size={20} />}
+          </button>
           
           <button
             type="submit"
             disabled={!inputText.trim() || isLoading || isVoiceMode}
-            className="bg-lime-400 text-black p-2 rounded-lg hover:bg-lime-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Send size={20} />
+            {isLoading ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
           </button>
         </form>
 
         {error && (
-          <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+          <div className="mt-2 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-2 rounded">
             {error}
           </div>
         )}
 
         {isVoiceMode && (
-          <div className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded flex items-center space-x-2">
+          <div className="mt-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-900/20 p-2 rounded flex items-center space-x-2">
             <Mic size={16} className="animate-pulse" />
             <span>Listening for your question...</span>
           </div>
