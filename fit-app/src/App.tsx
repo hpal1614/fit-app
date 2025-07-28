@@ -40,7 +40,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
+type TabType = 'workouts' | 'coach' | 'analytics' | 'profile';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -208,15 +208,12 @@ function App() {
         <Mic className="w-6 h-6 text-black" />
       </button>
 
-      {/* Bottom Navigation - 7 tabs for all features */}
+      {/* Bottom Navigation - 4 tabs only */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800 z-50">
         <div className="flex items-center justify-around py-2">
           {[
-            { icon: Dumbbell, label: 'Logger', key: 'workouts' },
-            { icon: Target, label: 'Generate', key: 'generator' },
-            { icon: Brain, label: 'Smart AI', key: 'intelligent-ai' },
-            { icon: Apple, label: 'Nutrition', key: 'nutrition' },
-            { icon: MessageCircle, label: 'Coach', key: 'coach' },
+            { icon: Trophy, label: 'Logger', key: 'workouts' },
+            { icon: MessageCircle, label: 'AI Coach', key: 'coach' },
             { icon: TrendingUp, label: 'Stats', key: 'analytics' },
             { icon: User, label: 'Profile', key: 'profile' }
           ].map((tab) => (
