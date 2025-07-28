@@ -75,6 +75,11 @@ export class UnifiedAIService extends EventEmitter {
   private initializeProviders(): void {
     const { providers } = this.config;
     
+    console.log('🔑 Initializing AI providers...');
+    console.log('Groq API Key:', providers.groq.apiKey ? `${providers.groq.apiKey.substring(0, 10)}...` : 'NOT SET');
+    console.log('OpenRouter API Key:', providers.openrouter.apiKey ? `${providers.openrouter.apiKey.substring(0, 10)}...` : 'NOT SET');
+    console.log('Google API Key:', providers.google.apiKey ? `${providers.google.apiKey.substring(0, 10)}...` : 'NOT SET');
+    
     if (providers.groq.apiKey) {
       this.providers.push({
         name: 'groq',
@@ -101,6 +106,8 @@ export class UnifiedAIService extends EventEmitter {
         models: providers.google.models
       });
     }
+    
+    console.log(`✅ Initialized ${this.providers.length} AI providers`);
   }
 
   // Main streaming response method
@@ -113,6 +120,7 @@ export class UnifiedAIService extends EventEmitter {
       requestType?: AIRequestType;
     }
   ): AsyncGenerator<string> {
+    console.log('🤖 AI Query:', query);
     const startTime = Date.now();
     
     // Check MCP tools first if enabled
@@ -124,13 +132,22 @@ export class UnifiedAIService extends EventEmitter {
       }
     }
 
+    // Get available providers
+    const availableProviders = this.getAvailableProviders();
+    console.log(`📡 Available providers: ${availableProviders.map(p => p.name).join(', ')}`);
+
     // Try each provider in priority order
-    for (const provider of this.getAvailableProviders()) {
+    for (const provider of availableProviders) {
       try {
-        if (this.isRateLimited(provider.name)) continue;
+        console.log(`🔄 Trying ${provider.name}...`);
+        if (this.isRateLimited(provider.name)) {
+          console.log(`⏰ ${provider.name} is rate limited, skipping...`);
+          continue;
+        }
 
         const response = await this.callProvider(provider, query, context);
         if (response) {
+          console.log(`✅ Got response from ${provider.name}`);
           yield* this.streamText(response.content);
           
           // Update conversation history
@@ -148,12 +165,13 @@ export class UnifiedAIService extends EventEmitter {
           return;
         }
       } catch (error) {
-        console.warn(`Provider ${provider.name} failed:`, error);
+        console.warn(`❌ Provider ${provider.name} failed:`, error);
         this.handleProviderError(provider, error);
       }
     }
 
     // Fallback to local responses if all providers fail
+    console.log('⚠️ All providers failed, using fallback response');
     if (this.config.fallbacks.enabled) {
       const fallback = this.getFallbackResponse(query, context?.requestType);
       yield* this.streamText(fallback);

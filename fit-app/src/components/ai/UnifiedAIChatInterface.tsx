@@ -89,6 +89,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
+      console.log('📤 Sending message to AI:', message);
+      
       // Stream response
       const stream = unifiedAIService.streamResponse(message, {
         workoutContext,
@@ -97,7 +99,10 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       });
 
       let fullResponse = '';
+      let chunkCount = 0;
+      
       for await (const chunk of stream) {
+        chunkCount++;
         fullResponse += chunk;
         setMessages(prev => {
           const newMessages = [...prev];
@@ -108,6 +113,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
           return newMessages;
         });
       }
+
+      console.log(`✅ Received ${chunkCount} chunks, total response length: ${fullResponse.length}`);
 
       // Mark streaming complete
       setMessages(prev => {
@@ -120,16 +127,22 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       });
 
       // Speak response if voice is enabled
-      if (enableVoice) {
+      if (enableVoice && fullResponse) {
         speak(fullResponse);
       }
     } catch (error) {
-      console.error('Error streaming response:', error);
+      console.error('❌ Error streaming response:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
         if (lastMessage.role === 'assistant') {
-          lastMessage.content = 'Sorry, I encountered an error. Please try again.';
+          lastMessage.content = `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please check the console for details.`;
           lastMessage.streaming = false;
         }
         return newMessages;
