@@ -165,7 +165,7 @@ function App() {
             </div>
           </div>
         )}
-        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} />}
+        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} onClose={() => setActiveTab('workouts')} />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
         {activeTab === 'profile' && (
           <div className="space-y-6">
