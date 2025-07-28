@@ -9,6 +9,7 @@ import SetLogger from './SetLogger';
 import AIChatInterface from './AIChatInterface';
 import WorkoutStats from './WorkoutStats';
 import RestTimer from './RestTimer';
+import { EnhancedWorkoutLogger } from './workout/EnhancedWorkoutLogger';
 
 interface WorkoutDashboardProps {
   className?: string;
@@ -44,6 +45,7 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
 
   const [showAIChat, setShowAIChat] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [useEnhancedLogger, setUseEnhancedLogger] = useState(false);
 
   // Handle voice commands from VoiceButton
   const handleVoiceCommand = async (_transcript: string, result: unknown) => {
@@ -169,99 +171,128 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
           />
         </div>
 
-        {/* Workout Status Bar */}
-        {isWorkoutActive ? (
-          <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1">
-                <Timer size={16} />
-                <span>{formatDuration(workoutDuration)}</span>
-              </div>
-              <div>Sets: {getTotalSets()}</div>
-              <div>Reps: {getTotalReps()}</div>
-              <div>Weight: {getTotalWeight()}lbs</div>
-            </div>
-            <div className="text-fitness-blue font-medium">{progressPercent}% Complete</div>
-          </div>
-        ) : (
-          <div className="text-center text-gray-500 py-4">
-            No active workout. Say "start workout" or click below to begin.
-          </div>
-        )}
-
-        {/* Progress Bar */}
-        {isWorkoutActive && (
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <div
-              className="bg-fitness-blue h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            ></div>
-          </div>
-        )}
-
-        {/* Control Buttons */}
-        <div className="flex items-center justify-center space-x-3">
-          {!isWorkoutActive ? (
-            <button
-              onClick={handleStartWorkout}
-              className="bg-fitness-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center space-x-2"
-            >
-              <Play size={20} />
-              <span>Start Workout</span>
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={() => previousExercise()}
-                className="bg-gray-100 text-gray-700 p-3 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={currentExerciseIndex === 0}
-              >
-                <SkipBack size={20} />
-              </button>
-              
-              <button
-                onClick={handlePauseResume}
-                className="bg-fitness-orange text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center space-x-2"
-              >
-                <Pause size={20} />
-                <span>Pause</span>
-              </button>
-              
-              <button
-                onClick={handleEndWorkout}
-                className="bg-voice-error text-white px-6 py-3 rounded-lg font-medium hover:bg-red-600 transition-colors flex items-center space-x-2"
-              >
-                <Square size={20} />
-                <span>End Workout</span>
-              </button>
-              
-              <button
-                onClick={() => nextExercise()}
-                className="bg-gray-100 text-gray-700 p-3 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={!currentWorkout || currentExerciseIndex >= currentWorkout.exercises.length - 1}
-              >
-                <SkipForward size={20} />
-              </button>
-            </>
-          )}
-          
-          {/* AI Chat Toggle */}
-          {isAIAvailable && (
-            <button
-              onClick={() => setShowAIChat(!showAIChat)}
-              className={`p-3 rounded-lg transition-colors ${
-                showAIChat 
-                  ? 'bg-fitness-green text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <MessageCircle size={20} />
-            </button>
-          )}
+        {/* Toggle Button for Enhanced Logger */}
+        <div className="mb-4">
+          <button 
+            onClick={() => setUseEnhancedLogger(!useEnhancedLogger)}
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
+          >
+            {useEnhancedLogger ? '📱 Use Original Logger' : '🚀 Use Enhanced Logger'}
+          </button>
         </div>
+
+        {/* Conditionally render based on toggle */}
+        {useEnhancedLogger ? (
+          // Enhanced Logger Interface
+          <EnhancedWorkoutLogger 
+            currentExercise={currentExercise}
+            onLogSet={async (setData) => {
+              try {
+                await logSet(setData.reps, setData.weight);
+                await speak(`Set logged: ${setData.reps} reps at ${setData.weight} pounds.`);
+              } catch (_err) {
+                await speak('Failed to log set. Please try again.');
+              }
+            }}
+          />
+        ) : (
+          // Original Interface
+          <>
+            {/* Workout Status Bar */}
+            {isWorkoutActive ? (
+              <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <Timer size={16} />
+                    <span>{formatDuration(workoutDuration)}</span>
+                  </div>
+                  <div>Sets: {getTotalSets()}</div>
+                  <div>Reps: {getTotalReps()}</div>
+                  <div>Weight: {getTotalWeight()}lbs</div>
+                </div>
+                <div className="text-fitness-blue font-medium">{progressPercent}% Complete</div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                No active workout. Say "start workout" or click below to begin.
+              </div>
+            )}
+
+            {/* Progress Bar */}
+            {isWorkoutActive && (
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                <div
+                  className="bg-fitness-blue h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                ></div>
+              </div>
+            )}
+
+            {/* Control Buttons */}
+            <div className="flex items-center justify-center space-x-3">
+              {!isWorkoutActive ? (
+                <button
+                  onClick={handleStartWorkout}
+                  className="bg-fitness-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center space-x-2"
+                >
+                  <Play size={20} />
+                  <span>Start Workout</span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => previousExercise()}
+                    className="bg-gray-100 text-gray-700 p-3 rounded-lg hover:bg-gray-200 transition-colors"
+                    disabled={currentExerciseIndex === 0}
+                  >
+                    <SkipBack size={20} />
+                  </button>
+                  
+                  <button
+                    onClick={handlePauseResume}
+                    className="bg-fitness-orange text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors flex items-center space-x-2"
+                  >
+                    <Pause size={20} />
+                    <span>Pause</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleEndWorkout}
+                    className="bg-voice-error text-white px-6 py-3 rounded-lg font-medium hover:bg-red-600 transition-colors flex items-center space-x-2"
+                  >
+                    <Square size={20} />
+                    <span>End Workout</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => nextExercise()}
+                    className="bg-gray-100 text-gray-700 p-3 rounded-lg hover:bg-gray-200 transition-colors"
+                    disabled={!currentWorkout || currentExerciseIndex >= currentWorkout.exercises.length - 1}
+                  >
+                    <SkipForward size={20} />
+                  </button>
+                </>
+              )}
+              
+              {/* AI Chat Toggle */}
+              {isAIAvailable && (
+                <button
+                  onClick={() => setShowAIChat(!showAIChat)}
+                  className={`p-3 rounded-lg transition-colors ${
+                    showAIChat 
+                      ? 'bg-fitness-green text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <MessageCircle size={20} />
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Rest Timer */}
+      {/* Rest Timer - Show for both interfaces */}
       {isResting && (
         <RestTimer 
           timeRemaining={restTimeRemaining}
@@ -269,8 +300,8 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
         />
       )}
 
-      {/* Current Exercise */}
-      {isWorkoutActive && currentExercise && (
+      {/* Current Exercise - Only show for original interface */}
+      {!useEnhancedLogger && isWorkoutActive && currentExercise && (
         <div className="grid md:grid-cols-2 gap-6">
           <ExerciseCard 
             exercise={currentExercise}
