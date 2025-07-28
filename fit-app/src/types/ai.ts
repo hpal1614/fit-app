@@ -43,6 +43,42 @@ export interface EncouragementStyle {
   goalOriented: boolean;
 }
 
+export interface AIProvider {
+  name: string;
+  priority: number;
+  isAvailable: boolean;
+  models: string[];
+}
+
+export interface StreamingMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: number;
+  streaming?: boolean;
+}
+
+export interface MCPServer {
+  name: string;
+  url: string;
+  capabilities: string[];
+  connected: boolean;
+  lastPing: number;
+  tools?: MCPTool[];
+  resources?: MCPResource[];
+}
+
+export interface MCPTool {
+  name: string;
+  description: string;
+  parameters: Record<string, any>;
+}
+
+export interface MCPResource {
+  path: string;
+  type: string;
+  description: string;
+}
+
 export interface AIRequest {
   query: string;
   context: WorkoutContext;
