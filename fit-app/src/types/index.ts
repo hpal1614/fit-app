@@ -379,3 +379,41 @@ export interface AIResponse {
     error?: boolean;
   };
 }
+
+// Intelligent AI types (Browser-compatible)
+export type {
+  IntelligentAIProviderType,
+  IntelligentAIConfig,
+  IntelligentAIContext,
+  IntelligentAIResponse,
+  IntelligentAIError,
+  IntelligentAICache,
+  IntelligentAIAnalysis,
+  IntelligentAIMood,
+  IntelligentAIPattern,
+  IntelligentAIOptions,
+  IntelligentAIRole,
+  IntelligentContextData,
+  IntelligentContextType,
+  KnowledgeNode,
+  RelationshipType,
+  KnowledgeGraph,
+  IntentClassification,
+  EntityExtraction,
+  SemanticAnalysis,
+  IntelligentMemory,
+  MemoryType,
+  MemoryPriority,
+  ActiveLearningFeedback,
+  LearningAdaptation
+} from './ai';
+
+// MCP types
+export type {
+  MCPContext,
+  MCPResponse,
+  ToolSchema,
+  ToolResult,
+  MCPPlugin,
+  ToolHandler
+} from './mcp';

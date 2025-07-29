@@ -393,6 +393,163 @@ export class WorkoutService {
     }
   }
 
+  // MCP Integration Methods
+  async generateWorkout(params: {
+    goal: string;
+    duration: number;
+    equipment?: string[];
+    experience?: string;
+  }): Promise<{
+    workout: Workout;
+    exercises: WorkoutExercise[];
+    message: string;
+  }> {
+    try {
+      const availableExercises: Exercise[] = [];
+      
+      // Filter exercises based on goal and equipment
+      if (params.goal === 'strength') {
+        availableExercises.push(
+          getExerciseById('barbell-squat'),
+          getExerciseById('deadlift'),
+          getExerciseById('bench-press'),
+          getExerciseById('overhead-press'),
+          getExerciseById('barbell-row')
+        );
+      } else if (params.goal === 'hypertrophy') {
+        availableExercises.push(
+          getExerciseById('dumbbell-bench-press'),
+          getExerciseById('lat-pulldown'),
+          getExerciseById('leg-press'),
+          getExerciseById('dumbbell-curl'),
+          getExerciseById('tricep-extension')
+        );
+      } else if (params.goal === 'endurance') {
+        availableExercises.push(
+          getExerciseById('burpees'),
+          getExerciseById('mountain-climbers'),
+          getExerciseById('jumping-jacks'),
+          getExerciseById('push-ups'),
+          getExerciseById('bodyweight-squats')
+        );
+      }
+
+      // Filter by equipment if specified
+      let filteredExercises = availableExercises.filter(ex => ex !== undefined);
+      if (params.equipment && params.equipment.length > 0) {
+        filteredExercises = filteredExercises.filter(ex => 
+          !ex.equipment || params.equipment!.includes(ex.equipment)
+        );
+      }
+
+      // Create workout exercises based on experience level
+      const exerciseCount = params.experience === 'beginner' ? 4 : 
+                          params.experience === 'advanced' ? 6 : 5;
+      
+      const workoutExercises: WorkoutExercise[] = filteredExercises
+        .slice(0, exerciseCount)
+        .map(ex => ({
+          exercise: ex,
+          sets: [],
+          targetSets: params.goal === 'strength' ? 5 : 
+                      params.goal === 'hypertrophy' ? 4 : 3,
+          targetReps: params.goal === 'strength' ? 5 : 
+                     params.goal === 'hypertrophy' ? 10 : 15,
+          notes: ''
+        }));
+
+      // Create and start the workout
+      const workout = await this.startWorkout(
+        undefined, 
+        workoutExercises.map(we => we.exercise),
+        params.goal === 'strength' ? WorkoutType.STRENGTH :
+        params.goal === 'endurance' ? WorkoutType.CARDIO :
+        WorkoutType.HYPERTROPHY
+      );
+
+      return {
+        workout,
+        exercises: workoutExercises,
+        message: `Generated ${params.goal} workout with ${workoutExercises.length} exercises for ${params.duration} minutes`
+      };
+    } catch (error) {
+      console.error('Failed to generate workout:', error);
+      throw error;
+    }
+  }
+
+  async analyzeProgress(params: {
+    metric: string;
+    data: any[];
+    timeframe: string;
+  }): Promise<{
+    analysis: string;
+    insights: string[];
+    recommendations: string[];
+  }> {
+    try {
+      const insights: string[] = [];
+      const recommendations: string[] = [];
+      let analysis = '';
+
+      if (params.metric === 'strength') {
+        // Analyze strength progress
+        const recentPRs = await this.getPersonalRecords();
+        const prCount = recentPRs.filter(pr => {
+          const prDate = new Date(pr.date);
+          const daysAgo = (Date.now() - prDate.getTime()) / (1000 * 60 * 60 * 24);
+          return params.timeframe === 'week' ? daysAgo <= 7 :
+                 params.timeframe === 'month' ? daysAgo <= 30 :
+                 params.timeframe === 'quarter' ? daysAgo <= 90 : daysAgo <= 365;
+        }).length;
+
+        analysis = `You've set ${prCount} personal records in the last ${params.timeframe}`;
+        
+        if (prCount > 5) {
+          insights.push('Excellent strength progression!');
+          recommendations.push('Consider a deload week to prevent overtraining');
+        } else if (prCount < 2) {
+          insights.push('Strength gains have plateaued');
+          recommendations.push('Try progressive overload or change your program');
+        }
+      } else if (params.metric === 'weight') {
+        // Analyze weight changes
+        if (params.data && params.data.length > 1) {
+          const startWeight = params.data[0];
+          const currentWeight = params.data[params.data.length - 1];
+          const change = currentWeight - startWeight;
+          
+          analysis = `Weight ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change)}kg`;
+          
+          if (Math.abs(change) > 2) {
+            insights.push(`Significant weight ${change > 0 ? 'gain' : 'loss'} detected`);
+            recommendations.push('Ensure your nutrition aligns with your goals');
+          }
+        }
+      } else if (params.metric === 'endurance') {
+        // Analyze endurance metrics
+        const workoutHistory = await this.getWorkoutHistory(20);
+        const cardioWorkouts = workoutHistory.filter(w => w.type === WorkoutType.CARDIO);
+        
+        analysis = `Completed ${cardioWorkouts.length} cardio workouts in the last ${params.timeframe}`;
+        
+        if (cardioWorkouts.length < 3) {
+          insights.push('Low cardio frequency');
+          recommendations.push('Add 2-3 cardio sessions per week for better endurance');
+        }
+      }
+
+      return {
+        analysis,
+        insights,
+        recommendations
+      };
+    } catch (error) {
+      console.error('Failed to analyze progress:', error);
+      throw error;
+    }
+  }
+
   // Static instance
   private static instance: WorkoutService;
 

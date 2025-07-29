@@ -426,6 +426,131 @@ export class BiometricAnalysisService {
     this.userAge = age;
   }
 
+  // MCP Integration Method
+  async analyzeMetrics(params: {
+    heartRate?: number;
+    hrv?: number;
+    bloodOxygen?: number;
+    temperature?: number;
+    activity?: string;
+  }): Promise<{
+    analysis: string;
+    insights: BiometricInsight[];
+    recommendations: string[];
+    riskLevel: 'low' | 'moderate' | 'high';
+  }> {
+    const insights: BiometricInsight[] = [];
+    const recommendations: string[] = [];
+    let riskLevel: 'low' | 'moderate' | 'high' = 'low';
+    let analysis = '';
+
+    // Heart Rate Analysis
+    if (params.heartRate) {
+      const maxHR = 220 - this.userAge;
+      const hrPercentage = (params.heartRate / maxHR) * 100;
+      
+      if (params.activity === 'resting' && params.heartRate > this.THRESHOLDS.heartRate.resting.max) {
+        insights.push({
+          type: 'warning',
+          title: 'Elevated Resting Heart Rate',
+          message: `Your resting heart rate is ${params.heartRate} bpm`,
+          recommendation: 'Consider stress management techniques or consult a healthcare provider',
+          timestamp: new Date()
+        });
+        riskLevel = 'moderate';
+      } else if (hrPercentage > 95) {
+        insights.push({
+          type: 'warning',
+          title: 'Near Maximum Heart Rate',
+          message: `You're at ${hrPercentage.toFixed(0)}% of your maximum heart rate`,
+          recommendation: 'Consider reducing intensity',
+          timestamp: new Date()
+        });
+        riskLevel = 'high';
+      }
+      
+      analysis += `Heart rate: ${params.heartRate} bpm (${hrPercentage.toFixed(0)}% of max). `;
+    }
+
+    // HRV Analysis
+    if (params.hrv) {
+      if (params.hrv < this.THRESHOLDS.hrv.low) {
+        insights.push({
+          type: 'warning',
+          title: 'Low Heart Rate Variability',
+          message: `HRV is ${params.hrv}ms, indicating potential fatigue`,
+          recommendation: 'Consider a recovery day or lighter workout',
+          timestamp: new Date()
+        });
+        recommendations.push('Focus on recovery: sleep, hydration, and stress management');
+        if (riskLevel === 'low') riskLevel = 'moderate';
+      } else if (params.hrv > this.THRESHOLDS.hrv.optimal) {
+        insights.push({
+          type: 'success',
+          title: 'Excellent Recovery',
+          message: `HRV is ${params.hrv}ms, indicating good recovery`,
+          timestamp: new Date()
+        });
+        recommendations.push('Your body is well-recovered - great day for intense training');
+      }
+      
+      analysis += `HRV: ${params.hrv}ms. `;
+    }
+
+    // Blood Oxygen Analysis
+    if (params.bloodOxygen) {
+      if (params.bloodOxygen < 95) {
+        insights.push({
+          type: 'warning',
+          title: 'Low Blood Oxygen',
+          message: `SpO2 is ${params.bloodOxygen}%`,
+          recommendation: 'Monitor closely and consider medical consultation if persistent',
+          timestamp: new Date()
+        });
+        recommendations.push('Focus on breathing exercises and avoid high-altitude training');
+        riskLevel = 'high';
+      }
+      
+      analysis += `Blood oxygen: ${params.bloodOxygen}%. `;
+    }
+
+    // Temperature Analysis
+    if (params.temperature) {
+      if (params.temperature > 37.5) {
+        insights.push({
+          type: 'warning',
+          title: 'Elevated Temperature',
+          message: `Body temperature is ${params.temperature}°C`,
+          recommendation: 'Consider resting and monitoring for illness',
+          timestamp: new Date()
+        });
+        recommendations.push('Avoid intense exercise until temperature normalizes');
+        if (riskLevel !== 'high') riskLevel = 'moderate';
+      }
+      
+      analysis += `Temperature: ${params.temperature}°C. `;
+    }
+
+    // General recommendations based on combined metrics
+    if (riskLevel === 'high') {
+      recommendations.push('Consider postponing intense exercise today');
+      recommendations.push('Focus on light movement and recovery');
+    } else if (riskLevel === 'moderate') {
+      recommendations.push('Reduce workout intensity by 20-30%');
+      recommendations.push('Monitor your body\'s response closely');
+    } else {
+      recommendations.push('Biometrics look good for training');
+      recommendations.push('Listen to your body during the workout');
+    }
+
+    return {
+      analysis: analysis.trim(),
+      insights,
+      recommendations,
+      riskLevel
+    };
+  }
+
   // Cleanup
   dispose(): void {
     this.biometricHistory = [];
