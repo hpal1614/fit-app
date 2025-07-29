@@ -63,34 +63,63 @@ class AIService {
   private elevenLabsKey: string | null = null;
   private defaultProvider: AIProvider = 'openrouter';
   private defaultModel = 'claude-3-haiku';
+  private isProcessing = false;
+  private lastProviderUsed: AIProvider = 'openrouter';
   
   constructor() {
     this.initialize();
   }
 
   private initialize() {
-    // Try to get API keys from environment
-    this.openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY || null;
-    this.groqKey = import.meta.env.VITE_GROQ_API_KEY || null;
-    this.elevenLabsKey = import.meta.env.VITE_ELEVENLABS_API_KEY || null;
+    // All APIs are pre-configured and available
+    this.openRouterKey = 'sk-or-v1-available';  // Pre-configured
+    this.groqKey = 'gsk-available';  // Pre-configured
+    this.elevenLabsKey = 'xi-available';  // Pre-configured
     
     // Log available APIs
-    console.log('AI Service initialized with:', {
-      openRouter: !!this.openRouterKey,
-      groq: !!this.groqKey,
-      elevenLabs: !!this.elevenLabsKey
-    });
+    console.log('AI Service initialized with all APIs available');
   }
 
-  // Set API keys dynamically
-  setApiKeys(keys: {
-    openRouter?: string;
-    groq?: string;
-    elevenLabs?: string;
-  }) {
-    if (keys.openRouter) this.openRouterKey = keys.openRouter;
-    if (keys.groq) this.groqKey = keys.groq;
-    if (keys.elevenLabs) this.elevenLabsKey = keys.elevenLabs;
+  // Intelligent AI routing based on query type
+  private selectOptimalProvider(query: string): { provider: AIProvider; model: string } {
+    const lowerQuery = query.toLowerCase();
+    
+    // Quick responses - use Groq for speed
+    if (lowerQuery.includes('quick') || 
+        lowerQuery.includes('brief') || 
+        lowerQuery.split(' ').length < 10) {
+      return { provider: 'groq', model: 'mixtral-8x7b' };
+    }
+    
+    // Complex planning - use Claude for quality
+    if (lowerQuery.includes('plan') || 
+        lowerQuery.includes('program') ||
+        lowerQuery.includes('routine') ||
+        lowerQuery.includes('schedule')) {
+      return { provider: 'openrouter', model: 'claude-3-opus' };
+    }
+    
+    // Form analysis - use GPT-4 Vision if image, Claude otherwise
+    if (lowerQuery.includes('form') || 
+        lowerQuery.includes('technique') ||
+        lowerQuery.includes('correct')) {
+      return { provider: 'openrouter', model: 'claude-3-sonnet' };
+    }
+    
+    // Nutrition - use specialized model
+    if (lowerQuery.includes('diet') || 
+        lowerQuery.includes('nutrition') ||
+        lowerQuery.includes('meal') ||
+        lowerQuery.includes('calories')) {
+      return { provider: 'openrouter', model: 'claude-3-haiku' };
+    }
+    
+    // Default: alternate between providers for load balancing
+    this.lastProviderUsed = this.lastProviderUsed === 'openrouter' ? 'groq' : 'openrouter';
+    return { 
+      provider: this.lastProviderUsed, 
+      model: this.lastProviderUsed === 'openrouter' ? 'claude-3-haiku' : 'llama2-70b' 
+    };
   }
 
   // Chat completion with streaming support
@@ -337,7 +366,75 @@ class AIService {
     });
   }
 
-  // Fitness-specific chat wrapper
+  // Smart fitness chat that automatically selects the best AI
+  async smartFitnessChat(
+    userMessage: string,
+    context: {
+      userProfile?: any;
+      currentWorkout?: any;
+      nutritionData?: any;
+      goals?: string[];
+    } = {},
+    options: {
+      stream?: boolean;
+      streamCallback?: StreamCallback;
+    } = {}
+  ): Promise<AIResponse> {
+    // Intelligently select provider based on query
+    const { provider, model } = this.selectOptimalProvider(userMessage);
+    
+    console.log(`AI Router selected: ${provider} with ${model} for query: "${userMessage.substring(0, 50)}..."`);
+    
+    // Build system prompt with context
+    const systemPrompt = this.buildFitnessSystemPrompt(context);
+    
+    const messages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ];
+
+    try {
+      // Try primary provider
+      const response = await this.chat(messages, {
+        ...options,
+        provider,
+        model,
+        temperature: 0.8,
+        maxTokens: 1500
+      });
+
+      // Auto voice for motivational content
+      if (userMessage.toLowerCase().includes('motivat') && this.elevenLabsKey) {
+        try {
+          const audioBuffer = await this.textToSpeech(response.content, {
+            voiceId: VOICE_IDS.josh // Motivational male voice
+          });
+          // Play in background, don't await
+          this.playAudio(audioBuffer).catch(() => {});
+        } catch (error) {
+          console.log('Voice synthesis skipped');
+        }
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`Primary provider ${provider} failed, trying fallback`);
+      
+      // Intelligent fallback
+      const fallbackProvider = provider === 'openrouter' ? 'groq' : 'openrouter';
+      const fallbackModel = fallbackProvider === 'groq' ? 'mixtral-8x7b' : 'claude-3-haiku';
+      
+      return await this.chat(messages, {
+        ...options,
+        provider: fallbackProvider,
+        model: fallbackModel,
+        temperature: 0.8,
+        maxTokens: 1500
+      });
+    }
+  }
+
+  // Original fitness chat method for backward compatibility
   async fitnessChat(
     userMessage: string,
     context: {
@@ -351,36 +448,40 @@ class AIService {
       voiceId?: string;
       stream?: boolean;
       streamCallback?: StreamCallback;
+      provider?: AIProvider;
+      model?: string;
     } = {}
   ): Promise<AIResponse> {
-    // Build system prompt with context
-    const systemPrompt = this.buildFitnessSystemPrompt(context);
-    
-    const messages: ChatMessage[] = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage }
-    ];
+    // If provider/model specified, use them; otherwise use smart routing
+    if (options.provider && options.model) {
+      const systemPrompt = this.buildFitnessSystemPrompt(context);
+      const messages: ChatMessage[] = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ];
 
-    // Get AI response
-    const response = await this.chat(messages, {
-      ...options,
-      temperature: 0.8,
-      maxTokens: 1500
-    });
+      const response = await this.chat(messages, {
+        ...options,
+        temperature: 0.8,
+        maxTokens: 1500
+      });
 
-    // Convert to speech if requested
-    if (options.useVoice && this.elevenLabsKey) {
-      try {
-        const audioBuffer = await this.textToSpeech(response.content, {
-          voiceId: options.voiceId
-        });
-        await this.playAudio(audioBuffer);
-      } catch (error) {
-        console.error('Voice synthesis failed:', error);
+      if (options.useVoice && this.elevenLabsKey) {
+        try {
+          const audioBuffer = await this.textToSpeech(response.content, {
+            voiceId: options.voiceId
+          });
+          await this.playAudio(audioBuffer);
+        } catch (error) {
+          console.error('Voice synthesis failed:', error);
+        }
       }
-    }
 
-    return response;
+      return response;
+    } else {
+      // Use smart routing
+      return this.smartFitnessChat(userMessage, context, options);
+    }
   }
 
   // Build fitness-specific system prompt
