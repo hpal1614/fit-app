@@ -358,4 +358,22 @@ export class FitnessConversationGraph {
 }
 
 // Export singleton instance
-export const conversationGraph = new FitnessConversationGraph();
+// Temporarily disabled due to LangGraph compatibility issues
+// export const conversationGraph = new FitnessConversationGraph();
+
+// Create a mock implementation
+export const conversationGraph = {
+  processMessage: async (
+    message: string,
+    userProfile: any,
+    workoutContext: any,
+    fitnessGoals: any,
+    conversationHistory: any[]
+  ) => {
+    // Simple mock response
+    return {
+      currentResponse: "I'm here to help with your fitness journey! The advanced conversation features are temporarily disabled, but I can still provide basic fitness guidance.",
+      messages: [...conversationHistory, { role: 'assistant', content: message }]
+    };
+  }
+};
