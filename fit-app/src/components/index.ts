@@ -12,6 +12,7 @@ export { MobileWorkoutInterface } from './MobileWorkoutInterface';
 export { VoiceCoachInterface } from './VoiceCoachInterface';
 export { MCPWorkoutInterface } from './MCPWorkoutInterface';
 export { ModernFitnessDashboard } from './ModernFitnessDashboard';
+export { WorkoutGenerator } from './WorkoutGenerator';
 
 // Form Analysis
 export { FormAnalysisInterface } from './FormAnalysisInterface';

@@ -29,10 +29,12 @@ import { useMCPBiometrics, useMCPProgress, useMCPWorkoutGeneration } from '../ho
 import { useWorkout } from '../hooks/useWorkout';
 // import { useMobile, useSwipeNavigation } from '../hooks/useMobile';
 import { SimpleAIChat } from './SimpleAIChat';
+import { WorkoutGenerator } from './WorkoutGenerator';
 
 export const ModernFitnessDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showAIChat, setShowAIChat] = useState(false);
+  const [showWorkoutGenerator, setShowWorkoutGenerator] = useState(false);
   
   const { monitorBiometrics } = useMCPBiometrics();
   const { trackProgress } = useMCPProgress();
@@ -421,17 +423,9 @@ export const ModernFitnessDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-3xl font-bold">Workouts</h2>
               <button 
-                onClick={async () => {
+                onClick={() => {
                   vibrate({ type: 'impact', intensity: 'medium' });
-                  const result = await generateWorkout({
-                    fitnessLevel: 'intermediate',
-                    goals: ['strength', 'muscle'],
-                    duration: 60,
-                    equipment: ['barbell', 'dumbbell']
-                  });
-                  if (result.success) {
-                    console.log('Generated workout:', result.data);
-                  }
+                  setShowWorkoutGenerator(true);
                 }}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform touch-manipulation"
               >
@@ -682,6 +676,23 @@ export const ModernFitnessDashboard: React.FC = () => {
 
             {/* AI Chat Interface */}
             <SimpleAIChat isOpen={showAIChat} onClose={() => setShowAIChat(false)} />
+            
+            {/* Workout Generator Modal */}
+            {showWorkoutGenerator && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className="bg-gray-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                  <WorkoutGenerator />
+                  <div className="sticky bottom-0 bg-gray-900 p-4 border-t border-gray-800">
+                    <button
+                      onClick={() => setShowWorkoutGenerator(false)}
+                      className="w-full bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-lg font-medium transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
