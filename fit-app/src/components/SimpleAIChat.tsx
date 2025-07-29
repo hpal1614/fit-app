@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Brain, Zap, Sparkles } from 'lucide-react';
-import { aiService } from '../services/aiService';
+import { mockAIService } from '../services/mockAIService';
 
 interface SimpleAIChatProps {
   isOpen: boolean;
@@ -37,14 +37,12 @@ export const SimpleAIChat: React.FC<SimpleAIChatProps> = ({ isOpen, onClose }) =
     setIsLoading(true);
     setStreamingContent('');
     
-    const startTime = Date.now();
-    
     try {
       // Add streaming message placeholder
       setMessages(prev => [...prev, { role: 'assistant', content: '', isStreaming: true }]);
       
-      // Use the AI service with automatic provider selection
-      const response = await aiService.smartFitnessChat(
+      // Use the mock AI service
+      const response = await mockAIService.generateResponse(
         userMsg,
         {
           userProfile: {
@@ -52,53 +50,39 @@ export const SimpleAIChat: React.FC<SimpleAIChatProps> = ({ isOpen, onClose }) =
             goals: ['muscle building', 'strength training']
           }
         },
-        {
-          stream: true,
-          streamCallback: {
-            onToken: (token) => {
-              setStreamingContent(prev => prev + token);
-            },
-            onComplete: (fullResponse) => {
-              const processingTime = Date.now() - startTime;
-              // Replace streaming message with final content
-              setMessages(prev => {
-                const newMessages = [...prev];
-                newMessages[newMessages.length - 1] = {
-                  role: 'assistant',
-                  content: fullResponse,
-                  isStreaming: false,
-                  provider: response.provider,
-                  model: response.model,
-                  processingTime
-                };
-                return newMessages;
-              });
-              setStreamingContent('');
-              setIsLoading(false);
-            },
-            onError: (error) => {
-              console.error('AI Error:', error);
-              setMessages(prev => {
-                const newMessages = [...prev];
-                newMessages[newMessages.length - 1] = {
-                  role: 'assistant',
-                  content: 'I encountered a temporary issue. Please try again in a moment.',
-                  isStreaming: false
-                };
-                return newMessages;
-              });
-              setStreamingContent('');
-              setIsLoading(false);
-            }
-          }
+        (token) => {
+          setStreamingContent(prev => prev + token);
         }
       );
+      
+      // Update with final response
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1] = {
+          role: 'assistant',
+          content: response.content,
+          isStreaming: false,
+          provider: response.provider,
+          model: response.model,
+          processingTime: response.processingTime
+        };
+        return newMessages;
+      });
+      setStreamingContent('');
+      setIsLoading(false);
+      
     } catch (error: any) {
       console.error('Chat error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `I'm having trouble processing that request. Please try again.` 
-      }]);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1] = {
+          role: 'assistant',
+          content: 'I apologize for the inconvenience. Let me help you with fitness advice. What would you like to know?',
+          isStreaming: false
+        };
+        return newMessages;
+      });
+      setStreamingContent('');
       setIsLoading(false);
     }
   };
