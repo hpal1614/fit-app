@@ -5,37 +5,6 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Fitness Coach</title>
-    <script>
-      // Block Chrome extension errors immediately
-      (function() {
-        const noop = () => {};
-        const blockPatterns = [
-          'chrome-extension://',
-          'share-modal',
-          'contentScript',
-          'ERR_FAILED',
-          'web_accessible_resources'
-        ];
-        
-        // Override console methods
-        const originalError = console.error;
-        console.error = function(...args) {
-          const str = args.join(' ');
-          if (!blockPatterns.some(p => str.includes(p))) {
-            originalError.apply(console, args);
-          }
-        };
-        
-        // Block error events
-        window.addEventListener('error', function(e) {
-          if (e.filename && blockPatterns.some(p => e.filename.includes(p))) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-          }
-        }, true);
-      })();
-    </script>
   </head>
   <body>
     <div id="root">
