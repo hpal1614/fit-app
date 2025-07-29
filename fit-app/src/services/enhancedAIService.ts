@@ -5,7 +5,7 @@ import { semanticCache } from './semanticCache';
 import { convertToIndexableDocuments } from './fitnessKnowledge';
 import type { AIResponse, Message, UserProfile, WorkoutContext, FitnessGoals } from '../types';
 
-class EnhancedAIService {
+export class EnhancedAIService {
   private initialized = false;
   private conversationHistory: Message[] = [];
   private userProfile: UserProfile = {

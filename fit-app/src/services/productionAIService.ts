@@ -1,4 +1,4 @@
-import { aiService } from './enhancedAIService';
+import { aiServiceFactory } from './aiServiceFactory';
 import { monitoring } from './monitoringService';
 import { circuitBreaker } from './circuitBreakerService';
 import { rateLimiter } from './rateLimiterService';
@@ -35,10 +35,11 @@ export class ProductionAIService {
   private logger = monitoring.getLogger();
   private requestCount = 0;
   private totalTokens = { prompt: 0, completion: 0 };
+  private aiService: any;
   
   // Circuit breaker wrapped functions
-  private wrappedSendMessage: typeof aiService.sendMessage;
-  private wrappedStreamMessage: typeof aiService.streamMessage;
+  private wrappedSendMessage: any;
+  private wrappedStreamMessage: any;
 
   constructor(config: Partial<ProductionAIConfig> = {}) {
     this.config = {
@@ -55,26 +56,29 @@ export class ProductionAIService {
       ...config
     };
 
+    // Get AI service from factory
+    this.aiService = aiServiceFactory.getBaseAIService();
+
     // Wrap AI service methods with circuit breakers
     this.wrappedSendMessage = this.config.enableCircuitBreaker
       ? circuitBreaker.wrap(
           'ai_sendMessage',
-          aiService.sendMessage.bind(aiService),
+          this.aiService.sendMessage?.bind(this.aiService) || this.createAIFallback('error'),
           {
             fallback: this.createAIFallback('error')
           }
         )
-      : aiService.sendMessage.bind(aiService);
+      : this.aiService.sendMessage?.bind(this.aiService) || this.createAIFallback('error');
 
     this.wrappedStreamMessage = this.config.enableCircuitBreaker
       ? circuitBreaker.wrap(
           'ai_streamMessage',
-          aiService.streamMessage.bind(aiService),
+          this.aiService.streamMessage?.bind(this.aiService) || this.createStreamFallback(),
           {
             fallback: this.createStreamFallback()
           }
         )
-      : aiService.streamMessage.bind(aiService);
+      : this.aiService.streamMessage?.bind(this.aiService) || this.createStreamFallback();
 
     this.logger.info('Production AI service initialized', { config: this.config });
   }
@@ -442,7 +446,7 @@ export class ProductionAIService {
 
     // Test AI service
     try {
-      const response = await aiService.sendMessage('test');
+      const response = await this.aiService.sendMessage('test');
       services.ai = !!response.message;
     } catch (error) {
       services.ai = false;

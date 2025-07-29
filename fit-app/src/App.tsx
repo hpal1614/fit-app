@@ -19,7 +19,8 @@ import {
   Mic,
   Brain,
   Apple,
-  Dumbbell
+  Dumbbell,
+  Timer
 } from 'lucide-react';
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
 import { AIChatInterface } from './components/AIChatInterface';
@@ -31,6 +32,14 @@ import { VoiceAssistant } from './components/VoiceAssistant';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
 import { databaseService } from './services/databaseService';
+import { WorkoutDashboard } from './components/WorkoutDashboard';
+import { VoiceButton } from './components/VoiceButton';
+import { BottomNavigation } from './components/BottomNavigation';
+import { MobileWorkoutInterface } from './components/MobileWorkoutInterface';
+import { WorkoutsTab } from './components/WorkoutsTab';
+import { VoiceCoachInterface } from './components/VoiceCoachInterface';
+import { MonitoringDashboard } from './components/MonitoringDashboard';
+import { AIHealthCheckDashboard } from './components/AIHealthCheckDashboard';
 import './App.css';
 
 interface UserStats {
@@ -40,7 +49,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
+type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile' | 'health';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -86,6 +95,35 @@ function App() {
       console.log('User needs onboarding');
     }
   }, []);
+
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'workout':
+        return isMobile ? (
+          <MobileWorkoutInterface
+            workoutHook={workoutHook}
+            voiceHook={voiceHook}
+            onShowAIChat={() => setShowAIChat(true)}
+          />
+        ) : (
+          <WorkoutDashboard
+            workoutHook={workoutHook}
+            voiceHook={voiceHook}
+            onShowAIChat={() => setShowAIChat(true)}
+          />
+        );
+      case 'workouts':
+        return <WorkoutsTab />;
+      case 'coach':
+        return <VoiceCoachInterface />;
+      case 'monitor':
+        return <MonitoringDashboard />;
+      case 'health':
+        return <AIHealthCheckDashboard />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="h-screen w-screen bg-black text-white relative overflow-hidden flex flex-col">
@@ -198,6 +236,7 @@ function App() {
             </div>
           </div>
         )}
+        {activeTab === 'health' && <AIHealthCheckDashboard />}
       </div>
 
       {/* Voice Assistant Button */}
@@ -218,7 +257,8 @@ function App() {
             { icon: Apple, label: 'Nutrition', key: 'nutrition' },
             { icon: MessageCircle, label: 'Coach', key: 'coach' },
             { icon: TrendingUp, label: 'Stats', key: 'analytics' },
-            { icon: User, label: 'Profile', key: 'profile' }
+            { icon: User, label: 'Profile', key: 'profile' },
+            { icon: Heart, label: 'Health', key: 'health' }
           ].map((tab) => (
             <button
               key={tab.key}
