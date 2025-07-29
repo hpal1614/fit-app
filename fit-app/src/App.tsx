@@ -1,30 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Trophy, 
-  MessageCircle, 
-  Users, 
-  User,
-  Flame,
-  Clock,
-  Zap,
   Bell,
   Search,
   Settings,
-  TrendingUp,
-  Plus,
-  ChevronRight,
-  Calendar,
-  Target,
-  Heart,
   Mic,
-  Brain,
-  Apple,
-  Dumbbell
+  Apple
 } from 'lucide-react';
 import { AIChatInterface } from './components/AIChatInterface';
-import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
 import { VoiceAssistant } from './components/VoiceAssistant';
 import { WorkoutLoggerDemo } from './components/WorkoutLoggerDemo';
