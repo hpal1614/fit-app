@@ -21,7 +21,6 @@ import {
   Apple,
   Dumbbell
 } from 'lucide-react';
-import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
 import { AIChatInterface } from './components/AIChatInterface';
 import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
@@ -41,7 +40,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile' | 'workout-demo';
+type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -143,8 +142,7 @@ function App() {
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
-        {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
-        {activeTab === 'workout-demo' && <WorkoutLoggerDemo />}
+        {activeTab === 'workouts' && <WorkoutLoggerDemo />}
         {activeTab === 'generator' && <WorkoutGenerator />}
         {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
         {activeTab === 'nutrition' && (
@@ -215,7 +213,6 @@ function App() {
         <div className="flex items-center justify-around py-2">
           {[
             { icon: Dumbbell, label: 'Logger', key: 'workouts' },
-            { icon: Zap, label: 'Demo', key: 'workout-demo' },
             { icon: Target, label: 'Generate', key: 'generator' },
             { icon: Brain, label: 'Smart AI', key: 'intelligent-ai' },
             { icon: Apple, label: 'Nutrition', key: 'nutrition' },
