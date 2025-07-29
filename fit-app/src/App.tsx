@@ -28,6 +28,7 @@ import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
 import { VoiceAssistant } from './components/VoiceAssistant';
+import { WorkoutLoggerDemo } from './components/WorkoutLoggerDemo';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
 import { databaseService } from './services/databaseService';
@@ -40,7 +41,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
+type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile' | 'workout-demo';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -143,6 +144,7 @@ function App() {
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
         {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
+        {activeTab === 'workout-demo' && <WorkoutLoggerDemo />}
         {activeTab === 'generator' && <WorkoutGenerator />}
         {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
         {activeTab === 'nutrition' && (
@@ -213,6 +215,7 @@ function App() {
         <div className="flex items-center justify-around py-2">
           {[
             { icon: Dumbbell, label: 'Logger', key: 'workouts' },
+            { icon: Zap, label: 'Demo', key: 'workout-demo' },
             { icon: Target, label: 'Generate', key: 'generator' },
             { icon: Brain, label: 'Smart AI', key: 'intelligent-ai' },
             { icon: Apple, label: 'Nutrition', key: 'nutrition' },

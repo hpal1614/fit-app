@@ -830,6 +830,139 @@ export class AICoachService {
   async getProgression(request: unknown): Promise<Progression> {
     return this.suggestProgression((request as any).history, 0, 0);
   }
+
+  // New method for generating coaching suggestions
+  async generateCoachingSuggestion(params: {
+    exercise: string;
+    currentWeight: number;
+    reps: number;
+    difficulty: number;
+    userHistory: any[];
+    nextExercise?: string;
+    feedback?: 'too_easy' | 'perfect' | 'too_hard';
+  }): Promise<string | null> {
+    try {
+      const context: WorkoutContext = {
+        currentExercise: params.exercise,
+        currentWeight: params.currentWeight,
+        targetReps: params.reps,
+        lastSetRPE: params.difficulty,
+        exerciseHistory: params.userHistory,
+        sessionType: 'strength' as const,
+        progressionGoal: 'strength',
+        fitnessLevel: 'intermediate',
+        equipment: [],
+        timeAvailable: 60,
+        recentPerformance: 'improving',
+        injuryStatus: [],
+        nutritionStatus: 'adequate',
+        recoveryScore: 8,
+        motivationLevel: 'high',
+        environmentType: 'gym',
+        socialContext: 'solo'
+      };
+
+      let prompt = `Based on the current workout context:
+- Exercise: ${params.exercise}
+- Weight: ${params.currentWeight}lbs
+- Reps: ${params.reps}
+- Difficulty (RPE): ${params.difficulty}/10`;
+
+      if (params.feedback) {
+        prompt += `\n- User feedback: Set was ${params.feedback}`;
+      }
+
+      if (params.nextExercise) {
+        prompt += `\n- Next exercise: ${params.nextExercise}`;
+      }
+
+      prompt += '\n\nProvide a brief, actionable coaching suggestion (1 sentence).';
+
+      const response = await this.getCoachingResponse(prompt, context);
+      return response.content;
+    } catch (error) {
+      console.error('Error generating coaching suggestion:', error);
+      return null;
+    }
+  }
+
+  // New method for parsing voice commands
+  async parseVoiceCommand(
+    transcription: string, 
+    context: {
+      currentExercise: string;
+      expectedWeight: number;
+      expectedReps: number;
+      context: string;
+    }
+  ): Promise<{
+    action: string;
+    weight?: number;
+    reps?: number;
+    rpe?: number;
+  } | null> {
+    try {
+      const prompt = `Parse this voice command from a workout session:
+Transcription: "${transcription}"
+Current exercise: ${context.currentExercise}
+Expected weight: ${context.expectedWeight}
+Expected reps: ${context.expectedReps}
+
+Identify the action and extract any numerical values for weight, reps, or RPE.
+Respond in JSON format: {"action": "...", "weight": ..., "reps": ..., "rpe": ...}
+
+Possible actions:
+- complete_set: User completed a set
+- failed_set: User failed to complete the set
+- adjust_weight: User wants to change the weight
+- start_timer: User wants to start rest timer
+- unknown: Cannot understand the command`;
+
+      const workoutContext: WorkoutContext = {
+        currentExercise: context.currentExercise,
+        currentWeight: context.expectedWeight,
+        targetReps: context.expectedReps,
+        sessionType: 'strength' as const,
+        progressionGoal: 'strength',
+        fitnessLevel: 'intermediate',
+        equipment: [],
+        timeAvailable: 60,
+        recentPerformance: 'improving',
+        injuryStatus: [],
+        nutritionStatus: 'adequate',
+        recoveryScore: 8,
+        motivationLevel: 'high',
+        environmentType: 'gym',
+        socialContext: 'solo'
+      };
+
+      const response = await this.getCoachingResponse(prompt, workoutContext);
+      
+      // Try to parse the response as JSON
+      try {
+        const parsed = JSON.parse(response.content);
+        return parsed;
+      } catch {
+        // If not valid JSON, try to extract information manually
+        const content = response.content.toLowerCase();
+        
+        if (content.includes('complete') || content.includes('finished')) {
+          return { action: 'complete_set' };
+        } else if (content.includes('fail') || content.includes('drop')) {
+          return { action: 'failed_set' };
+        } else if (content.includes('weight') || content.includes('adjust')) {
+          return { action: 'adjust_weight' };
+        } else if (content.includes('timer') || content.includes('rest')) {
+          return { action: 'start_timer' };
+        }
+        
+        return { action: 'unknown' };
+      }
+    } catch (error) {
+      console.error('Error parsing voice command:', error);
+      return null;
+    }
+  }
 }
 
 // Singleton instance

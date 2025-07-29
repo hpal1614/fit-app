@@ -473,6 +473,15 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
     setError(null);
   }, []);
 
+  // Get exercise history
+  const getExerciseHistory = useCallback((exerciseName: string) => {
+    return workoutHistory
+      .flatMap(workout => workout.exercises)
+      .filter(exercise => exercise.exercise.name === exerciseName)
+      .flatMap(exercise => exercise.completedSets)
+      .slice(0, 10); // Get last 10 sets for this exercise
+  }, [workoutHistory]);
+
   return {
     // Current workout state
     currentWorkout,
@@ -509,6 +518,7 @@ export const useWorkout = (options: UseWorkoutOptions = {}): UseWorkoutReturn =>
     workoutContext,
     workoutHistory,
     personalRecords,
+    getExerciseHistory,
     
     // State management
     isLoading,

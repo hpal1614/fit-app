@@ -41,8 +41,46 @@ export const useAI = () => {
     }
   }, []);
 
+  const generateCoachingSuggestion = useCallback(async (params: {
+    exercise: string;
+    currentWeight: number;
+    reps: number;
+    difficulty: number;
+    userHistory: any[];
+    nextExercise?: string;
+    feedback?: 'too_easy' | 'perfect' | 'too_hard';
+  }) => {
+    try {
+      const suggestion = await aiService.generateCoachingSuggestion(params);
+      return suggestion;
+    } catch (err) {
+      console.error('Error generating coaching suggestion:', err);
+      return null;
+    }
+  }, []);
+
+  const parseVoiceCommand = useCallback(async (
+    transcription: string,
+    context: {
+      currentExercise: string;
+      expectedWeight: number;
+      expectedReps: number;
+      context: string;
+    }
+  ) => {
+    try {
+      const command = await aiService.parseVoiceCommand(transcription, context);
+      return command;
+    } catch (err) {
+      console.error('Error parsing voice command:', err);
+      return null;
+    }
+  }, []);
+
   return {
     askCoach,
+    generateCoachingSuggestion,
+    parseVoiceCommand,
     isLoading,
     error,
     isAvailable: true // Always available with fallbacks
