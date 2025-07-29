@@ -491,5 +491,23 @@ export class ProductionAIService {
   }
 }
 
-// Export singleton instance
-export const productionAI = new ProductionAIService();
+// Create singleton instance lazily to avoid circular dependency issues
+let productionAIInstance: ProductionAIService | null = null;
+
+export function getProductionAI(): ProductionAIService {
+  if (!productionAIInstance) {
+    productionAIInstance = new ProductionAIService();
+  }
+  return productionAIInstance;
+}
+
+// Export for backwards compatibility, but use getProductionAI() for new code
+export const productionAI = {
+  get instance() {
+    return getProductionAI();
+  },
+  sendMessage: (...args: any[]) => getProductionAI().sendMessage(...args),
+  streamMessage: (...args: any[]) => getProductionAI().streamMessage(...args),
+  healthCheck: () => getProductionAI().healthCheck(),
+  getMetrics: () => getProductionAI().getMetrics()
+};

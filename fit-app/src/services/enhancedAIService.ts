@@ -195,4 +195,20 @@ export class EnhancedAIService {
   }
 }
 
-export const aiService = new EnhancedAIService();
+// Create singleton instance lazily to avoid circular dependency issues
+let enhancedAIInstance: EnhancedAIService | null = null;
+
+export function getEnhancedAI(): EnhancedAIService {
+  if (!enhancedAIInstance) {
+    enhancedAIInstance = new EnhancedAIService();
+  }
+  return enhancedAIInstance;
+}
+
+// Export as aiService for compatibility
+export const aiService = new Proxy({} as EnhancedAIService, {
+  get(target, prop) {
+    const instance = getEnhancedAI();
+    return (instance as any)[prop];
+  }
+});

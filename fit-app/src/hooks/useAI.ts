@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { AICoachService } from '../services/aiService';
+import { AIFallbackService } from '../services/fallbackService';
 
 const aiService = AICoachService.getInstance();
 
@@ -27,15 +28,14 @@ export const useAI = () => {
       console.error('❌ AI Error:', errorMsg);
       setError(errorMsg);
       
-      // Emergency fallback response
-      return {
-        content: "I'm here to help with your fitness journey! Ask me about workouts, exercises, or nutrition.",
-        type: 'general-advice',
-        confidence: 0.5,
-        timestamp: new Date(),
-        isComplete: true,
-        metadata: { provider: 'error-fallback' }
-      };
+      // Use comprehensive fallback service
+      const fallbackResponse = AIFallbackService.generateFallbackResponse(
+        'general-advice',
+        context,
+        errorMsg
+      );
+      
+      return fallbackResponse;
     } finally {
       setIsLoading(false);
     }

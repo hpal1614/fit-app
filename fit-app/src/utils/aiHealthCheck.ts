@@ -1,6 +1,7 @@
 import { AICoachService } from '../services/aiService';
 import { IntelligentAIService } from '../services/intelligentAIService';
 import { ProductionAIService } from '../services/productionAIService';
+import { APIKeyValidator } from './apiKeyValidator';
 
 interface ServiceStatus {
   status: 'healthy' | 'failed' | 'unknown';
@@ -115,100 +116,47 @@ export class AIHealthCheck {
       report.environment.importErrors.push(`ProductionAIService: ${error}`);
     }
 
-    // Test each provider individually
-    await this.testProviders(report);
+    // Test each provider individually using the API key validator
+    const apiKeyReport = await APIKeyValidator.validateAllKeys();
+    
+    // Map API key validation results to our report
+    report.providers.openrouter = {
+      status: apiKeyReport.apiKeys.openrouter.isValid ? 'healthy' : 'failed',
+      error: apiKeyReport.apiKeys.openrouter.error || null,
+      details: apiKeyReport.apiKeys.openrouter
+    };
+    
+    report.providers.groq = {
+      status: apiKeyReport.apiKeys.groq.isValid ? 'healthy' : 'failed',
+      error: apiKeyReport.apiKeys.groq.error || null,
+      details: apiKeyReport.apiKeys.groq
+    };
+    
+    report.providers.googleAI = {
+      status: apiKeyReport.apiKeys.googleAI.isValid ? 'healthy' : 'failed',
+      error: apiKeyReport.apiKeys.googleAI.error || null,
+      details: apiKeyReport.apiKeys.googleAI
+    };
+
+    // Update environment info with API key validation
+    report.environment.apiKeysPresent = {
+      openrouter: apiKeyReport.apiKeys.openrouter.isPresent,
+      groq: apiKeyReport.apiKeys.groq.isPresent,
+      googleAI: apiKeyReport.apiKeys.googleAI.isPresent,
+      openAI: apiKeyReport.apiKeys.openAI.isPresent
+    };
 
     // Generate recommendations
     this.generateRecommendations(report);
+    
+    // Add API key validator recommendations
+    report.recommendations.push(...apiKeyReport.recommendations);
 
     console.log('🏥 AI Health Check Complete:', report);
     return report;
   }
 
-  private static async testProviders(report: DiagnosisReport): Promise<void> {
-    // Test OpenRouter
-    if (report.environment.apiKeysPresent.openrouter) {
-      try {
-        const response = await fetch('https://openrouter.ai/api/v1/models', {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'AI Fitness Coach'
-          }
-        });
-        
-        if (response.ok) {
-          report.providers.openrouter.status = 'healthy';
-          const data = await response.json();
-          report.providers.openrouter.details = { 
-            modelsAvailable: data.data?.length || 0 
-          };
-        } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      } catch (error) {
-        report.providers.openrouter.status = 'failed';
-        report.providers.openrouter.error = error instanceof Error ? error.message : 'Unknown error';
-      }
-    } else {
-      report.providers.openrouter.status = 'failed';
-      report.providers.openrouter.error = 'API key not configured';
-    }
 
-    // Test Groq
-    if (report.environment.apiKeysPresent.groq) {
-      try {
-        const response = await fetch('https://api.groq.com/openai/v1/models', {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          report.providers.groq.status = 'healthy';
-          const data = await response.json();
-          report.providers.groq.details = { 
-            modelsAvailable: data.data?.length || 0 
-          };
-        } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      } catch (error) {
-        report.providers.groq.status = 'failed';
-        report.providers.groq.error = error instanceof Error ? error.message : 'Unknown error';
-      }
-    } else {
-      report.providers.groq.status = 'failed';
-      report.providers.groq.error = 'API key not configured';
-    }
-
-    // Test Google AI
-    if (report.environment.apiKeysPresent.googleAI) {
-      try {
-        // Simple test request to Google AI
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${import.meta.env.VITE_GOOGLE_AI_API_KEY}`
-        );
-        
-        if (response.ok) {
-          report.providers.googleAI.status = 'healthy';
-          const data = await response.json();
-          report.providers.googleAI.details = { 
-            modelsAvailable: data.models?.length || 0 
-          };
-        } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      } catch (error) {
-        report.providers.googleAI.status = 'failed';
-        report.providers.googleAI.error = error instanceof Error ? error.message : 'Unknown error';
-      }
-    } else {
-      report.providers.googleAI.status = 'failed';
-      report.providers.googleAI.error = 'API key not configured';
-    }
-  }
 
   private static generateRecommendations(report: DiagnosisReport): void {
     // Check for missing API keys

@@ -12,6 +12,7 @@ import {
   buildContextualPrompt
 } from '../constants/aiPrompts';
 import { getExerciseById } from '../constants/exercises';
+import { AIFallbackService } from './fallbackService';
 // Removed OpenAI import - using team service instead
 
 // AI Provider Capabilities moved to IntelligentAIRouter class
@@ -204,31 +205,24 @@ export class AITeamService {
   }
   
   private getIntelligentFallback(context: WorkoutContext, requestType: AIRequestType): AIResponse {
-    // Intelligent context-aware fallback based on request type and workout context
-    const fallbackMessages: Record<string, string> = {
-      'motivation': this.getMotivationalFallback(context),
-      'form-analysis': this.getFormFallback(context),
-      'nutrition-advice': this.getNutritionFallback(context),
-      'nutrition': this.getNutritionFallback(context),
-      'general-advice': this.getGeneralFallback(),
-      'exercise-explanation': this.getGeneralFallback(),
-      'rest-guidance': this.getGeneralFallback(),
-      'workout-planning': this.getGeneralFallback()
-    };
+    // Use the comprehensive fallback service for better responses
+    const fallbackResponse = AIFallbackService.generateFallbackResponse(
+      requestType,
+      context,
+      'All AI providers failed - using intelligent fallback'
+    );
     
-    const content = fallbackMessages[requestType] || fallbackMessages['general-advice'];
+    // Log fallback usage
+    AIFallbackService.logFallbackUsage(requestType, 'Intelligent fallback used');
     
+    // Enhance the metadata
     return {
-      content,
-      type: requestType,
-      confidence: 0.7,
-      timestamp: new Date(),
-      isComplete: true,
+      ...fallbackResponse,
       metadata: {
+        ...fallbackResponse.metadata,
         provider: 'intelligent-fallback',
         model: 'context-aware-fallback',
         processingTime: 0,
-        cached: false,
         teamResponse: false,
         fallbackReason: 'all-providers-failed'
       }
@@ -842,5 +836,10 @@ export function getAIService(config?: Partial<AICoachConfig>): AICoachService {
   return aiServiceInstance;
 }
 
-// Ready-to-use singleton instance
-export const aiService = getAIService();
+// Ready-to-use singleton instance - using Proxy for lazy initialization
+export const aiService = new Proxy({} as AICoachService, {
+  get(target, prop) {
+    const instance = getAIService();
+    return (instance as any)[prop];
+  }
+});
