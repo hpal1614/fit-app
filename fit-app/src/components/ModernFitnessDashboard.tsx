@@ -68,7 +68,10 @@ export const ModernFitnessDashboard: React.FC = () => {
   const networkStatus = { online: true };
   const batteryLevel = null;
   const capabilities = { wakeLock: false };
-  const vibrate = () => {};
+  const vibrate = (pattern?: any) => {
+    // Mock vibrate function that does nothing
+    console.log('Vibrate called with:', pattern);
+  };
   const requestWakeLock = async () => false;
   const releaseWakeLock = async () => {};
 
@@ -423,10 +426,16 @@ export const ModernFitnessDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-3xl font-bold">Workouts</h2>
               <button 
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Button clicked! Current showWorkoutGenerator:', showWorkoutGenerator);
                   setShowWorkoutGenerator(true);
+                  console.log('Setting showWorkoutGenerator to true');
                 }}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform touch-manipulation cursor-pointer"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform cursor-pointer"
+                style={{ zIndex: 10 }}
               >
                 <Plus className="w-5 h-5" />
                 <span>Generate AI Workout</span>
@@ -677,8 +686,10 @@ export const ModernFitnessDashboard: React.FC = () => {
             <SimpleAIChat isOpen={showAIChat} onClose={() => setShowAIChat(false)} />
             
             {/* Workout Generator Modal */}
+            {console.log('showWorkoutGenerator state:', showWorkoutGenerator)}
             {showWorkoutGenerator && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                {console.log('Rendering workout generator modal')}
                 <div className="bg-gray-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                   <WorkoutGenerator />
                   <div className="sticky bottom-0 bg-gray-900 p-4 border-t border-gray-800">
