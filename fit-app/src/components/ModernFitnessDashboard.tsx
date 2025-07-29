@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Activity, 
   Heart, 
@@ -17,10 +17,15 @@ import {
   Plus,
   Play,
   Pause,
-  CheckCircle
+  CheckCircle,
+  Wifi,
+  WifiOff,
+  Battery,
+  BatteryLow
 } from 'lucide-react';
 import { useMCPBiometrics, useMCPProgress, useMCPWorkoutGeneration } from '../hooks/useMCP';
 import { useWorkout } from '../hooks/useWorkout';
+import { useMobile, useSwipeNavigation } from '../hooks/useMobile';
 
 export const ModernFitnessDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -28,6 +33,62 @@ export const ModernFitnessDashboard: React.FC = () => {
   const { trackProgress } = useMCPProgress();
   const { generateWorkout } = useMCPWorkoutGeneration();
   const workout = useWorkout();
+  const mainRef = useRef<HTMLElement>(null);
+
+  // Mobile features
+  const { 
+    isMobile, 
+    isInstalled,
+    orientation,
+    networkStatus,
+    batteryLevel,
+    capabilities,
+    vibrate,
+    requestWakeLock,
+    releaseWakeLock
+  } = useMobile({
+    enableWakeLock: workout.isActive,
+    enableSwipeGestures: true,
+    enablePullToRefresh: true,
+    onRefresh: async () => {
+      await handleRefreshData();
+    }
+  });
+
+  // Tab navigation array
+  const tabs = ['dashboard', 'workouts', 'nutrition', 'ai-coach'];
+  
+  // Swipe navigation
+  const swipeHandlers = useSwipeNavigation(
+    () => navigateTab('next'),     // Swipe left
+    () => navigateTab('previous'),  // Swipe right
+    undefined,
+    undefined
+  );
+
+  // Navigate between tabs
+  const navigateTab = (direction: 'next' | 'previous') => {
+    const currentIndex = tabs.indexOf(activeTab);
+    let newIndex: number;
+    
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % tabs.length;
+    } else {
+      newIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
+    }
+    
+    setActiveTab(tabs[newIndex]);
+    vibrate({ type: 'selection', intensity: 'light' });
+  };
+
+  // Refresh data
+  const handleRefreshData = async () => {
+    vibrate({ type: 'notification', intensity: 'medium' });
+    await Promise.all([
+      monitorBiometrics(['heart_rate', 'recovery']),
+      trackProgress('strength', 'week')
+    ]);
+  };
 
   // Mock data for demonstration
   const [biometricData, setBiometricData] = useState({
@@ -39,16 +100,36 @@ export const ModernFitnessDashboard: React.FC = () => {
     sleep: 7.5
   });
 
+  // Handle workout start with mobile features
+  const handleStartWorkout = async () => {
+    vibrate({ type: 'impact', intensity: 'heavy' });
+    
+    if (isMobile && capabilities.wakeLock) {
+      await requestWakeLock();
+    }
+    
+    // Start workout logic here
+    console.log('Starting workout with mobile features enabled');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-      {/* Header */}
-      <header className="bg-black/20 backdrop-blur-lg border-b border-white/10">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white"
+      {...(isMobile ? swipeHandlers : {})}
+    >
+      {/* Header with mobile status indicators */}
+      <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 safe-area-top">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Activity className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold">FitTrack Pro</h1>
+            <div>
+              <h1 className="text-2xl font-bold">FitTrack Pro</h1>
+              {isInstalled && (
+                <p className="text-xs text-blue-400">Installed App</p>
+              )}
+            </div>
           </div>
           
           <nav className="hidden md:flex items-center space-x-6">
@@ -95,7 +176,27 @@ export const ModernFitnessDashboard: React.FC = () => {
           </nav>
 
           <div className="flex items-center space-x-4">
-            <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+            {/* Mobile status indicators */}
+            {isMobile && (
+              <>
+                {networkStatus.online ? (
+                  <Wifi className="w-4 h-4 text-green-400" />
+                ) : (
+                  <WifiOff className="w-4 h-4 text-red-400" />
+                )}
+                {batteryLevel !== null && (
+                  batteryLevel > 20 ? (
+                    <Battery className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <BatteryLow className="w-4 h-4 text-orange-400" />
+                  )
+                )}
+              </>
+            )}
+            <button 
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+            >
               <Settings className="w-5 h-5" />
             </button>
             <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
@@ -103,13 +204,37 @@ export const ModernFitnessDashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      {/* Main Content with pull-to-refresh */}
+      <main 
+        ref={mainRef}
+        className={`max-w-7xl mx-auto px-4 py-8 ${isMobile ? 'pb-24' : ''}`}
+      >
+        {/* Swipe indicator for mobile */}
+        {isMobile && (
+          <div className="flex justify-center mb-4">
+            <div className="flex space-x-2">
+              {tabs.map((tab, index) => (
+                <div
+                  key={tab}
+                  className={`h-2 rounded-full transition-all ${
+                    activeTab === tab 
+                      ? 'w-8 bg-white' 
+                      : 'w-2 bg-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
             {/* Hero Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-lg rounded-2xl p-6 border border-blue-500/20">
+              <div 
+                className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-lg rounded-2xl p-6 border border-blue-500/20 touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <Heart className="w-8 h-8 text-blue-400" />
                   <span className="text-sm text-blue-300">+2%</span>
@@ -118,7 +243,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                 <p className="text-gray-400">Heart Rate</p>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 backdrop-blur-lg rounded-2xl p-6 border border-orange-500/20">
+              <div 
+                className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 backdrop-blur-lg rounded-2xl p-6 border border-orange-500/20 touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <Flame className="w-8 h-8 text-orange-400" />
                   <span className="text-sm text-orange-300">+125</span>
@@ -127,7 +255,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                 <p className="text-gray-400">Calories Burned</p>
               </div>
 
-              <div className="bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-lg rounded-2xl p-6 border border-green-500/20">
+              <div 
+                className="bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-lg rounded-2xl p-6 border border-green-500/20 touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <Activity className="w-8 h-8 text-green-400" />
                   <span className="text-sm text-green-300">85%</span>
@@ -136,7 +267,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                 <p className="text-gray-400">Steps Today</p>
               </div>
 
-              <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-lg rounded-2xl p-6 border border-purple-500/20">
+              <div 
+                className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-lg rounded-2xl p-6 border border-purple-500/20 touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <TrendingUp className="w-8 h-8 text-purple-400" />
                   <span className="text-sm text-purple-300">+15%</span>
@@ -146,16 +280,19 @@ export const ModernFitnessDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Activity Chart */}
+            {/* Activity Chart - Simplified for mobile */}
             <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold">Weekly Activity</h2>
-                <button className="text-sm text-gray-400 hover:text-white transition-colors">
+                <button 
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                  onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                >
                   View Details <ChevronRight className="inline w-4 h-4" />
                 </button>
               </div>
               
-              <div className="grid grid-cols-7 gap-2 mb-4">
+              <div className={`grid grid-cols-7 gap-${isMobile ? '1' : '2'} mb-4`}>
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
                   <div key={day} className="text-center">
                     <div className={`h-32 bg-gradient-to-t rounded-lg mb-2 ${
@@ -163,7 +300,7 @@ export const ModernFitnessDashboard: React.FC = () => {
                         ? 'from-blue-600/40 to-blue-400/20' 
                         : 'from-gray-600/20 to-gray-400/10'
                     }`} style={{ height: `${Math.random() * 80 + 50}px` }} />
-                    <p className="text-xs text-gray-400">{day}</p>
+                    <p className={`text-${isMobile ? 'xs' : 'xs'} text-gray-400`}>{day}</p>
                   </div>
                 ))}
               </div>
@@ -171,7 +308,10 @@ export const ModernFitnessDashboard: React.FC = () => {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <button className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-left hover:scale-105 transition-transform">
+              <button 
+                className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-left hover:scale-105 transition-transform touch-manipulation"
+                onClick={handleStartWorkout}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <Play className="w-8 h-8" />
                   <ChevronRight className="w-5 h-5" />
@@ -180,7 +320,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                 <p className="text-gray-300 text-sm">AI-powered session ready</p>
               </button>
 
-              <button className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-colors">
+              <button 
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-colors touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <Camera className="w-8 h-8 text-green-400" />
                   <ChevronRight className="w-5 h-5" />
@@ -189,7 +332,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                 <p className="text-gray-400 text-sm">Scan or photo capture</p>
               </button>
 
-              <button className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-colors">
+              <button 
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-colors touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <Brain className="w-8 h-8 text-purple-400" />
                   <ChevronRight className="w-5 h-5" />
@@ -203,7 +349,10 @@ export const ModernFitnessDashboard: React.FC = () => {
             <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
               <h2 className="text-xl font-semibold mb-4">Recent Achievements</h2>
               <div className="space-y-3">
-                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                <div 
+                  className="flex items-center space-x-4 p-3 rounded-lg hover:bg-white/5 transition-colors touch-manipulation"
+                  onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                >
                   <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center">
                     <Award className="w-6 h-6" />
                   </div>
@@ -214,7 +363,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                   <CheckCircle className="w-5 h-5 text-green-400" />
                 </div>
 
-                <div className="flex items-center space-x-4 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                <div 
+                  className="flex items-center space-x-4 p-3 rounded-lg hover:bg-white/5 transition-colors touch-manipulation"
+                  onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                >
                   <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                     <Target className="w-6 h-6" />
                   </div>
@@ -235,6 +387,7 @@ export const ModernFitnessDashboard: React.FC = () => {
               <h2 className="text-3xl font-bold">Workouts</h2>
               <button 
                 onClick={async () => {
+                  vibrate({ type: 'impact', intensity: 'medium' });
                   const result = await generateWorkout({
                     fitnessLevel: 'intermediate',
                     goals: ['strength', 'muscle'],
@@ -245,7 +398,7 @@ export const ModernFitnessDashboard: React.FC = () => {
                     console.log('Generated workout:', result.data);
                   }
                 }}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform touch-manipulation"
               >
                 <Plus className="w-5 h-5" />
                 <span>Generate AI Workout</span>
@@ -254,7 +407,10 @@ export const ModernFitnessDashboard: React.FC = () => {
 
             {/* Workout Plans Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
+              <div 
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
                     <Activity className="w-6 h-6" />
@@ -275,7 +431,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
+              <div 
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                     <Flame className="w-6 h-6" />
@@ -302,7 +461,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold">Workout in Progress</h3>
                   <button 
-                    onClick={() => workout.pauseWorkout()}
+                    onClick={() => {
+                      vibrate({ type: 'impact', intensity: 'light' });
+                      workout.pauseWorkout();
+                    }}
                     className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
                   >
                     <Pause className="w-5 h-5" />
@@ -314,7 +476,7 @@ export const ModernFitnessDashboard: React.FC = () => {
                     <p className="text-sm text-gray-400">Minutes</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-bold">{workout.currentExercise?.name || '-'}</p>
+                    <p className={`text-${isMobile ? 'xl' : '3xl'} font-bold`}>{workout.currentExercise?.name || '-'}</p>
                     <p className="text-sm text-gray-400">Current Exercise</p>
                   </div>
                   <div>
@@ -331,7 +493,10 @@ export const ModernFitnessDashboard: React.FC = () => {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-3xl font-bold">Nutrition Tracking</h2>
-              <button className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform">
+              <button 
+                className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform touch-manipulation"
+                onClick={() => vibrate({ type: 'impact', intensity: 'medium' })}
+              >
                 <Camera className="w-5 h-5" />
                 <span>Scan Food</span>
               </button>
@@ -375,7 +540,10 @@ export const ModernFitnessDashboard: React.FC = () => {
             <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
               <h3 className="text-xl font-semibold mb-4">Recent Meals</h3>
               <div className="space-y-4">
-                <div className="flex items-center space-x-4 p-4 rounded-lg bg-white/5">
+                <div 
+                  className="flex items-center space-x-4 p-4 rounded-lg bg-white/5 touch-manipulation"
+                  onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                >
                   <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg" />
                   <div className="flex-1">
                     <p className="font-medium">Grilled Chicken Salad</p>
@@ -383,7 +551,10 @@ export const ModernFitnessDashboard: React.FC = () => {
                   </div>
                   <span className="text-sm text-gray-400">2h ago</span>
                 </div>
-                <div className="flex items-center space-x-4 p-4 rounded-lg bg-white/5">
+                <div 
+                  className="flex items-center space-x-4 p-4 rounded-lg bg-white/5 touch-manipulation"
+                  onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                >
                   <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg" />
                   <div className="flex-1">
                     <p className="font-medium">Post-Workout Shake</p>
@@ -409,25 +580,37 @@ export const ModernFitnessDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              <button className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105">
+              <button 
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105 touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <Mic className="w-10 h-10 text-blue-400 mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Voice Coaching</h3>
                 <p className="text-gray-400">Real-time audio guidance during workouts</p>
               </button>
 
-              <button className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105">
+              <button 
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105 touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <Camera className="w-10 h-10 text-green-400 mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Form Analysis</h3>
                 <p className="text-gray-400">AI-powered movement pattern detection</p>
               </button>
 
-              <button className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105">
+              <button 
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105 touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <BarChart3 className="w-10 h-10 text-purple-400 mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Progress Insights</h3>
                 <p className="text-gray-400">Detailed analytics and recommendations</p>
               </button>
 
-              <button className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105">
+              <button 
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105 touch-manipulation"
+                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+              >
                 <Users className="w-10 h-10 text-orange-400 mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Community</h3>
                 <p className="text-gray-400">Connect with fitness enthusiasts</p>
@@ -439,7 +622,10 @@ export const ModernFitnessDashboard: React.FC = () => {
               <p className="text-gray-300 mb-6">
                 Start your personalized AI coaching session now
               </p>
-              <button className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-lg text-lg font-medium hover:scale-105 transition-transform">
+              <button 
+                className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-lg text-lg font-medium hover:scale-105 transition-transform touch-manipulation"
+                onClick={() => vibrate({ type: 'impact', intensity: 'heavy' })}
+              >
                 Start AI Session
               </button>
             </div>
@@ -447,8 +633,8 @@ export const ModernFitnessDashboard: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Navigation (Mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-lg border-t border-white/10">
+      {/* Bottom Navigation (Mobile) with safe area */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-lg border-t border-white/10 safe-area-bottom">
         <div className="grid grid-cols-4 gap-1 p-2">
           {[
             { id: 'dashboard', icon: Activity, label: 'Home' },
@@ -458,7 +644,10 @@ export const ModernFitnessDashboard: React.FC = () => {
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id)}
+              onClick={() => {
+                setActiveTab(id);
+                vibrate({ type: 'selection', intensity: 'light' });
+              }}
               className={`flex flex-col items-center p-3 rounded-lg transition-all ${
                 activeTab === id
                   ? 'bg-white/10 text-white'
@@ -471,6 +660,36 @@ export const ModernFitnessDashboard: React.FC = () => {
           ))}
         </div>
       </nav>
+
+      {/* Add CSS for safe areas */}
+      <style jsx global>{`
+        .safe-area-top {
+          padding-top: env(safe-area-inset-top);
+        }
+        .safe-area-bottom {
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+        .touch-manipulation {
+          touch-action: manipulation;
+        }
+        
+        /* Optimize for mobile keyboards */
+        [data-keyboard="visible"] main {
+          padding-bottom: 50vh;
+        }
+        
+        /* Orientation-specific styles */
+        [data-orientation="landscape"] .md\\:hidden {
+          display: none;
+        }
+        
+        /* PWA specific styles */
+        @media (display-mode: standalone) {
+          .safe-area-top {
+            padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+          }
+        }
+      `}</style>
     </div>
   );
 };
