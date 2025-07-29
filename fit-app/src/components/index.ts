@@ -1,17 +1,24 @@
-export { WorkoutDashboard } from './WorkoutDashboard';
-export { AIChatInterface } from './AIChatInterface';
-export { VoiceButton } from './VoiceButton';
-export { WorkoutStats } from './WorkoutStats';
+// Core Components
 export { ExerciseCard } from './ExerciseCard';
-export { SetLogger } from './SetLogger';
 export { RestTimer } from './RestTimer';
-export { BiometricsDashboard } from './BiometricsDashboard';
-export { FormAnalysisInterface } from './FormAnalysisInterface';
-export { MonitoringDashboard } from './MonitoringDashboard';
+export { SetLogger } from './SetLogger';
+export { VoiceButton } from './VoiceButton';
+export { WorkoutDashboard } from './WorkoutDashboard';
+export { WorkoutStats } from './WorkoutStats';
+export { WorkoutsTab } from './WorkoutsTab';
+export { AIChatInterface } from './AIChatInterface';
+export { BottomNavigation } from './BottomNavigation';
 export { MobileWorkoutInterface } from './MobileWorkoutInterface';
 export { VoiceCoachInterface } from './VoiceCoachInterface';
-export { WorkoutsTab } from './WorkoutsTab';
-export { BottomNavigation } from './BottomNavigation';
+export { MCPWorkoutInterface } from './MCPWorkoutInterface';
+export { ModernFitnessDashboard } from './ModernFitnessDashboard';
+
+// Form Analysis
+export { FormAnalysisInterface } from './FormAnalysisInterface';
+
+// Biometrics & Monitoring
+export { BiometricsDashboard } from './BiometricsDashboard';
+export { MonitoringDashboard } from './MonitoringDashboard';
 
 // New components for updated UI
 export { UserProfileCard } from './UserProfileCard';
