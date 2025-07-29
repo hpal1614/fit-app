@@ -427,6 +427,183 @@ export class DatabaseService {
     }
   }
 
+  // Progress tracking method for MCP integration
+  async getProgress(params: {
+    metric: 'strength' | 'endurance' | 'weight' | 'measurements';
+    timeframe: 'week' | 'month' | '3months' | 'year';
+  }): Promise<any> {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      
+      // Calculate start date based on timeframe
+      switch (params.timeframe) {
+        case 'week':
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(startDate.getMonth() - 1);
+          break;
+        case '3months':
+          startDate.setMonth(startDate.getMonth() - 3);
+          break;
+        case 'year':
+          startDate.setFullYear(startDate.getFullYear() - 1);
+          break;
+      }
+
+      let progressData: any = {
+        metric: params.metric,
+        timeframe: params.timeframe,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        data: []
+      };
+
+      switch (params.metric) {
+        case 'strength':
+          // Get personal records in timeframe
+          const prs = await this.db.personalRecords
+            .where('date')
+            .between(startDate, endDate)
+            .toArray();
+
+          progressData.data = prs.map(pr => ({
+            date: pr.date,
+            exercise: pr.exerciseName,
+            weight: pr.weight,
+            reps: pr.reps,
+            improvement: pr.previousRecord ? 
+              ((pr.weight - pr.previousRecord.weight) / pr.previousRecord.weight * 100).toFixed(1) + '%' : 
+              'New PR'
+          }));
+
+          progressData.summary = {
+            totalPRs: prs.length,
+            exercisesImproved: new Set(prs.map(pr => pr.exerciseName)).size,
+            averageImprovement: this.calculateAverageImprovement(prs)
+          };
+          break;
+
+        case 'endurance':
+          // Get workouts and calculate volume trends
+          const workouts = await this.db.workouts
+            .where('startTime') // Changed from 'date' to 'startTime' to match DB schema
+            .between(startDate.toISOString(), endDate.toISOString())
+            .toArray();
+
+          progressData.data = workouts.map(workout => ({
+            date: workout.startTime, // Use workout.startTime as date
+            duration: workout.totalDuration || 0, // Assuming totalDuration is stored
+            volume: workout.totalVolume || 0, // Assuming totalVolume is stored
+            exerciseCount: workout.exercises.length, // Assuming exercises is an array of exercise IDs
+            type: workout.type
+          }));
+
+          progressData.summary = {
+            totalWorkouts: workouts.length,
+            averageDuration: workouts.reduce((sum, w) => sum + w.totalDuration || 0, 0) / workouts.length,
+            totalVolume: workouts.reduce((sum, w) => sum + w.totalVolume || 0, 0),
+            consistency: this.calculateConsistency(workouts, params.timeframe)
+          };
+          break;
+
+        case 'weight':
+        case 'measurements':
+          // Mock data for now - would come from user profile tracking
+          progressData.data = this.generateMockProgressData(params.metric, startDate, endDate);
+          progressData.summary = this.calculateProgressSummary(progressData.data);
+          break;
+      }
+
+      return progressData;
+    } catch (error) {
+      console.error('Failed to get progress data:', error);
+      throw error;
+    }
+  }
+
+  private calculateAverageImprovement(prs: PersonalRecord[]): string {
+    const improvements = prs
+      .filter(pr => pr.previousRecord)
+      .map(pr => ((pr.weight - pr.previousRecord!.weight) / pr.previousRecord!.weight * 100));
+    
+    if (improvements.length === 0) return '0%';
+    
+    const average = improvements.reduce((sum, imp) => sum + imp, 0) / improvements.length;
+    return average.toFixed(1) + '%';
+  }
+
+  private calculateConsistency(workouts: Workout[], timeframe: string): number {
+    const expectedWorkouts = {
+      'week': 3,
+      'month': 12,
+      '3months': 36,
+      'year': 150
+    };
+
+    const expected = expectedWorkouts[timeframe as keyof typeof expectedWorkouts];
+    return Math.min(100, (workouts.length / expected) * 100);
+  }
+
+  private generateMockProgressData(metric: string, startDate: Date, endDate: Date): any[] {
+    const data = [];
+    const days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    for (let i = 0; i <= days; i += 7) { // Weekly data points
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      
+      if (metric === 'weight') {
+        data.push({
+          date: date.toISOString(),
+          weight: 180 - (i / 7) * 0.5 + Math.random() * 2 - 1, // Gradual decrease with variation
+          unit: 'lbs'
+        });
+      } else {
+        data.push({
+          date: date.toISOString(),
+          measurements: {
+            chest: 40 - (i / 30) * 0.1,
+            waist: 34 - (i / 14) * 0.2,
+            arms: 14 + (i / 21) * 0.1,
+            thighs: 24 + (i / 28) * 0.05
+          },
+          unit: 'inches'
+        });
+      }
+    }
+    
+    return data;
+  }
+
+  private calculateProgressSummary(data: any[]): any {
+    if (data.length < 2) return { change: 0, trend: 'stable' };
+    
+    const first = data[0];
+    const last = data[data.length - 1];
+    
+    if (first.weight !== undefined) {
+      const change = last.weight - first.weight;
+      return {
+        totalChange: change.toFixed(1),
+        percentChange: ((change / first.weight) * 100).toFixed(1) + '%',
+        trend: change < -1 ? 'decreasing' : change > 1 ? 'increasing' : 'stable',
+        averageWeekly: (change / (data.length - 1)).toFixed(2)
+      };
+    }
+    
+    return {
+      measurements: {
+        chest: (last.measurements.chest - first.measurements.chest).toFixed(1),
+        waist: (last.measurements.waist - first.measurements.waist).toFixed(1),
+        arms: (last.measurements.arms - first.measurements.arms).toFixed(1),
+        thighs: (last.measurements.thighs - first.measurements.thighs).toFixed(1)
+      },
+      trend: 'improving'
+    };
+  }
+
   // Database maintenance
   async vacuum(): Promise<boolean> {
     try {

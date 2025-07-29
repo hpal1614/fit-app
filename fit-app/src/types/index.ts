@@ -6,6 +6,7 @@ export * from './voice';
 
 // AI Types
 export * from './ai';
+export * from './mcp';
 
 // App State Types
 export interface AppState {

@@ -365,6 +365,142 @@ export class WorkoutService {
     return Math.floor((Date.now() - this.startTime.getTime()) / 1000);
   }
 
+  // New methods for MCP integration
+  async generateWorkout(params: {
+    fitnessLevel: 'beginner' | 'intermediate' | 'advanced';
+    goals: string[];
+    duration: number;
+    equipment: string[];
+  }): Promise<Workout> {
+    const exercises: WorkoutExercise[] = [];
+    const availableTemplates = WORKOUT_TEMPLATES.filter(template => {
+      // Filter templates based on fitness level
+      if (params.fitnessLevel === 'beginner' && template.name.includes('Advanced')) return false;
+      if (params.fitnessLevel === 'advanced' && template.name.includes('Beginner')) return false;
+      return true;
+    });
+
+    // Select exercises based on goals and duration
+    const exerciseCount = Math.floor(params.duration / 10); // Roughly 10 minutes per exercise
+    const selectedExercises = new Set<string>();
+
+    for (let i = 0; i < exerciseCount && i < 8; i++) {
+      // Find exercises that match goals and equipment
+      const matchingExercises = Object.values(WORKOUT_TEMPLATES)
+        .flatMap(t => t.exercises)
+        .filter(ex => {
+          const exercise = getExerciseById(ex.id);
+          if (!exercise || selectedExercises.has(ex.id)) return false;
+          
+          // Check equipment requirements
+          if (params.equipment.length > 0) {
+            // For now, simple equipment check
+            if (params.equipment.includes('dumbbell') && exercise.name.toLowerCase().includes('dumbbell')) return true;
+            if (params.equipment.includes('barbell') && exercise.name.toLowerCase().includes('barbell')) return true;
+            if (params.equipment.includes('none') && !exercise.name.toLowerCase().includes('dumbbell') && !exercise.name.toLowerCase().includes('barbell')) return true;
+          }
+          
+          return true;
+        });
+
+      if (matchingExercises.length > 0) {
+        const randomExercise = matchingExercises[Math.floor(Math.random() * matchingExercises.length)];
+        selectedExercises.add(randomExercise.id);
+        exercises.push({
+          ...randomExercise,
+          sets: this.generateSetsForLevel(params.fitnessLevel)
+        });
+      }
+    }
+
+    const workout: Workout = {
+      id: `generated-${Date.now()}`,
+      date: new Date(),
+      name: `${params.goals.join(' & ')} Workout`,
+      type: WorkoutType.STRENGTH,
+      exercises,
+      duration: 0,
+      totalVolume: 0,
+      notes: `Generated workout for ${params.fitnessLevel} level. Goals: ${params.goals.join(', ')}`,
+      isCompleted: false
+    };
+
+    return workout;
+  }
+
+  private generateSetsForLevel(level: 'beginner' | 'intermediate' | 'advanced'): number {
+    switch (level) {
+      case 'beginner':
+        return 2 + Math.floor(Math.random() * 2); // 2-3 sets
+      case 'intermediate':
+        return 3 + Math.floor(Math.random() * 2); // 3-4 sets
+      case 'advanced':
+        return 4 + Math.floor(Math.random() * 2); // 4-5 sets
+      default:
+        return 3;
+    }
+  }
+
+  async recommendExercises(params: {
+    muscleGroups: string[];
+    equipment: string[];
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+  }): Promise<Exercise[]> {
+    const allExercises: Exercise[] = [];
+    
+    // Get all unique exercises from templates
+    const exerciseMap = new Map<string, Exercise>();
+    
+    WORKOUT_TEMPLATES.forEach(template => {
+      template.exercises.forEach(workoutExercise => {
+        const exercise = getExerciseById(workoutExercise.id);
+        if (exercise && !exerciseMap.has(exercise.id)) {
+          exerciseMap.set(exercise.id, exercise);
+        }
+      });
+    });
+
+    // Filter exercises based on criteria
+    const recommendations = Array.from(exerciseMap.values()).filter(exercise => {
+      // Filter by muscle groups
+      if (params.muscleGroups.length > 0) {
+        const exerciseMuscles = exercise.muscleGroups || [];
+        const hasMatchingMuscle = params.muscleGroups.some(mg => 
+          exerciseMuscles.some(em => em.toLowerCase().includes(mg.toLowerCase()))
+        );
+        if (!hasMatchingMuscle) return false;
+      }
+
+      // Filter by equipment
+      if (params.equipment.length > 0) {
+        const hasMatchingEquipment = params.equipment.some(eq => {
+          if (eq === 'none' || eq === 'bodyweight') {
+            return !exercise.name.toLowerCase().includes('dumbbell') && 
+                   !exercise.name.toLowerCase().includes('barbell') &&
+                   !exercise.name.toLowerCase().includes('cable');
+          }
+          return exercise.name.toLowerCase().includes(eq.toLowerCase());
+        });
+        if (!hasMatchingEquipment) return false;
+      }
+
+      // Filter by difficulty (simplified for now)
+      if (params.difficulty === 'beginner') {
+        // Exclude complex compound movements for beginners
+        if (exercise.name.toLowerCase().includes('clean') || 
+            exercise.name.toLowerCase().includes('snatch') ||
+            exercise.name.toLowerCase().includes('jerk')) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Return top 5-10 recommendations
+    return recommendations.slice(0, Math.min(10, recommendations.length));
+  }
+
   // Data Management
   async getWorkoutHistory(limit: number = 10): Promise<Workout[]> {
     try {
