@@ -102,14 +102,23 @@ export const ModernFitnessDashboard: React.FC = () => {
 
   // Handle workout start with mobile features
   const handleStartWorkout = async () => {
-    vibrate({ type: 'impact', intensity: 'heavy' });
+    console.log('Start workout clicked!');
     
-    if (isMobile && capabilities.wakeLock) {
-      await requestWakeLock();
+    try {
+      vibrate({ type: 'impact', intensity: 'heavy' });
+      
+      if (isMobile && capabilities.wakeLock) {
+        await requestWakeLock();
+      }
+      
+      // Start workout logic here
+      console.log('Starting workout with mobile features enabled');
+      
+      // You can add more workout logic here or navigate to workout page
+      alert('Workout starting! (This is a demo - implement your workout logic here)');
+    } catch (error) {
+      console.error('Error starting workout:', error);
     }
-    
-    // Start workout logic here
-    console.log('Starting workout with mobile features enabled');
   };
 
   return (
@@ -322,7 +331,11 @@ export const ModernFitnessDashboard: React.FC = () => {
 
               <button 
                 className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-colors touch-manipulation"
-                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                onClick={() => {
+                  console.log('Log Meal clicked!');
+                  vibrate({ type: 'selection', intensity: 'light' });
+                  setActiveTab('nutrition');
+                }}
               >
                 <div className="flex items-center justify-between mb-4">
                   <Camera className="w-8 h-8 text-green-400" />
@@ -334,7 +347,11 @@ export const ModernFitnessDashboard: React.FC = () => {
 
               <button 
                 className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-colors touch-manipulation"
-                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                onClick={() => {
+                  console.log('AI Analysis clicked!');
+                  vibrate({ type: 'selection', intensity: 'light' });
+                  setActiveTab('ai-coach');
+                }}
               >
                 <div className="flex items-center justify-between mb-4">
                   <Brain className="w-8 h-8 text-purple-400" />
@@ -661,35 +678,6 @@ export const ModernFitnessDashboard: React.FC = () => {
         </div>
       </nav>
 
-      {/* Add CSS for safe areas */}
-      <style jsx global>{`
-        .safe-area-top {
-          padding-top: env(safe-area-inset-top);
-        }
-        .safe-area-bottom {
-          padding-bottom: env(safe-area-inset-bottom);
-        }
-        .touch-manipulation {
-          touch-action: manipulation;
-        }
-        
-        /* Optimize for mobile keyboards */
-        [data-keyboard="visible"] main {
-          padding-bottom: 50vh;
-        }
-        
-        /* Orientation-specific styles */
-        [data-orientation="landscape"] .md\\:hidden {
-          display: none;
-        }
-        
-        /* PWA specific styles */
-        @media (display-mode: standalone) {
-          .safe-area-top {
-            padding-top: calc(env(safe-area-inset-top) + 0.5rem);
-          }
-        }
-      `}</style>
     </div>
   );
 };

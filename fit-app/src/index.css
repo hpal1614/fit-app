@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safe area styles for mobile devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Optimize for mobile keyboards */
+[data-keyboard="visible"] main {
+  padding-bottom: 50vh;
+}
+
+/* Orientation-specific styles */
+[data-orientation="landscape"] .md\:hidden {
+  display: none;
+}
+
+/* PWA specific styles */
+@media (display-mode: standalone) {
+  .safe-area-top {
+    padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+  }
+}
+
 :root {
   /* Primary Colors */
   --fitness-blue: #3B82F6;
