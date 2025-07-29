@@ -24,7 +24,6 @@ export class MobileService {
   private initialize(): void {
     // Check for mobile capabilities
     this.setupOrientationHandling();
-    this.setupWakeLock();
     this.setupVibrationAPI();
   }
 

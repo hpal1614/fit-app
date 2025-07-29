@@ -9,6 +9,15 @@ import { analyticsService } from './services/analyticsService';
 
 // Initialize services
 errorService.setGlobalErrorHandler((error, context) => {
+  // Ignore errors from external scripts/extensions
+  const ignoredSources = ['share-modal.js', 'chrome-extension://', 'extension://'];
+  const errorString = error.toString() + (error.stack || '');
+  
+  if (ignoredSources.some(source => errorString.includes(source))) {
+    console.log('Ignoring external script error:', error.message);
+    return;
+  }
+  
   console.error('Global error:', error, context);
   
   // Track error in analytics

@@ -36,6 +36,15 @@ export class ErrorService {
   private setupGlobalHandlers(): void {
     // Handle uncaught errors
     window.addEventListener('error', (event) => {
+      // Ignore errors from external scripts/extensions
+      if (event.filename && (
+        event.filename.includes('chrome-extension://') ||
+        event.filename.includes('extension://') ||
+        event.filename.includes('share-modal.js')
+      )) {
+        return;
+      }
+      
       this.handleError(event.error || new Error(event.message), {
         action: 'uncaught-error',
         metadata: {
