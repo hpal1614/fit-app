@@ -35,7 +35,7 @@ export class AnalyticsService {
 
   constructor(config: AnalyticsConfig = {}) {
     this.config = {
-      enableConsoleLogging: process.env.NODE_ENV === 'development',
+      enableConsoleLogging: import.meta.env.MODE === 'development',
       enableAutoTracking: true,
       sampleRate: 1,
       ...config
@@ -445,6 +445,6 @@ export class AnalyticsService {
 
 // Singleton instance
 export const analyticsService = new AnalyticsService({
-  trackingId: process.env.REACT_APP_ANALYTICS_ID,
-  apiEndpoint: process.env.REACT_APP_ANALYTICS_ENDPOINT
+  trackingId: import.meta.env.VITE_ANALYTICS_ID,
+  apiEndpoint: import.meta.env.VITE_ANALYTICS_ENDPOINT
 });

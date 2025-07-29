@@ -181,7 +181,7 @@ export class PerformanceService {
     }
 
     // Log slow operations in development
-    if (process.env.NODE_ENV === 'development' && value > 1000 && unit === 'ms') {
+    if (import.meta.env.MODE === 'development' && value > 1000 && unit === 'ms') {
       console.warn(`Slow operation detected: ${name} took ${value}ms`, metadata);
     }
   }

@@ -124,7 +124,7 @@ export class ErrorService {
     this.reportError(report);
 
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.error('Error handled:', report);
     }
 
