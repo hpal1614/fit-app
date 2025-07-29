@@ -705,23 +705,23 @@ export class MonitoringService {
 // Create singleton instance
 export const monitoring = new MonitoringService({
   langsmith: {
-    apiKey: process.env.REACT_APP_LANGSMITH_API_KEY,
-    projectName: process.env.REACT_APP_LANGSMITH_PROJECT || 'ai-fitness-coach'
+    apiKey: import.meta.env.VITE_LANGSMITH_API_KEY,
+    projectName: import.meta.env.VITE_LANGSMITH_PROJECT || 'ai-fitness-coach'
   },
   metrics: {
-    enabled: process.env.NODE_ENV === 'production',
+    enabled: import.meta.env.MODE === 'production',
     prefix: 'fitness_app'
   },
   logging: {
-    level: process.env.LOG_LEVEL || 'info',
+    level: import.meta.env.VITE_LOG_LEVEL || 'info',
     enableConsole: true,
-    enableFile: process.env.NODE_ENV === 'production',
+    enableFile: import.meta.env.MODE === 'production',
     maxFiles: '30d',
     maxSize: '20m'
   },
-  sentry: process.env.REACT_APP_SENTRY_DSN ? {
-    dsn: process.env.REACT_APP_SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
+  sentry: import.meta.env.VITE_SENTRY_DSN ? {
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE || 'development',
     tracesSampleRate: 0.1
   } : undefined
 });

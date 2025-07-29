@@ -5,7 +5,12 @@ import { resolve } from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-     resolve: {
+  define: {
+    // Polyfill process.env for libraries that expect it
+    'process.env': {},
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+  },
+  resolve: {
      alias: [
        { find: '@sentry/react', replacement: resolve(__dirname, 'src/services/sentryShim.ts') },
        { find: 'node:async_hooks', replacement: resolve(__dirname, 'src/services/sentryShim.ts') },
