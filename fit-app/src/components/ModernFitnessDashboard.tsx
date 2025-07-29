@@ -425,21 +425,35 @@ export const ModernFitnessDashboard: React.FC = () => {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-3xl font-bold">Workouts</h2>
-              <button 
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Button clicked! Current showWorkoutGenerator:', showWorkoutGenerator);
-                  setShowWorkoutGenerator(true);
-                  console.log('Setting showWorkoutGenerator to true');
-                }}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform cursor-pointer"
-                style={{ zIndex: 10 }}
-              >
-                <Plus className="w-5 h-5" />
-                <span>Generate AI Workout</span>
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Button clicked! Current showWorkoutGenerator:', showWorkoutGenerator);
+                    setShowWorkoutGenerator(true);
+                    console.log('Setting showWorkoutGenerator to true');
+                  }}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform cursor-pointer"
+                  style={{ zIndex: 10 }}
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Generate AI Workout</span>
+                </button>
+                
+                {/* Simple fallback button */}
+                <button 
+                  type="button"
+                  onClick={() => {
+                    alert('Opening workout generator...');
+                    setShowWorkoutGenerator(true);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg text-white font-medium"
+                >
+                  Open Generator
+                </button>
+              </div>
             </div>
 
             {/* Workout Plans Grid */}
