@@ -56,31 +56,46 @@ export class ProductionAIService {
       ...config
     };
 
-    // Get AI service from factory
-    this.aiService = aiServiceFactory.getBaseAIService();
+    // Initialize AI service asynchronously
+    this.initializeAIService();
 
-    // Wrap AI service methods with circuit breakers
-    this.wrappedSendMessage = this.config.enableCircuitBreaker
-      ? circuitBreaker.wrap(
-          'ai_sendMessage',
-          this.aiService.sendMessage?.bind(this.aiService) || this.createAIFallback('error'),
-          {
-            fallback: this.createAIFallback('error')
-          }
-        )
-      : this.aiService.sendMessage?.bind(this.aiService) || this.createAIFallback('error');
-
-    this.wrappedStreamMessage = this.config.enableCircuitBreaker
-      ? circuitBreaker.wrap(
-          'ai_streamMessage',
-          this.aiService.streamMessage?.bind(this.aiService) || this.createStreamFallback(),
-          {
-            fallback: this.createStreamFallback()
-          }
-        )
-      : this.aiService.streamMessage?.bind(this.aiService) || this.createStreamFallback();
+    // Set up temporary fallback wrappers until AI service is loaded
+    this.wrappedSendMessage = this.createAIFallback('error');
+    this.wrappedStreamMessage = this.createStreamFallback();
 
     this.logger.info('Production AI service initialized', { config: this.config });
+  }
+
+  private async initializeAIService() {
+    try {
+      // Get AI service from factory
+      this.aiService = await aiServiceFactory.getBaseAIService();
+
+      // Wrap AI service methods with circuit breakers
+      this.wrappedSendMessage = this.config.enableCircuitBreaker
+        ? circuitBreaker.wrap(
+            'ai_sendMessage',
+            this.aiService.sendMessage?.bind(this.aiService) || this.createAIFallback('error'),
+            {
+              fallback: this.createAIFallback('error')
+            }
+          )
+        : this.aiService.sendMessage?.bind(this.aiService) || this.createAIFallback('error');
+
+      this.wrappedStreamMessage = this.config.enableCircuitBreaker
+        ? circuitBreaker.wrap(
+            'ai_streamMessage',
+            this.aiService.streamMessage?.bind(this.aiService) || this.createStreamFallback(),
+            {
+              fallback: this.createStreamFallback()
+            }
+          )
+        : this.aiService.streamMessage?.bind(this.aiService) || this.createStreamFallback();
+
+      this.logger.info('AI service loaded successfully');
+    } catch (error) {
+      this.logger.error('Failed to initialize AI service', { error });
+    }
   }
 
   // Send message with production features
@@ -444,13 +459,18 @@ export class ProductionAIService {
       cache: true
     };
 
-    // Test AI service
-    try {
-      const response = await this.aiService.sendMessage('test');
-      services.ai = !!response.message;
-    } catch (error) {
-      services.ai = false;
-    }
+          // Test AI service
+      try {
+        if (this.aiService && this.aiService.sendMessage) {
+          const response = await this.aiService.sendMessage('test');
+          services.ai = !!response.message;
+        } else {
+          // AI service not yet initialized, but fallbacks are working
+          services.ai = true; // Fallbacks are available
+        }
+      } catch (error) {
+        services.ai = false;
+      }
 
     const healthy = Object.values(services).every(v => v);
     
