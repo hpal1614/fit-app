@@ -81,6 +81,22 @@ export class MockAIService {
   private async generateFitnessResponse(query: string, context: any): Promise<string> {
     const lowerQuery = query.toLowerCase();
     
+    // Greetings
+    if (lowerQuery.match(/^(hi|hey|hello|greetings|good morning|good afternoon|good evening)$/i) || 
+        lowerQuery.match(/^(hi|hey|hello)\s*$/)) {
+      return this.generateGreeting();
+    }
+    
+    // BMI calculation
+    if (lowerQuery.includes('bmi') || lowerQuery.includes('body mass index')) {
+      return this.generateBMIResponse(query);
+    }
+    
+    // Calculations and metrics
+    if (lowerQuery.includes('calculat') || lowerQuery.includes('how much') || lowerQuery.includes('how many')) {
+      return this.generateCalculationResponse(query);
+    }
+    
     // Workout planning
     if (lowerQuery.includes('workout') || lowerQuery.includes('exercise')) {
       if (lowerQuery.includes('plan') || lowerQuery.includes('program')) {
@@ -100,8 +116,13 @@ export class MockAIService {
     }
     
     // Motivation
-    if (lowerQuery.includes('motivat') || lowerQuery.includes('help')) {
+    if (lowerQuery.includes('motivat') || lowerQuery.includes('need help')) {
       return this.generateMotivationalResponse(query);
+    }
+    
+    // Questions about capabilities
+    if (lowerQuery.includes('can you') || lowerQuery.includes('what can')) {
+      return this.generateCapabilitiesResponse();
     }
     
     // Default fitness response
@@ -328,6 +349,151 @@ Based on your question, here are key principles for success:
 **Remember:** Fitness is a journey, not a destination. Every small step counts!
 
 Is there a specific aspect of fitness you'd like me to elaborate on?`;
+  }
+
+  private generateGreeting(): string {
+    const greetings = [
+      "Hello! 👋 I'm your AI fitness coach. How can I help you achieve your fitness goals today?",
+      "Hey there! Ready to work on your fitness journey? What would you like to know about?",
+      "Hi! Welcome to your personal fitness assistant. I can help with workouts, nutrition, form tips, and more. What's on your mind?",
+      "Hello! Great to see you here. Whether you need a workout plan, nutrition advice, or motivation, I'm here to help!"
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  }
+
+  private generateBMIResponse(query: string): string {
+    return `
+**BMI Calculator & Information**
+
+I'd be happy to help you calculate your BMI (Body Mass Index)!
+
+**To calculate BMI, I need:**
+- Your weight (in kg or lbs)
+- Your height (in cm, meters, or feet/inches)
+
+**BMI Formula:**
+- Metric: BMI = weight (kg) / height (m)²
+- Imperial: BMI = (weight (lbs) × 703) / height (inches)²
+
+**Example Calculation:**
+If you're 70 kg and 1.75m tall:
+BMI = 70 ÷ (1.75 × 1.75) = 22.9
+
+**BMI Categories:**
+- Underweight: < 18.5
+- Normal weight: 18.5-24.9
+- Overweight: 25-29.9
+- Obese: ≥ 30
+
+**Important Note:** BMI is just one metric and doesn't account for muscle mass, bone density, or body composition. Athletes often have high BMIs despite being very fit!
+
+Please share your height and weight, and I'll calculate your BMI for you!`;
+  }
+
+  private generateCalculationResponse(query: string): string {
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes('calorie') || lowerQuery.includes('tdee')) {
+      return `
+**Calorie Calculator**
+
+To calculate your daily calorie needs (TDEE - Total Daily Energy Expenditure), I need:
+- Age
+- Gender
+- Height
+- Weight
+- Activity level
+
+**Basic Formula (Mifflin-St Jeor):**
+- Men: (10 × weight in kg) + (6.25 × height in cm) - (5 × age) + 5
+- Women: (10 × weight in kg) + (6.25 × height in cm) - (5 × age) - 161
+
+**Activity Multipliers:**
+- Sedentary: BMR × 1.2
+- Light activity: BMR × 1.375
+- Moderate: BMR × 1.55
+- Very active: BMR × 1.725
+
+**For Weight Loss:** Create a 300-500 calorie deficit
+**For Muscle Gain:** Add 200-500 calorie surplus
+
+Share your details and I'll calculate your personalized calorie needs!`;
+    }
+    
+    if (lowerQuery.includes('protein')) {
+      return `
+**Protein Calculator**
+
+**Recommended Protein Intake:**
+- Sedentary adults: 0.8g per kg body weight
+- Active individuals: 1.2-1.7g per kg
+- Strength training: 1.6-2.2g per kg
+- Endurance athletes: 1.2-1.4g per kg
+
+**Example:** 
+70kg person doing strength training:
+70 × 1.8 = 126g protein daily
+
+**Good Protein Sources (per 100g):**
+- Chicken breast: 31g
+- Greek yogurt: 10g
+- Eggs: 13g (2 large eggs)
+- Lentils: 9g
+- Tofu: 8g
+
+What's your weight and activity level? I'll calculate your optimal protein intake!`;
+    }
+    
+    return `
+I can help you calculate various fitness metrics:
+
+**Available Calculations:**
+- BMI (Body Mass Index)
+- Daily calorie needs (TDEE)
+- Protein requirements
+- One-rep max estimation
+- Body fat percentage estimation
+- Water intake needs
+- Macro splits for your goals
+
+Which calculation would you like me to help with?`;
+  }
+
+  private generateCapabilitiesResponse(): string {
+    return `
+**I'm your AI Fitness Coach! Here's how I can help:**
+
+**💪 Workout Planning**
+- Custom workout programs (beginner to advanced)
+- Exercise recommendations
+- Form and technique guidance
+- Progressive overload strategies
+
+**🥗 Nutrition Guidance**
+- Meal planning and ideas
+- Macro calculations
+- Calorie tracking help
+- Supplement recommendations
+
+**📊 Calculations & Tracking**
+- BMI calculation
+- TDEE/calorie needs
+- Protein requirements
+- Progress tracking tips
+
+**🎯 Goal-Specific Help**
+- Weight loss strategies
+- Muscle building programs
+- Strength training
+- Endurance improvement
+
+**🧠 Motivation & Support**
+- Accountability tips
+- Overcoming plateaus
+- Building habits
+- Recovery advice
+
+Just ask me anything about fitness, and I'll provide personalized guidance!`;
   }
 
   // Simulate voice synthesis
