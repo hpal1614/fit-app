@@ -38,7 +38,6 @@ export const ModernFitnessDashboard: React.FC = () => {
   const { monitorBiometrics } = useMCPBiometrics();
   const { trackProgress } = useMCPProgress();
   const { generateWorkout } = useMCPWorkoutGeneration();
-  const { processContext } = useMCP();
   const workout = useWorkout();
   const mainRef = useRef<HTMLElement>(null);
 
@@ -136,25 +135,29 @@ export const ModernFitnessDashboard: React.FC = () => {
     setAIChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setAIChatInput('');
     
-    try {
-      const response = await processContext({
-        text: userMessage,
-        metadata: {
-          timestamp: new Date(),
-          userContext: { fitnessGoals: 'general' }
-        }
-      });
+    // For now, let's use a simple demo response system
+    // You can replace this with actual AI service calls later
+    setTimeout(() => {
+      let response = "I'm your AI fitness coach! ";
       
-      if (response) {
-        setAIChatMessages(prev => [...prev, { role: 'assistant', content: response.content }]);
+      const lowerMessage = userMessage.toLowerCase();
+      
+      if (lowerMessage.includes('workout')) {
+        response += "I can help you create a personalized workout plan. What are your fitness goals?";
+      } else if (lowerMessage.includes('diet') || lowerMessage.includes('nutrition')) {
+        response += "Nutrition is key to fitness success. I recommend a balanced diet with adequate protein for muscle recovery.";
+      } else if (lowerMessage.includes('weight') || lowerMessage.includes('lose')) {
+        response += "Weight loss requires a caloric deficit. Combine cardio with strength training for best results.";
+      } else if (lowerMessage.includes('muscle') || lowerMessage.includes('gain')) {
+        response += "To build muscle, focus on progressive overload, adequate protein intake, and proper rest.";
+      } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+        response = "Hello! I'm here to help with your fitness journey. What would you like to know about?";
+      } else {
+        response += "Feel free to ask me about workouts, nutrition, weight loss, muscle building, or any fitness-related topic!";
       }
-    } catch (error) {
-      console.error('AI chat error:', error);
-      setAIChatMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'I apologize, but I encountered an error. Please try again.' 
-      }]);
-    }
+      
+      setAIChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    }, 1000); // Simulate AI thinking time
   };
 
   return (
