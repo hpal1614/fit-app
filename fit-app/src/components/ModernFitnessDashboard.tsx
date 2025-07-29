@@ -422,33 +422,15 @@ export const ModernFitnessDashboard: React.FC = () => {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-3xl font-bold">Workouts</h2>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => {
-                    console.log('Generate workout button clicked!');
-                    try {
-                      vibrate({ type: 'impact', intensity: 'medium' });
-                    } catch (e) {
-                      console.log('Vibrate not available:', e);
-                    }
-                    setShowWorkoutGenerator(true);
-                    console.log('showWorkoutGenerator set to true');
-                  }}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform touch-manipulation cursor-pointer"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>Generate AI Workout</span>
-                </button>
-                <button 
-                  onClick={() => {
-                    alert('Test button works!');
-                    setShowWorkoutGenerator(true);
-                  }}
-                  className="bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg text-white"
-                >
-                  Test
-                </button>
-              </div>
+              <button 
+                onClick={() => {
+                  setShowWorkoutGenerator(true);
+                }}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 rounded-lg flex items-center space-x-2 hover:scale-105 transition-transform touch-manipulation cursor-pointer"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Generate AI Workout</span>
+              </button>
             </div>
 
             {/* Workout Plans Grid */}
