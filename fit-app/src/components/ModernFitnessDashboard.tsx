@@ -21,7 +21,9 @@ import {
   Wifi,
   WifiOff,
   Battery,
-  BatteryLow
+  BatteryLow,
+  X,
+  Send
 } from 'lucide-react';
 import { useMCPBiometrics, useMCPProgress, useMCPWorkoutGeneration } from '../hooks/useMCP';
 import { useWorkout } from '../hooks/useWorkout';
@@ -29,9 +31,14 @@ import { useMobile, useSwipeNavigation } from '../hooks/useMobile';
 
 export const ModernFitnessDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [aiChatInput, setAIChatInput] = useState('');
+  const [aiChatMessages, setAIChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
+  
   const { monitorBiometrics } = useMCPBiometrics();
   const { trackProgress } = useMCPProgress();
   const { generateWorkout } = useMCPWorkoutGeneration();
+  const { processContext } = useMCP();
   const workout = useWorkout();
   const mainRef = useRef<HTMLElement>(null);
 
@@ -118,6 +125,35 @@ export const ModernFitnessDashboard: React.FC = () => {
       alert('Workout starting! (This is a demo - implement your workout logic here)');
     } catch (error) {
       console.error('Error starting workout:', error);
+    }
+  };
+
+  // Handle AI chat
+  const handleAIChatSubmit = async () => {
+    if (!aiChatInput.trim()) return;
+    
+    const userMessage = aiChatInput;
+    setAIChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setAIChatInput('');
+    
+    try {
+      const response = await processContext({
+        text: userMessage,
+        metadata: {
+          timestamp: new Date(),
+          userContext: { fitnessGoals: 'general' }
+        }
+      });
+      
+      if (response) {
+        setAIChatMessages(prev => [...prev, { role: 'assistant', content: response.content }]);
+      }
+    } catch (error) {
+      console.error('AI chat error:', error);
+      setAIChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'I apologize, but I encountered an error. Please try again.' 
+      }]);
     }
   };
 
@@ -599,7 +635,10 @@ export const ModernFitnessDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               <button 
                 className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105 touch-manipulation"
-                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                onClick={() => {
+                  vibrate({ type: 'selection', intensity: 'light' });
+                  alert('Voice Coaching: This feature would enable real-time audio guidance during your workouts. (Demo)');
+                }}
               >
                 <Mic className="w-10 h-10 text-blue-400 mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Voice Coaching</h3>
@@ -608,7 +647,10 @@ export const ModernFitnessDashboard: React.FC = () => {
 
               <button 
                 className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 text-left border border-white/10 hover:bg-white/10 transition-all hover:scale-105 touch-manipulation"
-                onClick={() => vibrate({ type: 'selection', intensity: 'light' })}
+                onClick={() => {
+                  vibrate({ type: 'selection', intensity: 'light' });
+                  alert('Form Analysis: This feature would use your camera to analyze exercise form in real-time. (Demo)');
+                }}
               >
                 <Camera className="w-10 h-10 text-green-400 mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Form Analysis</h3>
@@ -641,11 +683,71 @@ export const ModernFitnessDashboard: React.FC = () => {
               </p>
               <button 
                 className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-lg text-lg font-medium hover:scale-105 transition-transform touch-manipulation"
-                onClick={() => vibrate({ type: 'impact', intensity: 'heavy' })}
+                onClick={() => {
+                  vibrate({ type: 'impact', intensity: 'heavy' });
+                  setShowAIChat(true);
+                }}
               >
                 Start AI Session
               </button>
             </div>
+
+            {/* AI Chat Interface */}
+            {showAIChat && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className="bg-gray-900 rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+                  <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                    <h3 className="text-xl font-semibold">AI Fitness Coach</h3>
+                    <button 
+                      onClick={() => setShowAIChat(false)}
+                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {aiChatMessages.length === 0 ? (
+                      <div className="text-center text-gray-400 py-8">
+                        <Brain className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p>Hi! I'm your AI fitness coach. Ask me anything about workouts, nutrition, or fitness goals!</p>
+                      </div>
+                    ) : (
+                      aiChatMessages.map((msg, idx) => (
+                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[70%] p-3 rounded-lg ${
+                            msg.role === 'user' 
+                              ? 'bg-blue-600 text-white' 
+                              : 'bg-gray-800 text-gray-100'
+                          }`}>
+                            {msg.content}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  <div className="p-4 border-t border-gray-800">
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        value={aiChatInput}
+                        onChange={(e) => setAIChatInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAIChatSubmit()}
+                        placeholder="Ask me about fitness, workouts, nutrition..."
+                        className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                      <button 
+                        onClick={handleAIChatSubmit}
+                        className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
