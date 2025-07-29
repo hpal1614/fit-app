@@ -27,13 +27,12 @@ import {
 } from 'lucide-react';
 import { useMCPBiometrics, useMCPProgress, useMCPWorkoutGeneration } from '../hooks/useMCP';
 import { useWorkout } from '../hooks/useWorkout';
-import { useMobile, useSwipeNavigation } from '../hooks/useMobile';
+// import { useMobile, useSwipeNavigation } from '../hooks/useMobile';
+import { SimpleAIChat } from './SimpleAIChat';
 
 export const ModernFitnessDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showAIChat, setShowAIChat] = useState(false);
-  const [aiChatInput, setAIChatInput] = useState('');
-  const [aiChatMessages, setAIChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
   
   const { monitorBiometrics } = useMCPBiometrics();
   const { trackProgress } = useMCPProgress();
@@ -41,36 +40,47 @@ export const ModernFitnessDashboard: React.FC = () => {
   const workout = useWorkout();
   const mainRef = useRef<HTMLElement>(null);
 
-  // Mobile features
-  const { 
-    isMobile, 
-    isInstalled,
-    orientation,
-    networkStatus,
-    batteryLevel,
-    capabilities,
-    vibrate,
-    requestWakeLock,
-    releaseWakeLock
-  } = useMobile({
-    enableWakeLock: workout.isActive,
-    enableSwipeGestures: true,
-    enablePullToRefresh: true,
-    onRefresh: async () => {
-      await handleRefreshData();
-    }
-  });
+  // Mobile features - temporarily disabled for debugging
+  // const { 
+  //   isMobile, 
+  //   isInstalled,
+  //   orientation,
+  //   networkStatus,
+  //   batteryLevel,
+  //   capabilities,
+  //   vibrate,
+  //   requestWakeLock,
+  //   releaseWakeLock
+  // } = useMobile({
+  //   enableWakeLock: workout.isActive,
+  //   enableSwipeGestures: true,
+  //   enablePullToRefresh: true,
+  //   onRefresh: async () => {
+  //     await handleRefreshData();
+  //   }
+  // });
+  
+  // Temporary mock values
+  const isMobile = false;
+  const isInstalled = false;
+  const networkStatus = { online: true };
+  const batteryLevel = null;
+  const capabilities = { wakeLock: false };
+  const vibrate = () => {};
+  const requestWakeLock = async () => false;
+  const releaseWakeLock = async () => {};
 
   // Tab navigation array
   const tabs = ['dashboard', 'workouts', 'nutrition', 'ai-coach'];
   
-  // Swipe navigation
-  const swipeHandlers = useSwipeNavigation(
-    () => navigateTab('next'),     // Swipe left
-    () => navigateTab('previous'),  // Swipe right
-    undefined,
-    undefined
-  );
+  // Swipe navigation - temporarily disabled
+  // const swipeHandlers = useSwipeNavigation(
+  //   () => navigateTab('next'),     // Swipe left
+  //   () => navigateTab('previous'),  // Swipe right
+  //   undefined,
+  //   undefined
+  // );
+  const swipeHandlers = {};
 
   // Navigate between tabs
   const navigateTab = (direction: 'next' | 'previous') => {
@@ -127,38 +137,7 @@ export const ModernFitnessDashboard: React.FC = () => {
     }
   };
 
-  // Handle AI chat
-  const handleAIChatSubmit = async () => {
-    if (!aiChatInput.trim()) return;
-    
-    const userMessage = aiChatInput;
-    setAIChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setAIChatInput('');
-    
-    // For now, let's use a simple demo response system
-    // You can replace this with actual AI service calls later
-    setTimeout(() => {
-      let response = "I'm your AI fitness coach! ";
-      
-      const lowerMessage = userMessage.toLowerCase();
-      
-      if (lowerMessage.includes('workout')) {
-        response += "I can help you create a personalized workout plan. What are your fitness goals?";
-      } else if (lowerMessage.includes('diet') || lowerMessage.includes('nutrition')) {
-        response += "Nutrition is key to fitness success. I recommend a balanced diet with adequate protein for muscle recovery.";
-      } else if (lowerMessage.includes('weight') || lowerMessage.includes('lose')) {
-        response += "Weight loss requires a caloric deficit. Combine cardio with strength training for best results.";
-      } else if (lowerMessage.includes('muscle') || lowerMessage.includes('gain')) {
-        response += "To build muscle, focus on progressive overload, adequate protein intake, and proper rest.";
-      } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
-        response = "Hello! I'm here to help with your fitness journey. What would you like to know about?";
-      } else {
-        response += "Feel free to ask me about workouts, nutrition, weight loss, muscle building, or any fitness-related topic!";
-      }
-      
-      setAIChatMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    }, 1000); // Simulate AI thinking time
-  };
+
 
   return (
     <div 
@@ -687,8 +666,14 @@ export const ModernFitnessDashboard: React.FC = () => {
               <button 
                 className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-lg text-lg font-medium hover:scale-105 transition-transform touch-manipulation"
                 onClick={() => {
-                  vibrate({ type: 'impact', intensity: 'heavy' });
+                  console.log('Start AI Session clicked!');
+                  try {
+                    vibrate({ type: 'impact', intensity: 'heavy' });
+                  } catch (e) {
+                    console.log('Vibrate not available');
+                  }
                   setShowAIChat(true);
+                  console.log('showAIChat set to:', true);
                 }}
               >
                 Start AI Session
@@ -696,61 +681,7 @@ export const ModernFitnessDashboard: React.FC = () => {
             </div>
 
             {/* AI Chat Interface */}
-            {showAIChat && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                <div className="bg-gray-900 rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
-                  <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                    <h3 className="text-xl font-semibold">AI Fitness Coach</h3>
-                    <button 
-                      onClick={() => setShowAIChat(false)}
-                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {aiChatMessages.length === 0 ? (
-                      <div className="text-center text-gray-400 py-8">
-                        <Brain className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                        <p>Hi! I'm your AI fitness coach. Ask me anything about workouts, nutrition, or fitness goals!</p>
-                      </div>
-                    ) : (
-                      aiChatMessages.map((msg, idx) => (
-                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[70%] p-3 rounded-lg ${
-                            msg.role === 'user' 
-                              ? 'bg-blue-600 text-white' 
-                              : 'bg-gray-800 text-gray-100'
-                          }`}>
-                            {msg.content}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  
-                  <div className="p-4 border-t border-gray-800">
-                    <div className="flex gap-2">
-                      <input 
-                        type="text"
-                        value={aiChatInput}
-                        onChange={(e) => setAIChatInput(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAIChatSubmit()}
-                        placeholder="Ask me about fitness, workouts, nutrition..."
-                        className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <button 
-                        onClick={handleAIChatSubmit}
-                        className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <SimpleAIChat isOpen={showAIChat} onClose={() => setShowAIChat(false)} />
           </div>
         )}
       </main>
