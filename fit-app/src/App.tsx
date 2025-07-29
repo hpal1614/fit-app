@@ -28,6 +28,7 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
 import { VoiceAssistant } from './components/VoiceAssistant';
 import { WorkoutLoggerDemo } from './components/WorkoutLoggerDemo';
+import { BottomNavigation } from './components/BottomNavigation';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
 import { databaseService } from './services/databaseService';
@@ -40,11 +41,11 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
+type TabType = 'logger' | 'workouts' | 'nutrition' | 'coach';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState<TabType>('workouts');
+  const [activeTab, setActiveTab] = useState<TabType>('logger');
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   
@@ -128,8 +129,8 @@ function App() {
         </div>
       </div>
 
-      {/* User Profile Card - Show on key tabs only */}
-      {['workouts', 'analytics', 'profile'].includes(activeTab) && (
+      {/* User Profile Card - Show on logger tab */}
+      {activeTab === 'logger' && (
         <div className="relative z-10 mx-6 mb-6">
           <UserProfileCard 
             userProfile={userProfile} 
@@ -142,9 +143,8 @@ function App() {
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
-        {activeTab === 'workouts' && <WorkoutLoggerDemo />}
-        {activeTab === 'generator' && <WorkoutGenerator />}
-        {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
+        {activeTab === 'logger' && <WorkoutLoggerDemo />}
+        {activeTab === 'workouts' && <WorkoutGenerator />}
         {activeTab === 'nutrition' && (
           <div className="space-y-6">
             <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800 text-center">
@@ -166,38 +166,6 @@ function App() {
           </div>
         )}
         {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} />}
-        {activeTab === 'analytics' && <AnalyticsDashboard />}
-        {activeTab === 'profile' && (
-          <div className="space-y-6">
-            <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800">
-              <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Fitness Level</span>
-                  <span className="text-lime-400">{userProfile.level}</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Team</span>
-                  <span className="text-lime-400">{userProfile.team}</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Voice Commands</span>
-                  <span className={voiceSupported ? "text-green-400" : "text-red-400"}>
-                    {voiceSupported ? "Enabled" : "Not Supported"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>PWA Features</span>
-                  <span className="text-green-400">Active</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Offline Storage</span>
-                  <span className="text-green-400">Enabled</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Voice Assistant Button */}
@@ -208,31 +176,12 @@ function App() {
         <Mic className="w-6 h-6 text-black" />
       </button>
 
-      {/* Bottom Navigation - 7 tabs for all features */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800 z-50">
-        <div className="flex items-center justify-around py-2">
-          {[
-            { icon: Dumbbell, label: 'Logger', key: 'workouts' },
-            { icon: Target, label: 'Generate', key: 'generator' },
-            { icon: Brain, label: 'Smart AI', key: 'intelligent-ai' },
-            { icon: Apple, label: 'Nutrition', key: 'nutrition' },
-            { icon: MessageCircle, label: 'Coach', key: 'coach' },
-            { icon: TrendingUp, label: 'Stats', key: 'analytics' },
-            { icon: User, label: 'Profile', key: 'profile' }
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as TabType)}
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg transition-colors ${
-                activeTab === tab.key ? 'text-lime-400' : 'text-gray-400'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{tab.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Bottom Navigation - 4 tabs */}
+      <BottomNavigation 
+        activeTab={activeTab} 
+        onTabChange={(tab) => setActiveTab(tab as TabType)}
+        workoutActive={workout.isActive}
+      />
 
       {/* Voice Assistant */}
       {showVoiceAssistant && (
