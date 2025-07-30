@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { WorkoutGeneratorService, WorkoutGoal, AvailableEquipment, GeneratedWorkout } from '../services/WorkoutGeneratorService';
+import { useMCPTools } from '../hooks/useMCPTools';
+import { Brain, Sparkles } from 'lucide-react';
 
 export const WorkoutGenerator: React.FC = () => {
   const [workoutGoal, setWorkoutGoal] = useState<WorkoutGoal>({
@@ -20,18 +22,64 @@ export const WorkoutGenerator: React.FC = () => {
   const [timeAvailable, setTimeAvailable] = useState(60);
   const [generatedWorkout, setGeneratedWorkout] = useState<GeneratedWorkout | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [useAI, setUseAI] = useState(true); // Default to AI-powered generation
   
   const workoutGenerator = new WorkoutGeneratorService();
+  const { generateWorkout: generateAIWorkout, loading: mcpLoading, error: mcpError } = useMCPTools();
 
   const handleGenerateWorkout = async () => {
     setIsGenerating(true);
     
-    // Simulate some processing time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const workout = workoutGenerator.generateWorkout(workoutGoal, equipment, timeAvailable);
-    setGeneratedWorkout(workout);
-    setIsGenerating(false);
+    try {
+      if (useAI) {
+        // Use MCP AI-powered generation
+        const equipmentArray = Object.entries(equipment)
+          .filter(([_, value]) => value)
+          .map(([key]) => key.replace(/([A-Z])/g, ' $1').trim());
+        
+        const aiResult = await generateAIWorkout(
+          workoutGoal.type,
+          timeAvailable,
+          equipmentArray
+        );
+        
+        // Convert AI result to GeneratedWorkout format
+        if (aiResult && aiResult.exercises) {
+          const workout: GeneratedWorkout = {
+            name: `AI ${workoutGoal.type.replace('-', ' ')} Workout`,
+            goal: workoutGoal,
+            estimatedDuration: timeAvailable,
+            exercises: aiResult.exercises.map((ex: any, idx: number) => ({
+              name: ex.exercise?.name || 'Unknown Exercise',
+              primaryMuscles: ex.exercise?.primaryMuscles || [],
+              secondaryMuscles: ex.exercise?.secondaryMuscles || [],
+              sets: ex.targetSets || 3,
+              reps: ex.targetReps || 10,
+              restBetweenSets: workoutGoal.type === 'strength' ? 180 : 90,
+              rpe: workoutGoal.type === 'endurance' ? 6 : 8,
+              notes: ex.notes || `AI-optimized for ${workoutGoal.type}`
+            })),
+            restPeriods: workoutGoal.type === 'strength' ? [180, 240] : [60, 90],
+            notes: [
+              `AI-generated workout based on ${workoutGoal.type} goals`,
+              `Optimized for ${timeAvailable} minutes`,
+              aiResult.message || 'Follow proper form and warm up before starting'
+            ],
+            progressionStrategy: 'AI will adapt your next workout based on your performance'
+          };
+          setGeneratedWorkout(workout);
+        }
+      } else {
+        // Use local generation
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        const workout = workoutGenerator.generateWorkout(workoutGoal, equipment, timeAvailable);
+        setGeneratedWorkout(workout);
+      }
+    } catch (error) {
+      console.error('Failed to generate workout:', error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleQuickWorkout = async (focus: 'upper' | 'lower' | 'full-body' | 'core') => {
@@ -53,6 +101,34 @@ export const WorkoutGenerator: React.FC = () => {
 
       {!generatedWorkout ? (
         <div className="space-y-6">
+          {/* AI Mode Toggle */}
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Brain className="w-6 h-6 text-purple-600" />
+                <div>
+                  <h3 className="font-medium text-gray-900">AI-Powered Generation</h3>
+                  <p className="text-sm text-gray-600">Use MCP tools for intelligent workout planning</p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useAI}
+                  onChange={(e) => setUseAI(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              </label>
+            </div>
+            {useAI && (
+              <div className="mt-3 flex items-center space-x-2 text-sm text-purple-700">
+                <Sparkles className="w-4 h-4" />
+                <span>AI analyzes your goals and creates optimized workouts</span>
+              </div>
+            )}
+          </div>
+
           {/* Quick Workout Options */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <h2 className="text-xl font-semibold mb-4">Quick Workouts</h2>
@@ -182,19 +258,29 @@ export const WorkoutGenerator: React.FC = () => {
               </div>
             </div>
 
+            {/* Error Display */}
+            {mcpError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {mcpError}
+              </div>
+            )}
+
             {/* Generate Button */}
             <button
               onClick={handleGenerateWorkout}
-              disabled={isGenerating}
+              disabled={isGenerating || mcpLoading}
               className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isGenerating ? (
+              {isGenerating || mcpLoading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Generating Your Perfect Workout...
+                  {useAI ? 'AI is Creating Your Perfect Workout...' : 'Generating Your Perfect Workout...'}
                 </div>
               ) : (
-                '🚀 Generate Custom Workout'
+                <div className="flex items-center justify-center gap-2">
+                  {useAI && <Brain className="w-5 h-5" />}
+                  <span>{useAI ? 'Generate AI Workout' : 'Generate Workout'}</span>
+                </div>
               )}
             </button>
           </div>
@@ -204,7 +290,10 @@ export const WorkoutGenerator: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{generatedWorkout.name}</h2>
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                {generatedWorkout.name}
+                {generatedWorkout.name.includes('AI') && <Brain className="w-6 h-6 text-purple-600" />}
+              </h2>
               <p className="text-gray-600">
                 {generatedWorkout.estimatedDuration} minutes • {generatedWorkout.exercises.length} exercises
               </p>
