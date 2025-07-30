@@ -49,6 +49,9 @@ function App() {
   
   const { workout, startWorkout, completeWorkout, addExercise } = useWorkout();
   const { isSupported: voiceSupported } = useVoice();
+  
+  // Safety check for workout object
+  const safeWorkout = workout || { isActive: false, duration: 0, exercises: [] };
   // Temporarily disable MCP tools to fix black screen
   const analyzeForm = null;
   const generateAIWorkout = null;
@@ -187,8 +190,8 @@ function App() {
               <UserProfileCard 
                 userProfile={userProfile} 
                 userStats={userStats}
-                isActiveWorkout={workout.isActive}
-                workoutDuration={workout.duration}
+                isActiveWorkout={safeWorkout.isActive}
+                workoutDuration={safeWorkout.duration}
               />
               
               {/* Quick Actions */}
@@ -286,7 +289,7 @@ function App() {
               {showWorkoutGenerator ? (
                 <WorkoutGenerator />
               ) : (
-                <WorkoutLoggerTab workout={workout} />
+                <WorkoutLoggerTab workout={safeWorkout} />
               )}
             </div>
           )}
@@ -297,7 +300,7 @@ function App() {
           {/* Coach Tab - Enhanced AI Chat */}
           {activeTab === 'coach' && (
             <AIChatInterface 
-              workoutContext={workout} 
+              workoutContext={safeWorkout} 
               onClose={() => setActiveTab('home')}
               className="h-[calc(100vh-12rem)]"
             />
