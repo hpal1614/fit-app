@@ -52,13 +52,21 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     }
   });
 
-  const {
-    processMultimodalInput,
-    lookupExercise,
-    trackProgress,
-    analyzeBiometrics,
-    loading: mcpLoading
-  } = useMCPTools();
+  // Temporarily disable MCP tools to test if that's the issue
+  const processMultimodalInput = null;
+  const lookupExercise = null;
+  const trackProgress = null;
+  const analyzeBiometrics = null;
+  const mcpLoading = false;
+  
+  // TODO: Re-enable when MCP is fixed
+  // const {
+  //   processMultimodalInput,
+  //   lookupExercise,
+  //   trackProgress,
+  //   analyzeBiometrics,
+  //   loading: mcpLoading
+  // } = useMCPTools();
 
   const [inputValue, setInputValue] = useState('');
   const [isMuted, setIsMuted] = useState(false);
@@ -141,7 +149,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      if (mcpEnabled) {
+      // MCP tools temporarily disabled - skip this block
+      if (false && mcpEnabled && processMultimodalInput) {
         // Analyze intent and use MCP tools if appropriate
         const intent = analyzeUserIntent(messageText);
         
@@ -194,7 +203,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       };
       setMessages(prev => [...prev, errorMessage]);
     }
-  }, [inputValue, isStreaming, streamResponse, workoutContext, speak, isMuted, mcpEnabled, processMultimodalInput]);
+  }, [inputValue, isStreaming, streamResponse, workoutContext, speak, isMuted, mcpEnabled]);
 
   const handleVoiceToggle = () => {
     if (isListening) {

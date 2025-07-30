@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { aiService } from '../services/aiService';
 
 interface StreamingAIOptions {
   onChunk?: (chunk: string) => void;
@@ -24,9 +25,19 @@ export const useStreamingAI = (options: StreamingAIOptions = {}) => {
     abortControllerRef.current = new AbortController();
     
     try {
-      // Simulate streaming like ChatGPT
-      const response = await generateStreamingResponse(message);
-      const words = response.split(' ');
+      // Get response from real AI service
+      const aiResponse = await aiService.getResponse({
+        message,
+        type: 'general-advice',
+        context: {
+          isActive: false,
+          startTime: new Date(),
+          exercises: []
+        }
+      });
+      
+      const responseText = aiResponse.message;
+      const words = responseText.split(' ');
       let accumulatedResponse = '';
       
       for (let i = 0; i < words.length; i++) {
@@ -49,9 +60,29 @@ export const useStreamingAI = (options: StreamingAIOptions = {}) => {
       options.onComplete?.(accumulatedResponse);
       
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Streaming failed';
-      setError(errorMsg);
-      options.onError?.(err as Error);
+      console.error('Streaming error:', err);
+      
+      // Fall back to hardcoded response if AI fails
+      const fallbackResponse = await generateStreamingResponse(message);
+      const words = fallbackResponse.split(' ');
+      let accumulatedResponse = '';
+      
+      for (let i = 0; i < words.length; i++) {
+        if (abortControllerRef.current?.signal.aborted) {
+          break;
+        }
+        
+        const word = words[i];
+        const chunk = i === 0 ? word : ' ' + word;
+        accumulatedResponse += chunk;
+        
+        setCurrentResponse(accumulatedResponse);
+        options.onChunk?.(chunk);
+        
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 30));
+      }
+      
+      options.onComplete?.(accumulatedResponse);
     } finally {
       setIsStreaming(false);
       abortControllerRef.current = null;

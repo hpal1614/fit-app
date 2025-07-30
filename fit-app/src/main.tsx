@@ -6,16 +6,24 @@ import { MCPProvider } from './providers/MCPProvider'
 
 // Emergency error handlers
 window.addEventListener('error', (event) => {
+  const errorMessage = event.error?.message || event.message || '';
+  const errorSource = event.filename || '';
+  
   const knownErrors = [
     'chrome-extension://invalid/',
+    'chrome-extension://',
     'share-modal.js',
-    'Service worker registration failed'
+    'Service worker registration failed',
+    'addEventListener',
+    'web_accessible_resources',
+    'net::ERR_FAILED'
   ];
   
-  if (knownErrors.some(err => event.error?.message?.includes(err))) {
+  if (knownErrors.some(err => errorMessage.includes(err) || errorSource.includes(err))) {
     event.preventDefault();
-    console.warn('Suppressed known error:', event.error?.message);
-    return;
+    event.stopPropagation();
+    console.warn('Suppressed known error:', errorMessage);
+    return false;
   }
 });
 
