@@ -27,6 +27,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   className = ''
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const messagesRef = useRef<Message[]>([]);
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>('');
   const [mcpEnabled, setMcpEnabled] = useState(true);
   
@@ -36,19 +37,42 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     },
     onComplete: (fullResponse) => {
       // Add complete message to messages
+      const messageId = `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
+        id: messageId,
         type: 'ai',
         content: fullResponse,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiMessage]);
+      
+              // Use both ref and state to ensure messages persist
+        messagesRef.current = [...messagesRef.current, aiMessage];
+        setMessages([...messagesRef.current]);
+        console.log('Added AI message. Total messages:', messagesRef.current.length);
+      
+      // Clear streaming message
       setCurrentStreamingMessage('');
       
       // Speak the response
-      if (!isMuted) {
-        speak(fullResponse);
+      if (!isMuted && speak) {
+        try {
+          speak(fullResponse);
+        } catch (error) {
+          console.error('Speech failed:', error);
+        }
       }
+    },
+    onError: (error) => {
+      console.error('Streaming error:', error);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        type: 'ai',
+        content: 'I apologize, but I encountered an error. Please try again with a different question.',
+        timestamp: new Date()
+      };
+              messagesRef.current = [...messagesRef.current, errorMessage];
+        setMessages([...messagesRef.current]);
+        setCurrentStreamingMessage('');
     }
   });
 
@@ -87,16 +111,17 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, currentStreamingMessage]);
 
-  // Add initial greeting
+  // Add initial greeting (only once)
   useEffect(() => {
     const greeting: Message = {
-      id: 'initial',
+      id: 'initial-greeting',
       type: 'ai',
-      content: `Hey there! 🎯 I'm your AI fitness coach${mcpEnabled ? ' with advanced intelligence' : ''}. I can help you with:\n\n• Workout plans & exercises 💪\n• Form tips & technique 🏋️\n• Nutrition advice 🥗\n• Progress tracking 📈\n\n${workoutContext ? `I see you're ${workoutContext.isActive ? 'crushing a workout right now' : 'planning your next session'}! ` : ''}What's on your mind?`,
+      content: `Hey there! 🎯 I'm your AI fitness coach. I can help you with:\n\n• Workout plans & exercises 💪\n• Form tips & technique 🏋️\n• Nutrition advice 🥗\n• Progress tracking 📈\n\nWhat's on your mind?`,
       timestamp: new Date()
     };
+    messagesRef.current = [greeting];
     setMessages([greeting]);
-  }, [workoutContext, mcpEnabled]);
+  }, []); // Empty dependency array - only run once
 
   // Handle voice transcript
   useEffect(() => {
@@ -139,14 +164,18 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     setInputValue('');
 
     // Add user message
+    const userMessageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const userMessage: Message = {
-      id: `user-${Date.now()}`,
+      id: userMessageId,
       type: 'user',
       content: messageText,
       timestamp: new Date(),
       isVoice: !!inputText
     };
-    setMessages(prev => [...prev, userMessage]);
+    console.log('Adding user message:', userMessageId, 'Content:', messageText);
+    messagesRef.current = [...messagesRef.current, userMessage];
+    setMessages([...messagesRef.current]);
+    console.log('Messages after adding user message:', messagesRef.current.length);
 
     try {
       // MCP tools temporarily disabled - skip this block
@@ -195,13 +224,14 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       await streamResponse(prompt);
     } catch (error) {
       console.error('Error processing message:', error);
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        type: 'ai',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+              const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          type: 'ai',
+          content: 'Sorry, I encountered an error. Please try again.',
+          timestamp: new Date()
+        };
+        messagesRef.current = [...messagesRef.current, errorMessage];
+        setMessages([...messagesRef.current]);
     }
   }, [inputValue, isStreaming, streamResponse, workoutContext, speak, isMuted, mcpEnabled]);
 
@@ -272,6 +302,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+        {console.log('Rendering messages:', messages.length, messages.map(m => ({ id: m.id, type: m.type, content: m.content.substring(0, 30) + '...' })))}
         {messages.map((message) => (
           <div
             key={message.id}
@@ -312,22 +343,20 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         ))}
         
         {/* Streaming message */}
-        {currentStreamingMessage && (
+        {isStreaming && currentStreamingMessage && (
           <div className="flex gap-3 justify-start">
             <div className="w-8 h-8 rounded-lg bg-lime-900/30 flex items-center justify-center flex-shrink-0">
               <Bot className="w-5 h-5 text-lime-400" />
             </div>
             <div className="max-w-[70%] rounded-2xl px-4 py-3 bg-gray-800/50 text-gray-100">
-              <div className="flex-1">
-                  <p className="whitespace-pre-wrap">
-                    {currentStreamingMessage}
-                  </p>
-                  <span className="inline-flex gap-1 mt-2">
-                    <span className="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                  </span>
-              </div>
+              <p className="whitespace-pre-wrap">
+                {currentStreamingMessage}
+              </p>
+              <span className="inline-flex gap-1 mt-2">
+                <span className="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              </span>
             </div>
           </div>
         )}
