@@ -1,33 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Trophy, 
+  Dumbbell,
   MessageCircle, 
-  Users, 
+  BarChart3,
+  Mic,
   User,
-  Flame,
-  Clock,
-  Zap,
   Bell,
   Search,
   Settings,
-  TrendingUp,
-  Plus,
-  ChevronRight,
-  Calendar,
-  Target,
-  Heart,
-  Mic,
-  Brain,
-  Apple,
-  Dumbbell
+  Clock,
+  Zap,
+  Heart
 } from 'lucide-react';
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
 import { AIChatInterface } from './components/AIChatInterface';
-import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
-import { WorkoutGenerator } from './components/WorkoutGenerator';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { MonitoringDashboard } from './components/MonitoringDashboard';
+import { VoiceCoachInterface } from './components/VoiceCoachInterface';
 import { UserProfileCard } from './components/UserProfileCard';
-import { VoiceAssistant } from './components/VoiceAssistant';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
 import { databaseService } from './services/databaseService';
@@ -40,13 +29,12 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
+type TabType = 'workout' | 'ai-coach' | 'monitoring' | 'voice' | 'profile';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState<TabType>('workouts');
+  const [activeTab, setActiveTab] = useState<TabType>('workout');
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
-  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   
   // Initialize hooks
   const workout = useWorkout();
@@ -55,8 +43,8 @@ function App() {
   // Mock user data - replace with real data later
   const userProfile = {
     name: "Himanshu P",
-    level: "Intermediate",
-    team: "Transform"
+    level: "Advanced",
+    team: "Elite Performance"
   };
 
   const userStats: UserStats = {
@@ -72,65 +60,64 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Initialize database service (Phase 3D)
+  // Initialize database service
   useEffect(() => {
-    // PWAService is initialized automatically in its constructor
-    // Just initialize the database service
     databaseService.initialize();
-  }, []);
-
-  // Check for onboarding
-  useEffect(() => {
-    const isOnboarded = localStorage.getItem('fitnessAppOnboarded');
-    if (!isOnboarded) {
-      console.log('User needs onboarding');
-    }
   }, []);
 
   return (
     <div className="h-screen w-screen bg-black text-white relative overflow-hidden flex flex-col">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-lime-400 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-lime-400 to-transparent rounded-full blur-3xl" />
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-lime-400 to-green-500 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-green-500 to-lime-400 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-lime-400 rounded-full blur-2xl opacity-30 animate-ping" />
       </div>
 
-      {/* Header */}
-      <div className="relative z-10 flex items-center justify-between p-6 pt-12">
+      {/* Premium Header */}
+      <div className="relative z-10 flex items-center justify-between p-6 pt-12 bg-gradient-to-b from-black via-gray-900/50 to-transparent">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-lime-400 rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold text-black">
-              {userProfile.name.charAt(0)}
-            </span>
+          <div className="relative">
+            <div className="w-14 h-14 bg-gradient-to-br from-lime-400 to-green-500 rounded-2xl flex items-center justify-center shadow-lg shadow-lime-400/30">
+              <span className="text-3xl font-black text-black">{userProfile.name.charAt(0)}</span>
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-lime-400 rounded-full flex items-center justify-center">
+              <Zap className="w-3 h-3 text-black" />
+            </div>
           </div>
           <div>
-            <h1 className="text-2xl font-bold">FIT APP</h1>
-            <p className="text-gray-400 text-sm">{currentTime.toLocaleTimeString()}</p>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-lime-400 to-green-500 bg-clip-text text-transparent">
+              FIT APP PRO
+            </h1>
+            <p className="text-gray-400 text-sm flex items-center gap-2">
+              <Clock className="w-3 h-3" />
+              {currentTime.toLocaleTimeString()}
+            </p>
           </div>
         </div>
         
         <div className="flex items-center space-x-4">
-          <button className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
+          <button className="p-3 bg-gray-800/80 backdrop-blur rounded-xl hover:bg-gray-700/80 transition-all transform hover:scale-105">
             <Search className="w-5 h-5" />
           </button>
           <button 
-            className="p-2 bg-gray-800 rounded-full relative hover:bg-gray-700 transition-colors"
+            className="p-3 bg-gray-800/80 backdrop-blur rounded-xl relative hover:bg-gray-700/80 transition-all transform hover:scale-105"
             onClick={() => setShowNotificationBadge(false)}
           >
             <Bell className="w-5 h-5" />
             {showNotificationBadge && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-lime-400 rounded-full" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-lime-400 rounded-full animate-pulse" />
             )}
           </button>
-          <button className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
+          <button className="p-3 bg-gray-800/80 backdrop-blur rounded-xl hover:bg-gray-700/80 transition-all transform hover:scale-105">
             <Settings className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {/* User Profile Card - Show on key tabs only */}
-      {['workouts', 'analytics', 'profile'].includes(activeTab) && (
-        <div className="relative z-10 mx-6 mb-6">
+      {/* User Stats Card - Show on specific tabs */}
+      {['workout', 'monitoring', 'profile'].includes(activeTab) && (
+        <div className="relative z-10 mx-6 mb-4">
           <UserProfileCard 
             userProfile={userProfile} 
             userStats={userStats}
@@ -140,59 +127,50 @@ function App() {
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
-        {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
-        {activeTab === 'generator' && <WorkoutGenerator />}
-        {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
-        {activeTab === 'nutrition' && (
-          <div className="space-y-6">
-            <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800 text-center">
-              <Apple className="w-16 h-16 mx-auto mb-4 text-green-400" />
-              <h2 className="text-2xl font-bold mb-2">Nutrition Tracking</h2>
-              <p className="text-gray-400">AI-powered nutrition tracking coming soon!</p>
-              <div className="mt-6 space-y-3">
-                <div className="p-4 bg-gray-800/50 rounded-lg">
-                  <p className="text-sm">📸 Camera-based food logging</p>
-                </div>
-                <div className="p-4 bg-gray-800/50 rounded-lg">
-                  <p className="text-sm">🧠 AI nutritional analysis</p>
-                </div>
-                <div className="p-4 bg-gray-800/50 rounded-lg">
-                  <p className="text-sm">📊 Macro & calorie tracking</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        {activeTab === 'workout' && <WorkoutLoggerTab workout={workout} />}
+        {activeTab === 'ai-coach' && (
+          <AIChatInterface 
+            workoutContext={workout.getContext()} 
+            onClose={() => {}}
+            className="h-full"
+          />
         )}
-        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} />}
-        {activeTab === 'analytics' && <AnalyticsDashboard />}
+        {activeTab === 'monitoring' && <MonitoringDashboard />}
+        {activeTab === 'voice' && (
+          <VoiceCoachInterface 
+            workoutContext={workout.getContext()}
+            onClose={() => {}}
+          />
+        )}
         {activeTab === 'profile' && (
           <div className="space-y-6">
-            <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800">
-              <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
+            <div className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 border border-lime-400/20 shadow-2xl shadow-lime-400/10">
+              <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-lime-400 to-green-500 bg-clip-text text-transparent">
+                Profile Settings
+              </h2>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Fitness Level</span>
-                  <span className="text-lime-400">{userProfile.level}</span>
+                <div className="flex items-center justify-between p-5 bg-gray-800/50 rounded-2xl backdrop-blur">
+                  <span className="text-gray-300">Fitness Level</span>
+                  <span className="text-lime-400 font-bold">{userProfile.level}</span>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Team</span>
-                  <span className="text-lime-400">{userProfile.team}</span>
+                <div className="flex items-center justify-between p-5 bg-gray-800/50 rounded-2xl backdrop-blur">
+                  <span className="text-gray-300">Team</span>
+                  <span className="text-lime-400 font-bold">{userProfile.team}</span>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Voice Commands</span>
-                  <span className={voiceSupported ? "text-green-400" : "text-red-400"}>
+                <div className="flex items-center justify-between p-5 bg-gray-800/50 rounded-2xl backdrop-blur">
+                  <span className="text-gray-300">Voice Commands</span>
+                  <span className={`font-bold ${voiceSupported ? "text-green-400" : "text-red-400"}`}>
                     {voiceSupported ? "Enabled" : "Not Supported"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>PWA Features</span>
-                  <span className="text-green-400">Active</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
-                  <span>Offline Storage</span>
-                  <span className="text-green-400">Enabled</span>
+                <div className="flex items-center justify-between p-5 bg-gray-800/50 rounded-2xl backdrop-blur">
+                  <span className="text-gray-300">Current Streak</span>
+                  <span className="text-lime-400 font-bold flex items-center gap-2">
+                    <Heart className="w-5 h-5" />
+                    {userStats.currentStreak} days
+                  </span>
                 </div>
               </div>
             </div>
@@ -200,50 +178,45 @@ function App() {
         )}
       </div>
 
-      {/* Voice Assistant Button */}
-      <button
-        onClick={() => setShowVoiceAssistant(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-r from-lime-400 to-green-500 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-50"
-      >
-        <Mic className="w-6 h-6 text-black" />
-      </button>
-
-      {/* Bottom Navigation - 7 tabs for all features */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800 z-50">
-        <div className="flex items-center justify-around py-2">
-          {[
-            { icon: Dumbbell, label: 'Logger', key: 'workouts' },
-            { icon: Target, label: 'Generate', key: 'generator' },
-            { icon: Brain, label: 'Smart AI', key: 'intelligent-ai' },
-            { icon: Apple, label: 'Nutrition', key: 'nutrition' },
-            { icon: MessageCircle, label: 'Coach', key: 'coach' },
-            { icon: TrendingUp, label: 'Stats', key: 'analytics' },
-            { icon: User, label: 'Profile', key: 'profile' }
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as TabType)}
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg transition-colors ${
-                activeTab === tab.key ? 'text-lime-400' : 'text-gray-400'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{tab.label}</span>
-            </button>
-          ))}
+      {/* Premium Bottom Navigation - 5 Tabs */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur-xl border-t border-lime-400/20 z-50">
+        <div className="relative">
+          {/* Active tab indicator */}
+          <div 
+            className="absolute top-0 h-1 bg-gradient-to-r from-lime-400 to-green-500 transition-all duration-300"
+            style={{
+              width: '20%',
+              left: `${['workout', 'ai-coach', 'monitoring', 'voice', 'profile'].indexOf(activeTab) * 20}%`
+            }}
+          />
+          
+          <div className="flex items-center justify-around py-3">
+            {[
+              { icon: Dumbbell, label: 'Workout', key: 'workout' },
+              { icon: MessageCircle, label: 'AI Coach', key: 'ai-coach' },
+              { icon: BarChart3, label: 'Monitoring', key: 'monitoring' },
+              { icon: Mic, label: 'Voice', key: 'voice' },
+              { icon: User, label: 'Profile', key: 'profile' }
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as TabType)}
+                className={`relative flex flex-col items-center space-y-1 px-3 py-2 rounded-xl transition-all duration-300 ${
+                  activeTab === tab.key 
+                    ? 'text-lime-400 scale-110' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {activeTab === tab.key && (
+                  <div className="absolute inset-0 bg-lime-400/10 rounded-xl blur-xl" />
+                )}
+                <tab.icon className={`w-6 h-6 ${activeTab === tab.key ? 'drop-shadow-[0_0_8px_rgba(163,230,53,0.8)]' : ''}`} />
+                <span className="text-[11px] font-semibold">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Voice Assistant */}
-      {showVoiceAssistant && (
-        <VoiceAssistant
-          workoutContext={workout.getContext()}
-          onClose={() => setShowVoiceAssistant(false)}
-          onCommand={(command, response) => {
-            console.log('Voice command:', command, 'Response:', response);
-          }}
-        />
-      )}
     </div>
   );
 }
