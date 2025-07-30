@@ -1,5 +1,16 @@
 # 🤖 CURSOR AI INSTRUCTIONS - READ THIS FIRST
 
+## 🚨 CRITICAL: WE ONLY USE THE 5-TAB UI NOW!
+
+### **The app has exactly 5 tabs:**
+1. **Home** - Dashboard & quick actions
+2. **Workout** - Logger + AI Generator
+3. **Nutrition** - Food tracking with MCP
+4. **Coach** - AI Chat interface
+5. **Profile** - Stats + Settings
+
+**NEVER add more tabs or change to any other UI structure!**
+
 ## 🚨 CRITICAL RULES FOR CURSOR
 
 ### ✅ FILES YOU CAN MODIFY:
