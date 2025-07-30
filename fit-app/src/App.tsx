@@ -40,19 +40,25 @@ import { pwaService } from './services/pwaService';
 import './services/testAI';
 import './services/validateAPIs';
 import './services/envTest';
+import './testKeys.js';
 
-// DEBUG: Check what API keys are actually loading
-console.log('🔑 API KEY DEBUG:');
-console.log('Groq:', import.meta.env.VITE_GROQ_API_KEY ? 'SET' : 'NOT SET');
-console.log('OpenRouter:', import.meta.env.VITE_OPENROUTER_API_KEY ? 'SET' : 'NOT SET');
-console.log('Google:', import.meta.env.VITE_GOOGLE_AI_API_KEY ? 'SET' : 'NOT SET');
-console.log('OpenAI:', import.meta.env.VITE_OPENAI_API_KEY ? 'SET' : 'NOT SET');
+// DEBUG: Check if new API keys are loading
+console.log('🔑 API KEY STATUS:');
+console.log('Groq Key:', import.meta.env.VITE_GROQ_API_KEY ? 'LOADED' : 'NOT LOADED');
+console.log('OpenRouter Key:', import.meta.env.VITE_OPENROUTER_API_KEY ? 'LOADED' : 'NOT LOADED');
+console.log('Google Key:', import.meta.env.VITE_GOOGLE_AI_API_KEY ? 'LOADED' : 'NOT LOADED');
 
-// Show first 10 characters of each key (safe to log)
+// Show first 10 characters (safe to log)
 console.log('🔑 KEY PREVIEWS:');
-console.log('Groq preview:', import.meta.env.VITE_GROQ_API_KEY?.substring(0, 10) + '...');
-console.log('OpenRouter preview:', import.meta.env.VITE_OPENROUTER_API_KEY?.substring(0, 10) + '...');
-console.log('Google preview:', import.meta.env.VITE_GOOGLE_AI_API_KEY?.substring(0, 10) + '...');
+console.log('Groq starts with:', import.meta.env.VITE_GROQ_API_KEY?.substring(0, 10));
+console.log('OpenRouter starts with:', import.meta.env.VITE_OPENROUTER_API_KEY?.substring(0, 10));
+console.log('Google starts with:', import.meta.env.VITE_GOOGLE_AI_API_KEY?.substring(0, 10));
+
+// Show the actual values (be careful with this in production!)
+console.log('🔍 ACTUAL KEY VALUES:');
+console.log('Groq full key:', import.meta.env.VITE_GROQ_API_KEY || 'UNDEFINED');
+console.log('OpenRouter full key:', import.meta.env.VITE_OPENROUTER_API_KEY || 'UNDEFINED');
+console.log('Google full key:', import.meta.env.VITE_GOOGLE_AI_API_KEY || 'UNDEFINED');
 
 // Add direct test function to window
 if (typeof window !== 'undefined') {
