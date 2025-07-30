@@ -95,8 +95,18 @@ function App() {
     // Initialize database
     databaseService.initialize();
     
-    // Initialize PWA features
-    pwaService.register();
+    // Initialize PWA features (already initialized on import)
+    try {
+      // PWA service initializes automatically, just check if it's available
+      if (pwaService && pwaService.getStatus) {
+        const status = pwaService.getStatus();
+        console.log('PWA service status:', status);
+      } else {
+        console.log('PWA service not available - app will work without offline features');
+      }
+    } catch (error) {
+      console.warn('PWA initialization check failed:', error);
+    }
     
     // Online/offline detection
     const handleOnline = () => setIsOnline(true);
@@ -369,7 +379,20 @@ function App() {
                     <span className="text-green-400">Active</span>
                   </div>
                   <button 
-                    onClick={() => pwaService.promptInstall()}
+                    onClick={async () => {
+                      try {
+                        if (pwaService && pwaService.showInstallPrompt) {
+                          const installed = await pwaService.showInstallPrompt();
+                          if (installed) {
+                            console.log('App installed successfully!');
+                          }
+                        } else {
+                          console.log('PWA install not available');
+                        }
+                      } catch (error) {
+                        console.warn('PWA install failed:', error);
+                      }
+                    }}
                     className="w-full mt-4 px-4 py-2 bg-lime-400 text-black rounded-lg font-medium hover:bg-lime-500 transition-colors"
                   >
                     Install App
