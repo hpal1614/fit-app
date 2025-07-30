@@ -15,7 +15,7 @@ import {
   ArcElement
 } from 'chart.js';
 import { healthCheck } from '../services/healthCheckService';
-import { monitoring } from '../services/monitoringService';
+import { monitoring } from '../services/monitoringService.browser';
 import { circuitBreaker } from '../services/circuitBreakerService';
 import { rateLimiter } from '../services/rateLimiterService';
 import { productionAI } from '../services/productionAIService';

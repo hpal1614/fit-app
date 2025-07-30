@@ -13,21 +13,21 @@
       </div>
     </div>
     <script>
+      // Fix "process is not defined" error
+      window.process = {
+        env: {},
+        version: '',
+        versions: {},
+        platform: 'browser',
+        argv: []
+      };
+      window.global = window;
+      
       console.log('Inline script running!');
       document.addEventListener('DOMContentLoaded', () => {
         console.log('DOM loaded!');
       });
-    </script>
-    <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Fallback if module fails
-      setTimeout(() => {
-        const root = document.getElementById('root');
-        if (root && root.innerText.includes('Your app is starting')) {
-          console.error('App failed to load - check console for errors');
-          root.innerHTML = '<h1 style="color: red;">Check browser console for errors (F12)</h1>';
-        }
-      }, 5000);
-    </script>
+          </script>
+      <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
