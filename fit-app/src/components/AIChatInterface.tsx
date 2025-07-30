@@ -28,6 +28,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>('');
   
   const { streamResponse, isStreaming, stopStreaming } = useStreamingAI({
+    workoutContext,
     onChunk: (chunk) => {
       setCurrentStreamingMessage(prev => prev + chunk);
     },
@@ -46,6 +47,10 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       if (!isMuted) {
         speak(fullResponse);
       }
+    },
+    onError: (error) => {
+      console.error('AI Chat Error:', error);
+      setCurrentStreamingMessage('');
     }
   });
   

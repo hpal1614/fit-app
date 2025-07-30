@@ -62,46 +62,88 @@ export class AITeamService {
   
   async getTeamResponse(
     query: string, 
-    context: WorkoutContext, 
+    context: WorkoutContext,
     requestType: AIRequestType
   ): Promise<AIResponse> {
-    const requestId = this.generateRequestId();
-    const abortController = new AbortController();
-    this.activeRequests.set(requestId, abortController);
+    const providersOrder = await this.router.getProviderOrder(requestType);
+    const raceStart = Date.now();
     
-    // Reset team status
-    this.teamStatus = { openrouter: 'idle', groq: 'idle', google: 'idle' };
+    console.log('🤖 AI Team Service - Starting request');
+    console.log('📝 Query:', query);
+    console.log('🎯 Request Type:', requestType);
+    
+    // Check if we have ANY valid API keys
+    const apiKeys = {
+      openrouter: import.meta.env.VITE_OPENROUTER_API_KEY,
+      groq: import.meta.env.VITE_GROQ_API_KEY,
+      google: import.meta.env.VITE_GOOGLE_AI_API_KEY
+    };
+    
+    const hasAnyValidKey = Object.values(apiKeys).some(key => key && key.length > 10);
+    
+    if (!hasAnyValidKey) {
+      console.error('❌ No valid API keys found!');
+      console.log('Available keys:', {
+        openrouter: apiKeys.openrouter ? 'Set but may be invalid' : 'Not set',
+        groq: apiKeys.groq ? 'Set but may be invalid' : 'Not set',
+        google: apiKeys.google ? 'Set but may be invalid' : 'Not set'
+      });
+      
+      // Return a helpful error message
+      return {
+        content: `⚠️ AI Service Configuration Error\n\nI'm unable to connect to the AI services because the API keys are invalid or missing. Here's what I found:\n\n${Object.entries(apiKeys).map(([provider, key]) => 
+          `• ${provider}: ${key ? '❌ Invalid key' : '❌ Missing'}`
+        ).join('\n')}\n\nTo fix this:\n1. Get valid API keys from:\n   - OpenRouter: https://openrouter.ai/keys\n   - Groq: https://console.groq.com/keys\n   - Google AI: https://makersuite.google.com/app/apikey\n\n2. Update your .env file with the correct keys\n3. Restart the development server\n\nFor now, I can still provide basic fitness advice based on my built-in knowledge. What would you like to know?`,
+        type: requestType,
+        confidence: 0.1,
+        timestamp: new Date(),
+        isComplete: true,
+        metadata: {
+          provider: 'error-handler',
+          error: 'invalid-api-keys',
+          processingTime: 0
+        }
+      };
+    }
+    
+    // Create promises for each provider
+    const providerPromises = providersOrder.map((provider, index) => 
+      this.tryProvider(provider, query, context, requestType, {
+        signal: new AbortController().signal,
+        priority: index,
+        timeout: index === 0 ? 5000 : 10000 // First provider gets 5s, others get 10s
+      }).catch(error => {
+        console.warn(`❌ ${provider} failed:`, error.message);
+        return null;
+      })
+    );
+    
+    // Add emergency fallback
+    const emergencyPromise = this.emergencyTimeout(12000);
     
     try {
-      // Get optimal provider order for this request
-      const providerOrder = await this.router.getOptimalProvider(requestType);
-      
-      // PARALLEL STRATEGY: Start all providers simultaneously
-      // First successful response wins, others are cancelled
-      const promises = providerOrder.map((provider, index) => 
-        this.tryProvider(provider, query, context, requestType, {
-          signal: abortController.signal,
-          priority: index + 1,
-          timeout: 2000 + (index * 1000) // 2s, 3s, 4s timeouts
-        })
-      );
-      
-      // Race condition: first success wins
-      const response = await Promise.race([
-        ...promises,
-        this.emergencyTimeout(5000) // Emergency timeout after 5 seconds
+      // Race all providers
+      const result = await Promise.race([
+        Promise.any(providerPromises.filter(p => p !== null)),
+        emergencyPromise
       ]);
       
-      // Cancel remaining requests
-      abortController.abort();
+      // Update provider status
+      const successProvider = result.metadata?.provider || 'unknown';
+      this.currentProvider = successProvider;
+      this.teamStatus.lastSuccess = Date.now();
+      this.teamStatus.failureCount = 0;
       
-      return response;
+      const totalTime = Date.now() - raceStart;
+      console.log(`✅ Got response from ${successProvider} in ${totalTime}ms`);
       
-    } catch (_error) {
-      // ALL providers failed - use intelligent fallback
+      return result;
+    } catch (error) {
+      console.error('❌ All AI providers failed:', error);
+      this.teamStatus.failureCount++;
+      
+      // Return intelligent fallback
       return this.getIntelligentFallback(context, requestType);
-    } finally {
-      this.activeRequests.delete(requestId);
     }
   }
   
