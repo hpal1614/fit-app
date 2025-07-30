@@ -1,99 +1,45 @@
 {
+  "manifest_version": 3,
   "name": "AI Fitness Coach",
-  "short_name": "FitCoach",
-  "description": "Your personal AI-powered fitness coach with real-time form analysis and voice coaching",
-  "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#111827",
-  "background_color": "#111827",
-  "icons": [
+  "version": "1.0.0",
+  "description": "Your personal AI-powered fitness coach with voice assistance and workout tracking",
+  
+  "permissions": [
+    "storage",
+    "activeTab",
+    "notifications",
+    "background"
+  ],
+  
+  "host_permissions": [
+    "https://api.openai.com/*",
+    "https://api.groq.com/*",
+    "https://api.elevenlabs.io/*",
+    "https://*.supabase.co/*",
+    "https://api.tryterra.co/*",
+    "https://openrouter.ai/*"
+  ],
+  
+  "web_accessible_resources": [
     {
-      "src": "/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "resources": [
+        "*.js",
+        "*.css",
+        "*.png",
+        "*.jpg",
+        "*.svg",
+        "*.woff2",
+        "*.woff",
+        "assets/*",
+        "icons/*",
+        "dist/*",
+        "static/*"
+      ],
+      "matches": ["<all_urls>"]
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshot-1.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "label": "AI Chat Interface"
-    },
-    {
-      "src": "/screenshot-2.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "label": "Form Analysis"
-    },
-    {
-      "src": "/screenshot-3.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "label": "Workout Dashboard"
-    }
-  ],
-  "categories": ["fitness", "health", "lifestyle"],
-  "shortcuts": [
-    {
-      "name": "Start Workout",
-      "short_name": "Workout",
-      "description": "Start a new workout session",
-      "url": "/workout",
-      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "AI Coach",
-      "short_name": "Coach",
-      "description": "Chat with your AI fitness coach",
-      "url": "/coach",
-      "icons": [{ "src": "/icon-96x96.png", "sizes": "96x96" }]
-    }
-  ],
-  "prefer_related_applications": false,
-  "related_applications": []
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://api.openai.com https://api.groq.com https://api.elevenlabs.io https://*.supabase.co https://api.tryterra.co https://openrouter.ai wss://*.supabase.co;"
+  }
 }

@@ -471,8 +471,25 @@ export class TerraService {
   }
 }
 
+// Helper function to safely get environment variables in browser
+function getEnvVar(key: string, defaultValue = ''): string {
+  // Check Vite environment variables (VITE_ prefix)
+  const viteKey = key.startsWith('VITE_') ? key : `VITE_${key}`;
+  
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env[viteKey] || import.meta.env[key] || defaultValue;
+  }
+  
+  // Fallback for window-based env vars
+  if (typeof window !== 'undefined' && (window as any).env) {
+    return (window as any).env[key] || defaultValue;
+  }
+  
+  return defaultValue;
+}
+
 // Create singleton instance with config from environment
 export const terraService = new TerraService({
-  apiKey: process.env.REACT_APP_TERRA_API_KEY || 'demo-api-key',
-  devId: process.env.REACT_APP_TERRA_DEV_ID || 'demo-dev-id'
+  apiKey: getEnvVar('TERRA_API_KEY', 'demo-api-key'),
+  devId: getEnvVar('TERRA_DEV_ID', 'demo-dev-id')
 });
