@@ -1,5 +1,5 @@
 import { MCPContext, MCPResponse, ToolSchema, ToolResult, MCPPlugin, ToolHandler } from '../types/mcp';
-import { formCoachingService } from './formCoachingService';
+import { formCoaching } from './formCoachingService';
 import WorkoutService from './workoutService';
 import { biometricAnalysis } from './biometricAnalysisService';
 import { nutritionService } from './nutritionService';
@@ -42,7 +42,7 @@ export class MCPService {
       }
     }, async (params) => {
       try {
-        const result = await formCoachingService.analyzeForm(params.media, params.exercise);
+        const result = await formCoaching.analyzeForm(params.media, params.exercise);
         return { success: true, data: result };
       } catch (error) {
         return { success: false, error: error.message };
