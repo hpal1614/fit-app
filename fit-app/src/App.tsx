@@ -40,7 +40,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
+type TabType = 'workouts' | 'coach' | 'analytics' | 'voice' | 'profile';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -143,30 +143,19 @@ function App() {
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
         {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
-        {activeTab === 'generator' && <WorkoutGenerator />}
-        {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
-        {activeTab === 'nutrition' && (
+        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} onClose={() => {}} />}
+        {activeTab === 'analytics' && <AnalyticsDashboard />}
+        {activeTab === 'voice' && (
           <div className="space-y-6">
-            <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800 text-center">
-              <Apple className="w-16 h-16 mx-auto mb-4 text-green-400" />
-              <h2 className="text-2xl font-bold mb-2">Nutrition Tracking</h2>
-              <p className="text-gray-400">AI-powered nutrition tracking coming soon!</p>
-              <div className="mt-6 space-y-3">
-                <div className="p-4 bg-gray-800/50 rounded-lg">
-                  <p className="text-sm">📸 Camera-based food logging</p>
-                </div>
-                <div className="p-4 bg-gray-800/50 rounded-lg">
-                  <p className="text-sm">🧠 AI nutritional analysis</p>
-                </div>
-                <div className="p-4 bg-gray-800/50 rounded-lg">
-                  <p className="text-sm">📊 Macro & calorie tracking</p>
-                </div>
-              </div>
-            </div>
+            <VoiceAssistant
+              workoutContext={workout.getContext()}
+              onClose={() => setActiveTab('workouts')}
+              onCommand={(command, response) => {
+                console.log('Voice command:', command, 'Response:', response);
+              }}
+            />
           </div>
         )}
-        {activeTab === 'coach' && <AIChatInterface workoutContext={workout.getContext()} />}
-        {activeTab === 'analytics' && <AnalyticsDashboard />}
         {activeTab === 'profile' && (
           <div className="space-y-6">
             <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-6 border border-gray-800">
@@ -208,16 +197,14 @@ function App() {
         <Mic className="w-6 h-6 text-black" />
       </button>
 
-      {/* Bottom Navigation - 7 tabs for all features */}
+      {/* Bottom Navigation - 5 tabs */}
       <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800 z-50">
         <div className="flex items-center justify-around py-2">
           {[
-            { icon: Dumbbell, label: 'Logger', key: 'workouts' },
-            { icon: Target, label: 'Generate', key: 'generator' },
-            { icon: Brain, label: 'Smart AI', key: 'intelligent-ai' },
-            { icon: Apple, label: 'Nutrition', key: 'nutrition' },
-            { icon: MessageCircle, label: 'Coach', key: 'coach' },
-            { icon: TrendingUp, label: 'Stats', key: 'analytics' },
+            { icon: Dumbbell, label: 'Workout', key: 'workouts' },
+            { icon: MessageCircle, label: 'AI Coach', key: 'coach' },
+            { icon: TrendingUp, label: 'Analytics', key: 'analytics' },
+            { icon: Mic, label: 'Voice', key: 'voice' },
             { icon: User, label: 'Profile', key: 'profile' }
           ].map((tab) => (
             <button
