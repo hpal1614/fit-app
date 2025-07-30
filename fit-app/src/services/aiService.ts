@@ -184,9 +184,14 @@ export class AITeamService {
     };
     
     console.log('AI Service - Checking API keys:', {
-      openrouter: apiKeys.openrouter ? `${apiKeys.openrouter.substring(0, 10)}...` : 'NOT SET',
-      groq: apiKeys.groq ? `${apiKeys.groq.substring(0, 10)}...` : 'NOT SET',
-      google: apiKeys.google ? `${apiKeys.google.substring(0, 10)}...` : 'NOT SET'
+      openrouter: apiKeys.openrouter ? `${apiKeys.openrouter.substring(0, 30)}...` : 'NOT SET',
+      groq: apiKeys.groq ? `${apiKeys.groq.substring(0, 30)}...` : 'NOT SET',
+      google: apiKeys.google ? `${apiKeys.google.substring(0, 30)}...` : 'NOT SET',
+      fullKeys: {
+        openrouter: apiKeys.openrouter,
+        groq: apiKeys.groq,
+        google: apiKeys.google
+      }
     });
     
     switch (provider) {
@@ -463,6 +468,13 @@ export class AITeamService {
     });
 
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Google AI error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+        apiKey: apiKey?.substring(0, 20) + '...'
+      });
       throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
     }
 
