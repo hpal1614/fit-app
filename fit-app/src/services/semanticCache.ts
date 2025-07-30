@@ -32,10 +32,22 @@ export class SemanticCacheService {
   };
 
   constructor() {
-    this.supabase = createClient(
-      import.meta.env.VITE_SUPABASE_URL || '',
-      import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-    );
+    try {
+      // Safe Supabase initialization
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http')) {
+        this.supabase = createClient(supabaseUrl, supabaseKey);
+        console.log('Semantic cache with Supabase initialized');
+      } else {
+        console.warn('Semantic cache running in memory-only mode');
+        this.supabase = null as any;
+      }
+    } catch (error) {
+      console.error('Failed to initialize semantic cache:', error);
+      this.supabase = null as any;
+    }
 
     this.openai = new OpenAI({
       apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
