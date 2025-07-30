@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, X, Mic, Volume2, Bot, User, Loader2, Brain, Activity } from 'lucide-react';
-import { useStreamingAI } from '../hooks/useStreamingAI';
-import { useVoice } from '../hooks/useVoice';
-import { useMCPTools } from '../hooks/useMCPTools';
-import type { WorkoutContext } from '../types/workout';
+import { useStreamingAI } from '../../hooks/useStreamingAI';
+import { useVoice } from '../../hooks/useVoice';
+import { useMCPTools } from '../../hooks/useMCPTools';
+import type { WorkoutContext } from '../../types/workout';
 // Removed unused AIResponse import
 
 interface Message {

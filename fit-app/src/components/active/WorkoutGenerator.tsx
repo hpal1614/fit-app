@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { WorkoutGeneratorService, WorkoutGoal, AvailableEquipment, GeneratedWorkout } from '../services/WorkoutGeneratorService';
-import { useMCPTools } from '../hooks/useMCPTools';
+import { WorkoutGeneratorService, WorkoutGoal, AvailableEquipment, GeneratedWorkout } from '../../services/WorkoutGeneratorService';
+import { useMCPTools } from '../../hooks/useMCPTools';
 import { Brain, Sparkles } from 'lucide-react';
 
 export const WorkoutGenerator: React.FC = () => {

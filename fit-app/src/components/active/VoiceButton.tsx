@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Volume2, Loader2 } from 'lucide-react';
-import { useVoice } from '../hooks/useVoice';
-import type { WorkoutContext } from '../types/workout';
+import { useVoice } from '../../hooks/useVoice';
+import type { WorkoutContext } from '../../types/workout';
 
 interface VoiceButtonProps {
   workoutContext?: WorkoutContext;

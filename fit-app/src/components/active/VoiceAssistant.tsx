@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, MicOff, X, Volume2, Loader2 } from 'lucide-react';
-import { useVoice } from '../hooks/useVoice';
-import { useAI } from '../hooks/useAI';
-import { useWorkout } from '../hooks/useWorkout';
+import { useVoice } from '../../hooks/useVoice';
+import { useAI } from '../../hooks/useAI';
+import { useWorkout } from '../../hooks/useWorkout';
 
 interface VoiceAssistantProps {
   workoutContext?: any;

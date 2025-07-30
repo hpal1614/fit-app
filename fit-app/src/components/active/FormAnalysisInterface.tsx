@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, CameraOff, Volume2, VolumeX, SwitchCamera, Download, Play, Square, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useFormAnalysis } from '../hooks/useFormAnalysis';
+import { useFormAnalysis } from '../../hooks/useFormAnalysis';
 
 interface Exercise {
   id: string;

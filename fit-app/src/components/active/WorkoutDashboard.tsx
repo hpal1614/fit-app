@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Play, Pause, Square, SkipForward, SkipBack, Timer, MessageCircle } from 'lucide-react';
-import { useWorkout } from '../hooks/useWorkout';
-import { useVoice } from '../hooks/useVoice';
-import { useAI } from '../hooks/useAI';
+import { useWorkout } from '../../hooks/useWorkout';
+import { useVoice } from '../../hooks/useVoice';
+import { useAI } from '../../hooks/useAI';
 import VoiceButton from './VoiceButton';
 import ExerciseCard from './ExerciseCard';
 import SetLogger from './SetLogger';

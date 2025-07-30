@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Trophy, Clock, Target, TrendingUp, Award, Zap } from 'lucide-react';
-import type { Workout } from '../types/workout';
+import type { Workout } from '../../types/workout';
 
 interface WorkoutStatsProps {
   workout: Workout | null;

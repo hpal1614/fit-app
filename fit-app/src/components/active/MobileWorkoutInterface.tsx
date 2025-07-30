@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, SkipForward, Heart, Activity, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useWorkout } from '../hooks/useWorkout';
-import { useVoice } from '../hooks/useVoice';
-import { useBiometrics } from '../hooks/useBiometrics';
-import { mobileOptimization } from '../services/mobileOptimizationService';
+import { useWorkout } from '../../hooks/useWorkout';
+import { useVoice } from '../../hooks/useVoice';
+import { useBiometrics } from '../../hooks/useBiometrics';
+import { mobileOptimization } from '../../services/mobileOptimizationService';
 
 interface MobileWorkoutInterfaceProps {
   workoutId?: string;

@@ -4,7 +4,7 @@ import { AIWorkoutGenerator } from './workout/AIWorkoutGenerator';
 import { CustomWorkoutBuilder } from './workout/CustomWorkoutBuilder';
 import { PDFWorkoutUploader } from './workout/PDFWorkoutUploader';
 import { WorkoutPlanCard } from './workout/WorkoutPlanCard';
-import type { WorkoutPlan, WorkoutContext } from '../types/workout';
+import type { WorkoutPlan, WorkoutContext } from '../../types/workout';
 
 interface UserProfile {
   fitnessLevel: string;

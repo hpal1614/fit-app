@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Volume2, Zap, Radio, Wifi, Chrome, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRealtimeVoice } from '../hooks/useRealtimeVoice';
-import { aiService } from '../services/aiService';
+import { useRealtimeVoice } from '../../hooks/useRealtimeVoice';
+import { aiService } from '../../services/aiService';
 
 interface VoiceMode {
   id: 'openai-realtime' | 'elevenlabs' | 'webrtc' | 'browser';

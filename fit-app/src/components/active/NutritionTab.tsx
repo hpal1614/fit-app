@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Apple, Camera, Upload, Loader2, Search, Info } from 'lucide-react';
-import { useMCPTools } from '../hooks/useMCPTools';
+import { useMCPTools } from '../../hooks/useMCPTools';
 
 export const NutritionTab: React.FC = () => {
   const [foodInput, setFoodInput] = useState('');
