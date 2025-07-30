@@ -4,6 +4,7 @@ import { useStreamingAI } from '../../hooks/useStreamingAI';
 import { useVoice } from '../../hooks/useVoice';
 import { useMCPTools } from '../../hooks/useMCPTools';
 import { aiService } from '../../services/aiService';
+import { sendEmergencyAI } from '../../services/emergencyAI';
 import type { WorkoutContext } from '../../types/workout';
 // Removed unused AIResponse import
 
@@ -259,7 +260,26 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       await streamResponse(prompt);
     } catch (error) {
       console.error('Error processing message:', error);
-              const errorMessage: Message = {
+      console.warn('Using emergency AI as final fallback');
+      
+      // Use emergency AI as final fallback
+      try {
+        const emergencyResponse = await sendEmergencyAI(messageText);
+        const emergencyMessage: Message = {
+          id: `ai-emergency-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: 'ai',
+          content: emergencyResponse,
+          timestamp: new Date()
+        };
+        messagesRef.current = [...messagesRef.current, emergencyMessage];
+        setMessages([...messagesRef.current]);
+        
+        if (!isMuted && speak) {
+          speak(emergencyResponse);
+        }
+      } catch (emergencyError) {
+        console.error('Even emergency AI failed:', emergencyError);
+        const errorMessage: Message = {
           id: `error-${Date.now()}`,
           type: 'ai',
           content: 'Sorry, I encountered an error. Please try again.',
@@ -267,6 +287,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         };
         messagesRef.current = [...messagesRef.current, errorMessage];
         setMessages([...messagesRef.current]);
+      }
     }
   }, [inputValue, isStreaming, streamResponse, workoutContext, speak, isMuted, mcpEnabled]);
 

@@ -41,6 +41,19 @@ import './services/testAI';
 import './services/validateAPIs';
 import './services/envTest';
 
+// DEBUG: Check what API keys are actually loading
+console.log('🔑 API KEY DEBUG:');
+console.log('Groq:', import.meta.env.VITE_GROQ_API_KEY ? 'SET' : 'NOT SET');
+console.log('OpenRouter:', import.meta.env.VITE_OPENROUTER_API_KEY ? 'SET' : 'NOT SET');
+console.log('Google:', import.meta.env.VITE_GOOGLE_AI_API_KEY ? 'SET' : 'NOT SET');
+console.log('OpenAI:', import.meta.env.VITE_OPENAI_API_KEY ? 'SET' : 'NOT SET');
+
+// Show first 10 characters of each key (safe to log)
+console.log('🔑 KEY PREVIEWS:');
+console.log('Groq preview:', import.meta.env.VITE_GROQ_API_KEY?.substring(0, 10) + '...');
+console.log('OpenRouter preview:', import.meta.env.VITE_OPENROUTER_API_KEY?.substring(0, 10) + '...');
+console.log('Google preview:', import.meta.env.VITE_GOOGLE_AI_API_KEY?.substring(0, 10) + '...');
+
 // Add direct test function to window
 if (typeof window !== 'undefined') {
   window.testAIDirectly = async () => {

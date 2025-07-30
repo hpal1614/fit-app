@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { aiService } from '../services/aiService';
 import { freeAIService } from '../services/freeAIService';
+import { sendEmergencyAI } from '../services/emergencyAI';
 
 interface StreamingAIOptions {
   onChunk?: (chunk: string) => void;
@@ -106,6 +107,34 @@ export const useStreamingAI = (options: StreamingAIOptions = {}) => {
         return;
       } catch (freeAIError) {
         console.error('Free AI service also failed:', freeAIError);
+      }
+      
+      // Try emergency AI service
+      console.log('Trying emergency AI service...');
+      try {
+        const emergencyResponse = await sendEmergencyAI(message);
+        const words = emergencyResponse.split(' ');
+        let accumulatedResponse = '';
+        
+        for (let i = 0; i < words.length; i++) {
+          if (abortControllerRef.current?.signal.aborted) {
+            break;
+          }
+          
+          const word = words[i];
+          const chunk = i === 0 ? word : ' ' + word;
+          accumulatedResponse += chunk;
+          
+          setCurrentResponse(accumulatedResponse);
+          options.onChunk?.(chunk);
+          
+          await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 30));
+        }
+        
+        options.onComplete?.(accumulatedResponse);
+        return;
+      } catch (emergencyError) {
+        console.error('Emergency AI also failed:', emergencyError);
       }
       
       // Final fallback to hardcoded response
