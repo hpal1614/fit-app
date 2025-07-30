@@ -25,7 +25,6 @@ import { MCPProvider } from './providers/MCPProvider';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
 import { databaseService } from './services/databaseService';
-import { workoutSessionService } from './services/workoutSessionService';
 
 // Define only 5 tabs
 type TabType = 'home' | 'workouts' | 'nutrition' | 'coach' | 'profile';
@@ -60,20 +59,6 @@ function App() {
 
   useEffect(() => {
     databaseService.initialize();
-    
-    // Initialize workout session if needed
-    const initializeSession = async () => {
-      try {
-        const hasActiveSession = await workoutSessionService.hasActiveSession();
-        if (!hasActiveSession) {
-          await workoutSessionService.startNewSession();
-        }
-      } catch (error) {
-        console.error('Failed to initialize workout session:', error);
-      }
-    };
-    
-    initializeSession();
   }, []);
 
   return (
