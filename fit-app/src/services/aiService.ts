@@ -404,6 +404,13 @@ export class AITeamService {
     });
 
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Groq API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+        model: 'llama-3.1-70b-versatile'
+      });
       throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
     }
 

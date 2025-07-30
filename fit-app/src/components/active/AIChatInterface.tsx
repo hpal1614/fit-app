@@ -3,6 +3,7 @@ import { Send, X, Mic, Volume2, Bot, User, Loader2, Brain, Activity } from 'luci
 import { useStreamingAI } from '../../hooks/useStreamingAI';
 import { useVoice } from '../../hooks/useVoice';
 import { useMCPTools } from '../../hooks/useMCPTools';
+import { aiService } from '../../services/aiService';
 import type { WorkoutContext } from '../../types/workout';
 // Removed unused AIResponse import
 

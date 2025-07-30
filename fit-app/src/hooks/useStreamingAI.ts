@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { aiService } from '../services/aiService';
+import { freeAIService } from '../services/freeAIService';
 
 interface StreamingAIOptions {
   onChunk?: (chunk: string) => void;
@@ -79,7 +80,35 @@ export const useStreamingAI = (options: StreamingAIOptions = {}) => {
         messageProvided: message
       });
       
-      // Fall back to hardcoded response if AI fails
+      // Try free AI service as fallback
+      console.log('Trying free AI service...');
+      try {
+        const freeResponse = await freeAIService.getResponse(message);
+        const words = freeResponse.split(' ');
+        let accumulatedResponse = '';
+        
+        for (let i = 0; i < words.length; i++) {
+          if (abortControllerRef.current?.signal.aborted) {
+            break;
+          }
+          
+          const word = words[i];
+          const chunk = i === 0 ? word : ' ' + word;
+          accumulatedResponse += chunk;
+          
+          setCurrentResponse(accumulatedResponse);
+          options.onChunk?.(chunk);
+          
+          await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 30));
+        }
+        
+        options.onComplete?.(accumulatedResponse);
+        return;
+      } catch (freeAIError) {
+        console.error('Free AI service also failed:', freeAIError);
+      }
+      
+      // Final fallback to hardcoded response
       const fallbackResponse = await generateStreamingResponse(message);
       const words = fallbackResponse.split(' ');
       let accumulatedResponse = '';
