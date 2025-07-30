@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>AI Fitness Coach</title>
   </head>
   <body>
     <div id="root">
@@ -12,6 +12,22 @@
         Your app is starting...
       </div>
     </div>
+    <script>
+      console.log('Inline script running!');
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded!');
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Fallback if module fails
+      setTimeout(() => {
+        const root = document.getElementById('root');
+        if (root && root.innerText.includes('Your app is starting')) {
+          console.error('App failed to load - check console for errors');
+          root.innerHTML = '<h1 style="color: red;">Check browser console for errors (F12)</h1>';
+        }
+      }, 5000);
+    </script>
   </body>
 </html>

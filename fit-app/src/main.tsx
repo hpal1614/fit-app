@@ -3,8 +3,11 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
+console.log('main.tsx starting...');
+
 // Emergency error handlers
 window.addEventListener('error', (event) => {
+  console.error('Window error:', event.error);
   const knownErrors = [
     'chrome-extension://invalid/',
     'share-modal.js',
@@ -19,105 +22,35 @@ window.addEventListener('error', (event) => {
 });
 
 window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled rejection:', event.reason);
   if (event.reason?.message?.includes('chrome-extension://invalid/')) {
     event.preventDefault();
     return;
   }
 });
 
-console.log('Main.tsx loaded');
+console.log('About to find root element...');
+const rootElement = document.getElementById('root');
+console.log('Root element:', rootElement);
 
-// Create a safe App wrapper with error boundary
-function SafeApp() {
-  return (
-    <React.StrictMode>
-      <ErrorBoundary>
-        <MCPProvider>
-          <App />
-        </MCPProvider>
-      </ErrorBoundary>
-    </React.StrictMode>
-  );
-}
-
-// Simple Error Boundary
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: {children: React.ReactNode}) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('App Error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ 
-          padding: '20px', 
-          textAlign: 'center',
-          backgroundColor: '#1f2937',
-          color: 'white',
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <h1>🔧 App Recovery Mode</h1>
-          <p>Something went wrong, but we're fixing it...</p>
-          <pre style={{ 
-            backgroundColor: '#374151', 
-            padding: '10px', 
-            borderRadius: '5px',
-            fontSize: '12px',
-            marginTop: '20px'
-          }}>
-            {this.state.error?.message}
-          </pre>
-          <button 
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '10px 20px',
-              marginTop: '20px',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            Reload App
-          </button>
-        </div>
-      );
-    }
-
-    return this.props.children;
+if (!rootElement) {
+  console.error('Root element not found!');
+  document.body.innerHTML = '<h1>Root element not found!</h1>';
+} else {
+  console.log('Creating React root...');
+  try {
+    const root = ReactDOM.createRoot(rootElement);
+    console.log('React root created, rendering app...');
+    
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+    
+    console.log('React app rendered successfully');
+  } catch (error) {
+    console.error('Error rendering app:', error);
+    rootElement.innerHTML = `<h1>Error: ${error.message}</h1>`;
   }
 }
-
-// Simple MCP Provider fallback
-function MCPProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <MCPContext.Provider value={{ 
-      isConnected: false, 
-      tools: [], 
-      connect: () => {}, 
-      disconnect: () => {} 
-    }}>
-      {children}
-    </MCPContext.Provider>
-  );
-}
-
-// Create MCP Context
-const MCPContext = React.createContext<any>(null);
-
-ReactDOM.createRoot(document.getElementById('root')!).render(<SafeApp />);
-
-console.log('React app rendered with safety measures');
