@@ -36,6 +36,9 @@ import { useVoice } from './hooks/useVoice';
 import { databaseService } from './services/databaseService';
 import { pwaService } from './services/pwaService';
 
+// Import AI test utility
+import './services/testAI';
+
 // Define only 5 tabs
 type TabType = 'home' | 'workouts' | 'nutrition' | 'coach' | 'profile';
 

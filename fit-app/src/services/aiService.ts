@@ -183,6 +183,12 @@ export class AITeamService {
       google: import.meta.env.VITE_GOOGLE_AI_API_KEY
     };
     
+    console.log('AI Service - Checking API keys:', {
+      openrouter: apiKeys.openrouter ? `${apiKeys.openrouter.substring(0, 10)}...` : 'NOT SET',
+      groq: apiKeys.groq ? `${apiKeys.groq.substring(0, 10)}...` : 'NOT SET',
+      google: apiKeys.google ? `${apiKeys.google.substring(0, 10)}...` : 'NOT SET'
+    });
+    
     switch (provider) {
       case 'openrouter':
         if (!apiKeys.openrouter) throw new Error('OpenRouter API key not available');
@@ -334,10 +340,22 @@ export class AITeamService {
     });
 
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenRouter API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      });
       throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('OpenRouter API response:', {
+      status: response.status,
+      hasChoices: !!data.choices,
+      choicesLength: data.choices?.length,
+      firstChoice: data.choices?.[0]
+    });
     const content = data.choices?.[0]?.message?.content || '';
     const processingTime = Date.now() - startTime;
 
@@ -517,6 +535,14 @@ export class AICoachService {
       responseStyle: 'conversational',
       ...config
     };
+    
+    // Log API key status on initialization
+    console.log('🚀 AICoachService initialized with keys:', {
+      openrouter: import.meta.env.VITE_OPENROUTER_API_KEY ? '✓ Set' : '✗ Missing',
+      groq: import.meta.env.VITE_GROQ_API_KEY ? '✓ Set' : '✗ Missing',
+      google: import.meta.env.VITE_GOOGLE_AI_API_KEY ? '✓ Set' : '✗ Missing',
+      allEnvVars: Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'))
+    });
   }
 
   async initialize(config?: Partial<AICoachConfig>): Promise<boolean> {

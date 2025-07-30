@@ -26,6 +26,11 @@ export const useStreamingAI = (options: StreamingAIOptions = {}) => {
     
     try {
       // Get response from real AI service
+      console.log('useStreamingAI - Calling AI service with:', {
+        message: message.substring(0, 50) + '...',
+        type: 'general-advice'
+      });
+      
       const aiResponse = await aiService.getResponse({
         message,
         type: 'general-advice',
@@ -36,7 +41,13 @@ export const useStreamingAI = (options: StreamingAIOptions = {}) => {
         }
       });
       
-      const responseText = aiResponse.message;
+      console.log('useStreamingAI - Got AI response:', {
+        hasContent: !!aiResponse.content,
+        contentLength: aiResponse.content?.length,
+        contentPreview: aiResponse.content?.substring(0, 50) + '...'
+      });
+      
+      const responseText = aiResponse.content;
       const words = responseText.split(' ');
       let accumulatedResponse = '';
       
@@ -60,7 +71,13 @@ export const useStreamingAI = (options: StreamingAIOptions = {}) => {
       options.onComplete?.(accumulatedResponse);
       
     } catch (err) {
-      console.error('Streaming error:', err);
+      console.error('Streaming error - Failed to get AI response:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        aiServiceAvailable: !!aiService,
+        messageProvided: message
+      });
       
       // Fall back to hardcoded response if AI fails
       const fallbackResponse = await generateStreamingResponse(message);
