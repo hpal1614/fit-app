@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Home, MessageCircle, Mic } from 'lucide-react';
-import { AIChatInterface } from './components/AIChatInterface';
+import { AIChatInterface } from './components/active/AIChatInterface';
 import { useAI } from './hooks/useAI';
 import { useVoice } from './hooks/useVoiceEmergency';
 

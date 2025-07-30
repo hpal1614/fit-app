@@ -21,14 +21,14 @@ import {
   Apple,
   Dumbbell
 } from 'lucide-react';
-import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
-import { AIChatInterface } from './components/AIChatInterface';
+import { WorkoutLoggerTab } from './components/active/WorkoutLoggerTab';
+import { AIChatInterface } from './components/active/AIChatInterface';
 import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
-import { WorkoutGenerator } from './components/WorkoutGenerator';
+import { WorkoutGenerator } from './components/active/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
-import { VoiceAssistant } from './components/VoiceAssistant';
-import { NutritionTab } from './components/NutritionTab';
+import { VoiceAssistant } from './components/active/VoiceAssistant';
+import { NutritionTab } from './components/active/NutritionTab';
 import { MCPProvider } from './providers/MCPProvider';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
