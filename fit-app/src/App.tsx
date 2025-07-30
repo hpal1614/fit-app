@@ -39,6 +39,22 @@ import { pwaService } from './services/pwaService';
 // Import AI test utility
 import './services/testAI';
 
+// Add direct test function to window
+if (typeof window !== 'undefined') {
+  window.testAIDirectly = async () => {
+    console.log('🧪 Direct AI Test Starting...');
+    try {
+      const { freeAIService } = await import('./services/freeAIService');
+      const response = await freeAIService.getResponse('How do I do a squat?');
+      console.log('✅ Free AI Response:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Direct AI Test Failed:', error);
+      throw error;
+    }
+  };
+}
+
 // Define only 5 tabs
 type TabType = 'home' | 'workouts' | 'nutrition' | 'coach' | 'profile';
 

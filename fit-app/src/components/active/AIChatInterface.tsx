@@ -161,6 +161,8 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     const messageText = inputText || inputValue.trim();
     if (!messageText || isStreaming) return;
 
+    console.log('🚀 handleSubmit called with:', messageText);
+
     // Clear input
     setInputValue('');
 
@@ -177,6 +179,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     messagesRef.current = [...messagesRef.current, userMessage];
     setMessages([...messagesRef.current]);
     console.log('Messages after adding user message:', messagesRef.current.length);
+    console.log('Current messages:', messagesRef.current.map(m => ({ type: m.type, content: m.content.substring(0, 30) + '...' })));
 
     try {
       // MCP tools temporarily disabled - skip this block
@@ -416,6 +419,18 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
       {/* Input Area */}
       <div className="border-t border-gray-800 pt-4">
+        {/* Test Button for Debugging */}
+        <button
+          onClick={async () => {
+            console.log('🔧 TEST BUTTON CLICKED');
+            console.log('Current messages:', messagesRef.current.length);
+            await handleSubmit('test message');
+          }}
+          className="mb-2 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        >
+          🧪 Test AI (Click me to debug)
+        </button>
+        
         <div className="flex gap-2">
           <input
             ref={inputRef}
