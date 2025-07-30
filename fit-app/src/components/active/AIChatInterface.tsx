@@ -6,6 +6,7 @@ import { useMCPTools } from '../../hooks/useMCPTools';
 import { aiService } from '../../services/aiService';
 import { sendEmergencyAI } from '../../services/emergencyAI';
 import { bulletproofAI } from '../../services/bulletproofAI';
+import { emergencyAI } from '../../services/emergencyAI.js';
 import type { WorkoutContext } from '../../types/workout';
 // Removed unused AIResponse import
 
@@ -227,9 +228,38 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         Provide a helpful, encouraging response as a fitness coach.
         ${mcpEnabled ? 'Note: MCP tools are available for specific queries about exercises, progress, or biometrics.' : ''}`;
 
-      // Try bulletproof AI first
+      // Try emergency AI first (hardcoded keys)
       try {
-        console.log('🎯 Using BulletproofAI service...');
+        console.log('🚨 Using Emergency AI with hardcoded keys...');
+        const emergencyResponse = await emergencyAI.sendMessage(messageText);
+        
+        console.log('✅ Emergency AI response:', emergencyResponse);
+        
+        if (emergencyResponse && emergencyResponse.message) {
+          // Add AI message directly
+          const aiMessage: Message = {
+            id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'ai',
+            content: emergencyResponse.message,
+            timestamp: new Date()
+          };
+          messagesRef.current = [...messagesRef.current, aiMessage];
+          setMessages([...messagesRef.current]);
+          
+          if (!isMuted && speak) {
+            speak(emergencyResponse.message);
+          }
+          
+          console.log(`✅ AI responded via: ${emergencyResponse.provider}`);
+          return;
+        }
+      } catch (emergencyError) {
+        console.error('Emergency AI failed:', emergencyError);
+      }
+      
+      // Try bulletproof AI second
+      try {
+        console.log('🎯 Trying BulletproofAI service...');
         const bulletproofResponse = await bulletproofAI.sendMessage(messageText);
         
         console.log('✅ BulletproofAI response:', bulletproofResponse);
@@ -246,9 +276,10 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
           setMessages([...messagesRef.current]);
           
           // Update suggestions if available
-          if (bulletproofResponse.suggestions) {
-            setSuggestedActions(bulletproofResponse.suggestions);
-          }
+          // TODO: Add suggestions UI later
+          // if (bulletproofResponse.suggestions) {
+          //   setSuggestedActions(bulletproofResponse.suggestions);
+          // }
           
           if (!isMuted && speak) {
             speak(bulletproofResponse.message);
