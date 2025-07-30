@@ -28,10 +28,9 @@ import { UserProfileCard } from './components/UserProfileCard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 
 // Providers & Hooks
-import { MCPProvider } from './providers/MCPProvider';
 import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
-import { useMCPTools } from './hooks/useMCPTools';
+// import { useMCPTools } from './hooks/useMCPTools'; // Temporarily disabled
 
 // Services
 import { databaseService } from './services/databaseService';
@@ -50,14 +49,23 @@ function App() {
   
   const { workout, startWorkout, completeWorkout, addExercise } = useWorkout();
   const { isSupported: voiceSupported } = useVoice();
-  const { 
-    analyzeForm, 
-    generateWorkout: generateAIWorkout, 
-    analyzeBiometrics,
-    analyzeNutrition,
-    lookupExercise,
-    trackProgress 
-  } = useMCPTools();
+  // Temporarily disable MCP tools to fix black screen
+  const analyzeForm = null;
+  const generateAIWorkout = null;
+  const analyzeBiometrics = null;
+  const analyzeNutrition = null;
+  const lookupExercise = null;
+  const trackProgress = null;
+  
+  // TODO: Re-enable when MCP is fixed
+  // const { 
+  //   analyzeForm, 
+  //   generateWorkout: generateAIWorkout, 
+  //   analyzeBiometrics,
+  //   analyzeNutrition,
+  //   lookupExercise,
+  //   trackProgress 
+  // } = useMCPTools();
   
   const [userProfile] = useState({
     name: 'JAXON',
@@ -122,8 +130,7 @@ function App() {
   };
 
   return (
-    <MCPProvider>
-      <div className="h-screen w-screen bg-black text-white relative overflow-hidden flex flex-col">
+    <div className="h-screen w-screen bg-black text-white relative overflow-hidden flex flex-col">
         {/* Background Effects */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
         <div className="absolute inset-0">
@@ -413,7 +420,6 @@ function App() {
           </div>
         )}
       </div>
-    </MCPProvider>
   );
 }
 

@@ -1,95 +1,102 @@
-// BLOCK Chrome extension interference - Add at TOP of main.tsx
-(function blockChromeExtensions() {
-  // Block invalid chrome extension requests
-  const originalFetch = window.fetch;
-  window.fetch = function(...args) {
-    const url = args[0];
-    if (typeof url === 'string' && url.includes('chrome-extension://invalid/')) {
-      return Promise.reject(new Error('Blocked invalid extension'));
-    }
-    return originalFetch.apply(this, args);
-  };
-  
-  // Block contentScript errors
-  const originalConsoleError = console.error;
-  console.error = function(...args) {
-    const message = args[0];
-    if (typeof message === 'string' && 
-        (message.includes('chrome-extension://invalid/') || 
-         message.includes('contentScript.bundle.js'))) {
-      return; // Silently ignore these errors
-    }
-    return originalConsoleError.apply(this, args);
-  };
-  
-  console.log('Chrome extension blocker active');
-})();
-
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { MCPProvider } from './providers/MCPProvider'
 
-// EMERGENCY: Add this at the top of main.tsx after imports
-console.log('Environment check:', {
-  supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-  hasSupabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY
-});
-
-// Fix missing environment variables
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.warn('Supabase credentials missing - app will use fallback mode');
-  
-  // Set fallback values to prevent crashes
-  (window as any).__SUPABASE_FALLBACK__ = true;
-}
-
-// NUCLEAR ERROR SUPPRESSION - Add if desperate
-window.addEventListener('error', (e) => {
+// Emergency error handlers
+window.addEventListener('error', (event) => {
   const knownErrors = [
-    'chrome-extension',
-    'contentScript',
-    'addEventListener',
-    'Invalid URL',
-    'net::ERR_FAILED',
-    'process is not defined',
-    'fitnessRAG.indexFitnessDocuments is not a function'
+    'chrome-extension://invalid/',
+    'share-modal.js',
+    'Service worker registration failed'
   ];
   
-  if (knownErrors.some(err => e.error?.message?.includes(err) || e.message?.includes(err))) {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
+  if (knownErrors.some(err => event.error?.message?.includes(err))) {
+    event.preventDefault();
+    console.warn('Suppressed known error:', event.error?.message);
+    return;
   }
-  
-  // Log other errors normally
-  console.error('Application error:', e.error);
 });
 
-window.addEventListener('unhandledrejection', (e) => {
-  const knownErrors = [
-    'chrome-extension',
-    'Invalid URL',
-    'Supabase'
-  ];
-  
-  if (knownErrors.some(err => e.reason?.message?.includes(err) || e.reason?.includes(err))) {
-    e.preventDefault();
-    return false;
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason?.message?.includes('chrome-extension://invalid/')) {
+    event.preventDefault();
+    return;
   }
-  
-  console.error('Unhandled promise rejection:', e.reason);
 });
-
-// Add error boundary for React components
-console.log('Global error handlers initialized');
 
 console.log('Main.tsx loaded');
 
+// Simple Error Boundary
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('App Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ 
+          padding: '20px', 
+          textAlign: 'center',
+          backgroundColor: '#1f2937',
+          color: 'white',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
+        }}>
+          <h1>🔧 App Recovery Mode</h1>
+          <p>Something went wrong, but we're fixing it...</p>
+          <pre style={{ 
+            backgroundColor: '#374151', 
+            padding: '10px', 
+            borderRadius: '5px',
+            fontSize: '12px',
+            marginTop: '20px'
+          }}>
+            {this.state.error?.message}
+          </pre>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '10px 20px',
+              marginTop: '20px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Reload App
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+    <ErrorBoundary>
+      <MCPProvider>
+        <App />
+      </MCPProvider>
+    </ErrorBoundary>
+  </React.StrictMode>
+);
 
-console.log('React app rendered');
+console.log('React app rendered with safety measures');
