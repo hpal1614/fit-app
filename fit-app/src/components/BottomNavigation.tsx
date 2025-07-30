@@ -45,8 +45,8 @@ export const BottomNavigation: React.FC<{
             className={`
               flex flex-col items-center py-2 px-4 rounded-lg transition-all duration-200
               ${activeTab === tab.id
-                ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                : 'text-gray-500 dark:text-gray-400 hover:text-blue-600'
+                ? 'text-lime-400 bg-lime-400/10'
+                : 'text-gray-500 dark:text-gray-400 hover:text-lime-400'
               }
               ${tab.id === 'logger' && workoutActive ? 'animate-pulse' : ''}
             `}
@@ -54,7 +54,7 @@ export const BottomNavigation: React.FC<{
             <div className="relative">
               {tab.icon}
               {tab.id === 'logger' && workoutActive && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-lime-400 rounded-full animate-pulse" />
               )}
             </div>
             <span className="text-xs mt-1 font-medium">{tab.name}</span>
