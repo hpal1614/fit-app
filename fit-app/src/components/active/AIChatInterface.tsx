@@ -318,7 +318,6 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
                     <span className="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
                     <span className="w-2 h-2 bg-lime-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                   </span>
-                </div>
               </div>
             </div>
           </div>
