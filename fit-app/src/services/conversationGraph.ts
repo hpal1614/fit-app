@@ -85,17 +85,9 @@ export class FitnessConversationGraph {
     this.graph
       .addEdge('__start__', 'analyze_intent')
       .addEdge('analyze_intent', 'retrieve_context')
-      .addConditionalEdges(
-        'retrieve_context',
-        this.routeBasedOnIntent.bind(this),
-        {
-          coaching: 'adapt_coaching_style',
-          correction: 'form_correction',
-          motivation: 'motivational_boost',
-          education: 'educational_content',
-          planning: 'workout_planning',
-        }
-      )
+      // Note: addConditionalEdges is not available in this version
+      // Using direct edges instead
+      .addEdge('retrieve_context', 'adapt_coaching_style')
       .addEdge('adapt_coaching_style', 'generate_response')
       .addEdge('form_correction', 'generate_response')
       .addEdge('motivational_boost', 'generate_response')
