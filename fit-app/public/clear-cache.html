@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear All Caches</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #111827;
+            color: white;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .log {
+            background: #1f2937;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Clear All Caches</h1>
+    <button onclick="clearEverything()">🧹 Clear Everything</button>
+    <button onclick="unregisterServiceWorkers()">🔧 Unregister Service Workers</button>
+    <button onclick="clearBrowserCache()">🗑️ Clear Browser Cache</button>
+    <button onclick="window.location.href='/'">🏠 Go Back to App</button>
+    <div id="log" class="log"></div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.textContent += message + '\n';
+            console.log(message);
+        }
+
+        async function clearEverything() {
+            log('Starting complete cache clear...');
+            
+            // 1. Unregister all service workers
+            await unregisterServiceWorkers();
+            
+            // 2. Clear all caches
+            await clearBrowserCache();
+            
+            // 3. Clear localStorage and sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            log('✅ Cleared localStorage and sessionStorage');
+            
+            // 4. Clear IndexedDB
+            if ('indexedDB' in window) {
+                const databases = await indexedDB.databases();
+                for (const db of databases) {
+                    indexedDB.deleteDatabase(db.name);
+                    log(`✅ Deleted IndexedDB: ${db.name}`);
+                }
+            }
+            
+            log('✅ All caches cleared! Refreshing in 2 seconds...');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        }
+
+        async function unregisterServiceWorkers() {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    const success = await registration.unregister();
+                    log(`${success ? '✅' : '❌'} Unregistered service worker: ${registration.scope}`);
+                }
+            } else {
+                log('❌ Service workers not supported');
+            }
+        }
+
+        async function clearBrowserCache() {
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                for (const cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                    log(`✅ Deleted cache: ${cacheName}`);
+                }
+            } else {
+                log('❌ Cache API not supported');
+            }
+        }
+    </script>
+</body>
+</html>
