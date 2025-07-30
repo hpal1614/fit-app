@@ -5,6 +5,7 @@ import { useVoice } from '../../hooks/useVoice';
 import { useMCPTools } from '../../hooks/useMCPTools';
 import { aiService } from '../../services/aiService';
 import { sendEmergencyAI } from '../../services/emergencyAI';
+import { bulletproofAI } from '../../services/bulletproofAI';
 import type { WorkoutContext } from '../../types/workout';
 // Removed unused AIResponse import
 
@@ -226,34 +227,66 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         Provide a helpful, encouraging response as a fitness coach.
         ${mcpEnabled ? 'Note: MCP tools are available for specific queries about exercises, progress, or biometrics.' : ''}`;
 
-      // Try direct AI call as a test
+      // Try bulletproof AI first
       try {
-        const directResponse = await aiService.getResponse({
-          message: messageText,
-          type: 'general-advice',
-          context: workoutContext || { isActive: false, startTime: new Date(), exercises: [] }
-        });
+        console.log('🎯 Using BulletproofAI service...');
+        const bulletproofResponse = await bulletproofAI.sendMessage(messageText);
         
-        console.log('Direct AI response:', directResponse);
+        console.log('✅ BulletproofAI response:', bulletproofResponse);
         
-        if (directResponse && directResponse.content) {
+        if (bulletproofResponse && bulletproofResponse.message) {
           // Add AI message directly
           const aiMessage: Message = {
             id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: 'ai',
-            content: directResponse.content,
+            content: bulletproofResponse.message,
             timestamp: new Date()
           };
           messagesRef.current = [...messagesRef.current, aiMessage];
           setMessages([...messagesRef.current]);
           
+          // Update suggestions if available
+          if (bulletproofResponse.suggestions) {
+            setSuggestedActions(bulletproofResponse.suggestions);
+          }
+          
           if (!isMuted && speak) {
-            speak(directResponse.content);
+            speak(bulletproofResponse.message);
           }
           return;
         }
-      } catch (directError) {
-        console.error('Direct AI call failed:', directError);
+      } catch (bulletproofError) {
+        console.error('BulletproofAI failed:', bulletproofError);
+        
+        // Try direct AI call as fallback
+        try {
+          const directResponse = await aiService.getResponse({
+            message: messageText,
+            type: 'general-advice',
+            context: workoutContext || { isActive: false, startTime: new Date(), exercises: [] }
+          });
+          
+          console.log('Direct AI response:', directResponse);
+          
+          if (directResponse && directResponse.content) {
+            // Add AI message directly
+            const aiMessage: Message = {
+              id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              type: 'ai',
+              content: directResponse.content,
+              timestamp: new Date()
+            };
+            messagesRef.current = [...messagesRef.current, aiMessage];
+            setMessages([...messagesRef.current]);
+            
+            if (!isMuted && speak) {
+              speak(directResponse.content);
+            }
+            return;
+          }
+        } catch (directError) {
+          console.error('Direct AI call failed:', directError);
+        }
       }
       
       // Fall back to streaming if direct call fails

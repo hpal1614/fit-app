@@ -1,3 +1,26 @@
+// EMERGENCY: Block all the annoying errors (must be first!)
+window.addEventListener('error', (e) => {
+  const knownErrors = [
+    'chrome-extension://invalid/',
+    'share-modal.js',
+    'addEventListener',
+    'Service worker',
+    'net::ERR_FAILED'
+  ];
+  
+  if (knownErrors.some(err => e.error?.message?.includes(err) || e.message?.includes(err))) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  if (e.reason?.message?.includes('chrome-extension://invalid/')) {
+    e.preventDefault();
+    return false;
+  }
+});
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
