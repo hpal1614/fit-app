@@ -38,6 +38,7 @@ import { pwaService } from './services/pwaService';
 
 // Import AI test utility
 import './services/testAI';
+import './services/validateAPIs';
 
 // Add direct test function to window
 if (typeof window !== 'undefined') {
