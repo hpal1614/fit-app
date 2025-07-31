@@ -29,7 +29,8 @@ import {
   NimbusCard,
   NimbusButton,
   NimbusTheme,
-  NimbusStreamingChat
+  NimbusStreamingChat,
+  NimbusNutritionTracker
 } from './nimbus';
 
 // Feature Components
@@ -174,24 +175,7 @@ function App() {
         {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
         {activeTab === 'generator' && <WorkoutGenerator />}
         {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
-        {activeTab === 'nutrition' && (
-          <NimbusCard variant="glass" className="text-center">
-            <Apple className="w-16 h-16 mx-auto mb-4 text-primary-400" />
-            <h2 className="text-2xl font-bold mb-2">Nutrition Tracking</h2>
-            <p className="text-neutral-400 mb-6">AI-powered nutrition tracking coming soon!</p>
-            <div className="space-y-3">
-              <NimbusCard variant="bordered" padding="sm">
-                <p className="text-sm">📸 Camera-based food logging</p>
-              </NimbusCard>
-              <NimbusCard variant="bordered" padding="sm">
-                <p className="text-sm">🧠 AI nutritional analysis</p>
-              </NimbusCard>
-              <NimbusCard variant="bordered" padding="sm">
-                <p className="text-sm">📊 Macro & calorie tracking</p>
-              </NimbusCard>
-            </div>
-          </NimbusCard>
-        )}
+        {activeTab === 'nutrition' && <NimbusNutritionTracker />}
         {activeTab === 'coach' && (
           <NimbusStreamingChat 
             context={workout.getContext()} 
