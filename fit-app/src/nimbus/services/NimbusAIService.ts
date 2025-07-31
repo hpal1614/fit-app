@@ -48,20 +48,31 @@ export class NimbusAIService {
   private getDefaultProviders(): AIProvider[] {
     return [
       {
-        name: 'openai',
-        apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-        model: 'gpt-3.5-turbo',
+        name: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
+        model: 'openai/gpt-3.5-turbo',
         maxTokens: 1000,
         temperature: 0.7,
         priority: 1
       },
       {
-        name: 'anthropic',
-        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
-        model: 'claude-3-haiku-20240307',
+        name: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        apiKey: import.meta.env.VITE_GROQ_API_KEY,
+        model: 'mixtral-8x7b-32768',
         maxTokens: 1000,
         temperature: 0.7,
         priority: 2
+      },
+      {
+        name: 'google',
+        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
+        apiKey: import.meta.env.VITE_GOOGLE_AI_API_KEY,
+        model: 'gemini-pro',
+        maxTokens: 1000,
+        temperature: 0.7,
+        priority: 3
       },
       {
         name: 'local',
@@ -157,8 +168,10 @@ export class NimbusAIService {
     options?: StreamingOptions
   ): AsyncGenerator<string, void, unknown> {
     
-    if (provider.name === 'openai') {
-      yield* this.streamFromOpenAI(provider, message, context, options);
+    if (provider.name === 'openrouter' || provider.name === 'groq') {
+      yield* this.streamFromOpenAICompatible(provider, message, context, options);
+    } else if (provider.name === 'google') {
+      yield* this.streamFromGoogle(provider, message, context, options);
     } else if (provider.name === 'anthropic') {
       yield* this.streamFromAnthropic(provider, message, context, options);
     } else {
@@ -167,21 +180,30 @@ export class NimbusAIService {
   }
   
   /**
-   * Stream from OpenAI
+   * Stream from OpenAI-compatible APIs (OpenRouter, Groq)
    */
-  private async *streamFromOpenAI(
+  private async *streamFromOpenAICompatible(
     provider: AIProvider,
     message: string,
     context: any,
     options?: StreamingOptions
   ): AsyncGenerator<string, void, unknown> {
     
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (provider.name === 'openrouter') {
+      headers['Authorization'] = `Bearer ${provider.apiKey}`;
+      headers['HTTP-Referer'] = window.location.origin;
+      headers['X-Title'] = 'Nimbus Fitness AI';
+    } else if (provider.name === 'groq') {
+      headers['Authorization'] = `Bearer ${provider.apiKey}`;
+    }
+    
+    const response = await fetch(provider.endpoint!, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${provider.apiKey}`
-      },
+      headers,
       body: JSON.stringify({
         model: provider.model,
         messages: this.buildMessages(message, context),
@@ -218,6 +240,71 @@ export class NimbusAIService {
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
               yield content;
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+      }
+    }
+  }
+  
+  /**
+   * Stream from Google AI (Gemini)
+   */
+  private async *streamFromGoogle(
+    provider: AIProvider,
+    message: string,
+    context: any,
+    options?: StreamingOptions
+  ): AsyncGenerator<string, void, unknown> {
+    
+    const endpoint = `${provider.endpoint}/gemini-pro:streamGenerateContent?key=${provider.apiKey}`;
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: this.buildGooglePrompt(message, context)
+          }]
+        }],
+        generationConfig: {
+          temperature: provider.temperature,
+          maxOutputTokens: provider.maxTokens,
+        }
+      }),
+      signal: options?.signal
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Google AI API error: ${response.status}`);
+    }
+    
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response body');
+    
+    const decoder = new TextDecoder();
+    let buffer = '';
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      
+      for (const line of lines) {
+        if (line.trim()) {
+          try {
+            const data = JSON.parse(line);
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              yield text;
             }
           } catch (e) {
             // Skip invalid JSON
@@ -365,6 +452,27 @@ export class NimbusAIService {
     });
     
     return messages;
+  }
+  
+  /**
+   * Build Google AI prompt
+   */
+  private buildGooglePrompt(userMessage: string, context: any): string {
+    const systemPrompt = this.getSystemPrompt(context);
+    
+    // Google AI doesn't have system messages, so we combine them
+    let fullPrompt = systemPrompt + '\n\n';
+    
+    // Add conversation history
+    const historyStart = Math.max(0, this.conversationHistory.length - this.config.conversationMemory!);
+    for (let i = historyStart; i < this.conversationHistory.length; i++) {
+      const msg = this.conversationHistory[i];
+      fullPrompt += `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}\n\n`;
+    }
+    
+    fullPrompt += `Human: ${userMessage}\n\nAssistant:`;
+    
+    return fullPrompt;
   }
   
   /**
