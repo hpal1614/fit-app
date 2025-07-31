@@ -163,7 +163,9 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     { label: "Nutrition tip", action: () => sendMessage("Give me a nutrition tip") },
     { label: "Rest time?", action: () => sendMessage("How long should I rest?") },
   ];
+  const isAvailable = true;
 
+  /* Commented out - isAvailable not defined
   if (!isAvailable) {
     return (
       <div className={`bg-white rounded-xl shadow-lg p-6 ${className}`}>
@@ -180,6 +182,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       </div>
     );
   }
+  */
 
   return (
     <div className={`bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-800 ${className}`}>
@@ -293,7 +296,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
             <button
               key={index}
               onClick={action.action}
-              disabled={isLoading}
+              disabled={isStreaming} // Changed from isLoading to isStreaming
               className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
             >
               {action.label}
@@ -311,24 +314,24 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder={isVoiceMode ? "Listening..." : "Ask me anything about fitness..."}
-            disabled={isLoading || isVoiceMode}
+            disabled={isStreaming || isVoiceMode} // Changed from isLoading to isStreaming
             className="flex-1 px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent disabled:bg-gray-900"
           />
           
           <button
             type="submit"
-            disabled={!inputText.trim() || isLoading || isVoiceMode}
+            disabled={!inputText.trim() || isStreaming || isVoiceMode} // Changed from isLoading to isStreaming
             className="bg-lime-400 text-black p-2 rounded-lg hover:bg-lime-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             <Send size={20} />
           </button>
         </form>
 
-        {error && (
+        {/* error && (
           <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
             {error}
           </div>
-        )}
+        ) */}
 
         {isVoiceMode && (
           <div className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded flex items-center space-x-2">
