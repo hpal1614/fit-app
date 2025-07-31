@@ -5,7 +5,7 @@ import {
   Settings,
   Mic
 } from 'lucide-react';
-import { WorkoutDashboard } from './components/WorkoutDashboard';
+import { Nimbus } from './components/Nimbus';
 import { AIChatInterface } from './components/AIChatInterface';
 import { WorkoutsTab } from './components/WorkoutsTab';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -114,8 +114,8 @@ function App() {
 
         {/* Tab Content */}
         {activeTab === 'logger' && (
-          <div className="space-y-4">
-            <WorkoutDashboard className="bg-gray-900/80 backdrop-blur-lg rounded-2xl border border-gray-800" />
+          <div>
+            <Nimbus />
           </div>
         )}
         
