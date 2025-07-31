@@ -7,32 +7,61 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary Colors
-        'fitness-blue': '#3B82F6',
-        'fitness-green': '#10B981',
-        'fitness-orange': '#F59E0B',
-        'fitness-red': '#EF4444',
+        // Nimbus Primary Colors
+        primary: {
+          50: '#F0FDF4',
+          100: '#DCFCE7',
+          200: '#BBF7D0',
+          300: '#86EFAC',
+          400: '#4ADE80',
+          500: '#22C55E',
+          600: '#16A34A',
+          700: '#15803D',
+          800: '#166534',
+          900: '#14532D',
+        },
         
-        // Voice States
+        // Nimbus Secondary Colors
+        secondary: {
+          50: '#FFF7ED',
+          100: '#FFEDD5',
+          200: '#FED7AA',
+          300: '#FDBA74',
+          400: '#FB923C',
+          500: '#F97316',
+          600: '#EA580C',
+          700: '#C2410C',
+          800: '#9A3412',
+          900: '#7C2D12',
+        },
+        
+        // Nimbus Neutral Scale
+        neutral: {
+          50: '#FAFAFA',
+          100: '#F4F4F5',
+          200: '#E4E4E7',
+          300: '#D4D4D8',
+          400: '#A1A1AA',
+          500: '#71717A',
+          600: '#52525B',
+          700: '#3F3F46',
+          800: '#27272A',
+          900: '#18181B',
+          950: '#09090B',
+        },
+        
+        // Voice States (Nimbus)
         'voice-listening': '#8B5CF6',
         'voice-speaking': '#06B6D4',
         'voice-processing': '#F59E0B',
-        'voice-idle': '#6B7280',
+        'voice-idle': '#71717A',
         'voice-error': '#EF4444',
         
-        // Neutral Scale
-        gray: {
-          50: '#F9FAFB',
-          100: '#F3F4F6',
-          200: '#E5E7EB',
-          300: '#D1D5DB',
-          400: '#9CA3AF',
-          500: '#6B7280',
-          600: '#4B5563',
-          700: '#374151',
-          800: '#1F2937',
-          900: '#111827',
-        }
+        // Legacy mappings (for backward compatibility)
+        'fitness-blue': '#3B82F6',
+        'fitness-green': '#22C55E',
+        'fitness-orange': '#F97316',
+        'fitness-red': '#EF4444',
       },
       animation: {
         'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
