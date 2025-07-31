@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, X, Mic, Volume2, Bot, User, Loader2 } from 'lucide-react';
+import { Send, X, Mic, Volume2, VolumeX, Bot, User, Loader2 } from 'lucide-react';
 import { useStreamingAI } from '../hooks/useStreamingAI';
 import { useVoice } from '../hooks/useVoice';
 import type { WorkoutContext } from '../types/workout';
@@ -52,6 +52,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   const { speak, isListening, startListening, stopListening } = useVoice({ workoutContext });
   const [inputText, setInputText] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,14 +64,15 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
   // Never show loading for more than 5 seconds - CRITICAL TIMEOUT PROTECTION
   useEffect(() => {
-    if (isLoading) {
+    if (isStreaming) {
       const timeout = setTimeout(() => {
         // Force stop loading if it takes too long
         console.warn('AI loading timeout - forcing stop');
+        stopStreaming();
       }, 5000);
       return () => clearTimeout(timeout);
     }
-  }, [isLoading]);
+  }, [isStreaming, stopStreaming]);
 
   // Initial greeting
   useEffect(() => {
@@ -186,10 +188,21 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         <div className="flex items-center space-x-2">
           <Bot size={24} className="text-lime-400" />
           <h3 className="text-xl font-bold text-white">AI Coach</h3>
-          {isLoading && <Loader2 size={16} className="animate-spin text-gray-400" />}
+          {isStreaming && <Loader2 size={16} className="animate-spin text-gray-400" />}
         </div>
         
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className={`p-2 rounded-lg transition-colors ${
+              isMuted 
+                ? 'bg-gray-700 text-gray-400' 
+                : 'bg-gray-700 text-lime-400 hover:bg-gray-600'
+            }`}
+            title={isMuted ? 'Unmute voice' : 'Mute voice'}
+          >
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </button>
           <button
             onClick={handleVoiceToggle}
             className={`p-2 rounded-lg transition-colors ${

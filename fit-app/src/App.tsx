@@ -147,21 +147,7 @@ function App() {
         <Mic className="w-6 h-6 text-black" />
       </button>
 
-      {/* Bottom Navigation with Lime Theme Override */}
-      <style jsx global>{`
-        .fixed.bottom-0 button .text-blue-600 {
-          color: rgb(163 230 53) !important;
-        }
-        .fixed.bottom-0 button .bg-blue-50 {
-          background-color: rgb(163 230 53 / 0.1) !important;
-        }
-        .fixed.bottom-0 button:hover .text-gray-500 {
-          color: rgb(163 230 53) !important;
-        }
-        .fixed.bottom-0 .bg-green-500 {
-          background-color: rgb(163 230 53) !important;
-        }
-      `}</style>
+      {/* Bottom Navigation is already styled with lime theme in BottomNavigation.tsx */}
       <BottomNavigation 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
