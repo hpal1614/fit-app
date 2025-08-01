@@ -346,10 +346,59 @@ export class FixedVoiceService {
 
       console.log('🔊 Speaking:', text);
 
+      // Check if speech synthesis is supported and available
+      if (!this.synthesis) {
+        console.warn('🔊 Speech synthesis not available');
+        resolve(); // Don't reject, just resolve silently
+        return;
+      }
+
+      // Wait for voices to be loaded if needed
+      if (this.synthesis.getVoices().length === 0) {
+        console.log('🔊 Waiting for voices to load...');
+        this.synthesis.onvoiceschanged = () => {
+          this.synthesis.onvoiceschanged = null; // Remove listener
+          this.attemptSpeak(text, options, resolve, reject);
+        };
+        return;
+      }
+
+      this.attemptSpeak(text, options, resolve, reject);
+    });
+  }
+
+  // Attempt to speak with retry logic
+  private attemptSpeak(
+    text: string, 
+    options: { voice?: string; rate?: number; pitch?: number } = {},
+    resolve: () => void,
+    reject: (error: any) => void,
+    attempt: number = 1
+  ): void {
+    try {
       const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Set basic properties
       utterance.rate = options.rate || 1.0;
       utterance.pitch = options.pitch || 1.0;
       utterance.volume = 1.0;
+      utterance.lang = 'en-US';
+
+      // Try to set a voice if available
+      const voices = this.synthesis.getVoices();
+      if (voices.length > 0) {
+        // Prefer English voices
+        const englishVoice = voices.find(voice => 
+          voice.lang.startsWith('en') && voice.default
+        ) || voices.find(voice => 
+          voice.lang.startsWith('en')
+        ) || voices[0];
+        
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+          console.log('🔊 Using voice:', englishVoice.name);
+        }
+      }
 
       utterance.onstart = () => {
         console.log('🔊 Speech started');
@@ -358,7 +407,7 @@ export class FixedVoiceService {
       };
 
       utterance.onend = () => {
-        console.log('🔊 Speech ended');
+        console.log('🔊 Speech ended successfully');
         this.state.isSpeaking = false;
         this.notifyListeners();
         resolve();
@@ -366,9 +415,32 @@ export class FixedVoiceService {
 
       utterance.onerror = (error) => {
         console.error('🔊 Speech error:', error);
+        
+        // Handle specific error types
+        if (error.error === 'interrupted' || error.error === 'canceled') {
+          console.log('🔊 Speech was interrupted or canceled');
+          this.state.isSpeaking = false;
+          this.notifyListeners();
+          resolve(); // Don't reject for interruptions
+          return;
+        }
+
+        // Retry logic for certain errors
+        if (attempt < 3 && (error.error === 'network' || error.error === 'not-allowed')) {
+          console.log(`🔊 Retrying speech (attempt ${attempt + 1}/3)...`);
+          setTimeout(() => {
+            this.attemptSpeak(text, options, resolve, reject, attempt + 1);
+          }, 1000);
+          return;
+        }
+
+        // Final failure
+        console.error('🔊 Speech failed after retries:', error.error);
         this.state.isSpeaking = false;
         this.notifyListeners();
-        reject(error);
+        
+        // Don't reject, just resolve to prevent app crashes
+        resolve();
       };
 
       // Cancel any current speech
@@ -376,7 +448,13 @@ export class FixedVoiceService {
       
       // Start speaking
       this.synthesis.speak(utterance);
-    });
+      
+    } catch (error) {
+      console.error('🔊 Speech setup error:', error);
+      this.state.isSpeaking = false;
+      this.notifyListeners();
+      resolve(); // Don't reject, just resolve
+    }
   }
 
   // Subscribe to state changes

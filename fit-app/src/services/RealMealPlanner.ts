@@ -3,7 +3,7 @@
  * Uses actual nutritional analysis and real food databases
  */
 
-import { realNutritionAPI, RealFoodProduct, MealPlanRequest, MealPlan } from './RealNutritionAPI';
+import { getRealNutritionAPI, RealFoodProduct, MealPlanRequest, MealPlan } from './RealNutritionAPI';
 import { NimbusAIService } from '../nimbus/services/NimbusAIService';
 
 interface NutritionalRequirements {
@@ -192,7 +192,7 @@ export class RealMealPlanner {
 
     // Search for foods in each category
     for (const category of template.foodCategories) {
-      const searchResults = await realNutritionAPI.searchFoods(category, 10);
+      const searchResults = await getRealNutritionAPI().searchFoods(category, 10);
       
       // Filter based on dietary restrictions
       const filteredProducts = searchResults.products.filter(product => 

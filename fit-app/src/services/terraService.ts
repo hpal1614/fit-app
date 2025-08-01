@@ -473,6 +473,6 @@ export class TerraService {
 
 // Create singleton instance with config from environment
 export const terraService = new TerraService({
-  apiKey: process.env.REACT_APP_TERRA_API_KEY || 'demo-api-key',
-  devId: process.env.REACT_APP_TERRA_DEV_ID || 'demo-dev-id'
+  apiKey: import.meta.env.VITE_TERRA_API_KEY || 'demo-api-key',
+  devId: import.meta.env.VITE_TERRA_DEV_ID || 'demo-dev-id'
 });

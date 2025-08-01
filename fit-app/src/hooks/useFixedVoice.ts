@@ -81,6 +81,7 @@ export function useFixedVoice() {
       return true;
     } catch (error) {
       console.error('❌ Speak failed:', error);
+      // Don't throw error, just return false
       return false;
     }
   }, [voiceService]);

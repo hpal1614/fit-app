@@ -19,7 +19,10 @@ import {
   Mic,
   Brain,
   Apple,
-  Dumbbell
+  Dumbbell,
+  FileText,
+  Share2,
+  BarChart3
 } from 'lucide-react';
 
 // Nimbus UI Components
@@ -34,6 +37,10 @@ import {
 } from './nimbus';
 import { SimpleVoiceTest } from './components/voice/SimpleVoiceTest';
 
+// Phase 4 Components
+import { NimbusPDFUploader } from './components/nimbus/pdf/NimbusPDFUploader';
+import { NimbusAdvancedAnalyticsDashboard } from './components/nimbus/analytics/NimbusAdvancedAnalyticsDashboard';
+
 // Feature Components
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
 import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
@@ -47,6 +54,11 @@ import { useWorkout } from './hooks/useWorkout';
 import { useVoice } from './hooks/useVoice';
 import { databaseService } from './services/databaseService';
 
+// Phase 4 Services
+import { NimbusPWAService } from './services/nimbus/NimbusPWAService';
+import { NimbusPerformanceOptimizer } from './services/nimbus/NimbusPerformanceOptimizer';
+import { NimbusPDFWorkout } from './services/nimbus/NimbusPDFParser';
+
 import './App.css';
 
 interface UserStats {
@@ -56,17 +68,22 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'voice-demo' | 'analytics' | 'profile';
+type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'voice-demo' | 'analytics' | 'profile' | 'pdf-upload' | 'template-sharing' | 'advanced-analytics';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState<TabType>('workouts');
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
+  const [parsedWorkout, setParsedWorkout] = useState<NimbusPDFWorkout | null>(null);
 
   
   // Initialize hooks
   const workout = useWorkout();
   const { isSupported: voiceSupported } = useVoice();
+
+  // Initialize Phase 4 services
+  const pwaService = new NimbusPWAService();
+  const performanceOptimizer = new NimbusPerformanceOptimizer();
 
   // Mock user data - replace with real data later
   const userProfile = {
@@ -93,6 +110,26 @@ function App() {
     databaseService.initialize();
   }, []);
 
+  // Initialize Phase 4 features
+  useEffect(() => {
+    const initializePhase4 = async () => {
+      // Register PWA service worker
+      await pwaService.registerServiceWorker();
+      
+      // Start performance monitoring
+      performanceOptimizer.startPerformanceMonitoring();
+      
+      // Optimize performance
+      await performanceOptimizer.optimizeBundleSize();
+      await performanceOptimizer.optimizeResponseTimes();
+      performanceOptimizer.optimizeMemoryUsage();
+      
+      console.log('🚀 Phase 4 features initialized successfully');
+    };
+
+    initializePhase4();
+  }, []);
+
   // Check for onboarding
   useEffect(() => {
     const isOnboarded = localStorage.getItem('fitnessAppOnboarded');
@@ -110,6 +147,9 @@ function App() {
     { key: 'coach', label: 'Coach', icon: MessageCircle },
     { key: 'voice-demo', label: 'Voice', icon: Mic },
     { key: 'analytics', label: 'Stats', icon: TrendingUp },
+    { key: 'pdf-upload', label: 'PDF', icon: FileText },
+    { key: 'template-sharing', label: 'Share', icon: Share2 },
+    { key: 'advanced-analytics', label: 'Advanced', icon: BarChart3 },
     { key: 'profile', label: 'Profile', icon: User, badge: showNotificationBadge ? 1 : undefined }
   ];
 
@@ -186,6 +226,33 @@ function App() {
         )}
         {activeTab === 'voice-demo' && <SimpleVoiceTest />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
+        {activeTab === 'pdf-upload' && (
+          <NimbusPDFUploader
+            onWorkoutParsed={(workout) => {
+              setParsedWorkout(workout);
+              setActiveTab('workouts');
+            }}
+            onError={(error) => {
+              console.error('PDF parsing error:', error);
+              // You could show a toast notification here
+            }}
+          />
+        )}
+        {activeTab === 'template-sharing' && (
+          <div className="text-center py-12">
+            <Share2 className="mx-auto w-16 h-16 text-gray-400 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Template Sharing
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Share and discover workout templates with the community
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
+              Coming soon - Advanced template sharing system
+            </p>
+          </div>
+        )}
+        {activeTab === 'advanced-analytics' && <NimbusAdvancedAnalyticsDashboard />}
         {activeTab === 'profile' && (
           <NimbusCard variant="glass">
             <h2 className="text-xl font-bold mb-4">Profile Settings</h2>

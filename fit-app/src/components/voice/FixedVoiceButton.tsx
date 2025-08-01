@@ -31,7 +31,10 @@ export const FixedVoiceButton: React.FC<{
 
   // Test speech function
   const testSpeech = async () => {
-    await speak("Voice test successful! I can hear you now.");
+    const success = await speak("Voice test successful! I can hear you now.");
+    if (!success) {
+      console.log('🔊 Speech synthesis not available or failed');
+    }
   };
 
   const getButtonStyle = () => {
@@ -125,6 +128,7 @@ export const FixedVoiceButton: React.FC<{
           <p>Permission: {permissionGranted ? '✅' : '❌'}</p>
           <p>Listening: {isListening ? '✅' : '❌'}</p>
           <p>Speaking: {isSpeaking ? '✅' : '❌'}</p>
+          <p>Speech Synthesis: {window.speechSynthesis ? '✅' : '❌'}</p>
           <p>Error: {error ? '❌' : '✅'}</p>
         </div>
         

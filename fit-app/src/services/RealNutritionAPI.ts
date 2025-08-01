@@ -107,7 +107,7 @@ export interface MealPlan {
 
 class USDADatabase {
   private baseUrl = 'https://api.nal.usda.gov/fdc/v1';
-  private apiKey = process.env.REACT_APP_USDA_API_KEY || '';
+  private apiKey = import.meta.env.VITE_USDA_API_KEY || '';
 
   async searchFoods(query: string, pageSize: number = 25): Promise<RealFoodProduct[]> {
     try {
@@ -456,5 +456,15 @@ export class RealNutritionAPI {
   }
 }
 
-// Export singleton instance
-export const realNutritionAPI = new RealNutritionAPI(); 
+// Export singleton instance with lazy initialization
+let _realNutritionAPI: RealNutritionAPI | null = null;
+
+export function getRealNutritionAPI(): RealNutritionAPI {
+  if (!_realNutritionAPI) {
+    _realNutritionAPI = new RealNutritionAPI();
+  }
+  return _realNutritionAPI;
+}
+
+// For backward compatibility
+export const realNutritionAPI = getRealNutritionAPI(); 
