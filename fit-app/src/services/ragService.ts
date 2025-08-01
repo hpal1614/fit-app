@@ -51,11 +51,30 @@ export class FitnessRAGService {
     }
 
     try {
-      // Generate query embedding (simple keyword-based for demo)
+      console.log('🔍 RAG Query:', query);
+      
+      // Generate query embedding
       const queryVector = this.generateEmbedding(query);
+      console.log('📊 Query embedding generated, length:', queryVector.length);
+
+      // Check if vector store has data
+      if (!this.vectorStore.hasData()) {
+        console.log('⚠️ Vector store empty, seeding knowledge base...');
+        await this.seedKnowledgeBase();
+      }
 
       // Search vector store
-      const results = await this.vectorStore.query(queryVector, 3);
+      const results = await this.vectorStore.query(queryVector, 5);
+      console.log('🔎 Search results:', results.length, 'items found');
+
+      // Log top results for debugging
+      if (results.length > 0) {
+        console.log('🏆 Top result:', {
+          title: results[0].item.metadata.title,
+          score: results[0].score,
+          type: results[0].item.metadata.type
+        });
+      }
 
       // Format response
       const sources = results.map(r => ({
@@ -68,6 +87,12 @@ export class FitnessRAGService {
       const confidence = this.calculateConfidence(results);
       const followUpQuestions = this.generateFollowUpQuestions(query, results);
 
+      console.log('✅ RAG Response generated:', {
+        answerLength: answer.length,
+        sourcesCount: sources.length,
+        confidence: confidence
+      });
+
       return {
         answer,
         sources,
@@ -75,7 +100,7 @@ export class FitnessRAGService {
         followUpQuestions
       };
     } catch (error) {
-      console.error('RAG query failed:', error);
+      console.error('❌ RAG query failed:', error);
       return {
         answer: "I'm having trouble accessing my knowledge base. Could you try rephrasing your question?",
         sources: [],
@@ -86,32 +111,97 @@ export class FitnessRAGService {
   }
 
   private async seedKnowledgeBase(): Promise<void> {
-    console.log('Seeding fitness knowledge base...');
+    console.log('🌱 Seeding fitness knowledge base...');
+    console.log('📚 Knowledge base items:', this.knowledgeBase.length);
 
-    const vectorItems: VectorItem[] = this.knowledgeBase.map(item => ({
-      id: item.id,
-      vector: this.generateEmbedding(item.content),
-      metadata: item
-    }));
+    try {
+      const vectorItems: VectorItem[] = this.knowledgeBase.map(item => {
+        const vector = this.generateEmbedding(item.content);
+        console.log(`📝 Created vector for "${item.title}":`, {
+          vectorLength: vector.length,
+          nonZeroValues: vector.filter(v => v > 0).length
+        });
+        
+        return {
+          id: item.id,
+          vector: vector,
+          metadata: item
+        };
+      });
 
-    await this.vectorStore.addItems(vectorItems);
-    console.log(`Seeded ${vectorItems.length} knowledge items`);
+      await this.vectorStore.addItems(vectorItems);
+      console.log(`✅ Seeded ${vectorItems.length} knowledge items successfully`);
+      
+      // Verify seeding
+      if (this.vectorStore.hasData()) {
+        console.log('✅ Vector store verification: Data confirmed');
+      } else {
+        console.error('❌ Vector store verification: No data found after seeding');
+      }
+    } catch (error) {
+      console.error('❌ Failed to seed knowledge base:', error);
+      throw error;
+    }
   }
 
   private generateEmbedding(text: string): number[] {
-    // Simple keyword-based embedding for browser compatibility
+    // Enhanced keyword-based embedding for better matching
     const keywords = [
-      'squat', 'deadlift', 'bench', 'press', 'row', 'pull', 'push',
-      'muscle', 'strength', 'power', 'endurance', 'cardio', 'hiit',
-      'protein', 'carbs', 'fat', 'calories', 'nutrition', 'diet',
-      'form', 'technique', 'safety', 'injury', 'warmup', 'recovery',
-      'beginner', 'intermediate', 'advanced', 'progression', 'sets', 'reps'
+      // Exercise keywords
+      'squat', 'squats', 'deadlift', 'deadlifts', 'bench', 'bench press', 'press', 'row', 'rows', 'pull', 'pulls', 'push', 'pushes',
+      'curl', 'curls', 'extension', 'extensions', 'press', 'presses', 'fly', 'flies', 'lunge', 'lunges', 'step', 'steps',
+      'muscle', 'muscles', 'strength', 'power', 'endurance', 'cardio', 'hiit', 'aerobic', 'anaerobic',
+      
+      // Body parts
+      'chest', 'back', 'shoulders', 'arms', 'biceps', 'triceps', 'legs', 'quads', 'quadriceps', 'hamstrings', 'glutes', 'calves',
+      'core', 'abs', 'abdominal', 'neck', 'forearms', 'traps', 'lats', 'deltoids',
+      
+      // Nutrition keywords
+      'protein', 'proteins', 'carbs', 'carbohydrates', 'fat', 'fats', 'calories', 'calorie', 'nutrition', 'diet', 'food', 'eating',
+      'meal', 'meals', 'supplement', 'supplements', 'vitamin', 'vitamins', 'mineral', 'minerals',
+      
+      // Training keywords
+      'form', 'technique', 'safety', 'injury', 'injuries', 'warmup', 'warm up', 'recovery', 'rest', 'training', 'workout', 'workouts',
+      'exercise', 'exercises', 'beginner', 'beginners', 'intermediate', 'advanced', 'progression', 'sets', 'reps', 'repetitions',
+      'weight', 'weights', 'dumbbell', 'dumbbells', 'barbell', 'barbells', 'machine', 'machines', 'bodyweight', 'body weight',
+      
+      // Action words
+      'how', 'what', 'when', 'why', 'where', 'perform', 'performing', 'do', 'doing', 'lift', 'lifting', 'move', 'moving',
+      'stand', 'standing', 'sit', 'sitting', 'lie', 'lying', 'hold', 'holding', 'grip', 'gripping'
     ];
 
     const textLower = text.toLowerCase();
-    return keywords.map(keyword => 
-      textLower.includes(keyword) ? 1 : 0
-    );
+    const words = textLower.split(/\s+/);
+    
+    // Create embedding with better scoring
+    const embedding = keywords.map(keyword => {
+      // Check for exact matches
+      if (textLower.includes(keyword)) {
+        return 1.0;
+      }
+      
+      // Check for partial matches
+      const keywordWords = keyword.split(/\s+/);
+      let partialMatch = 0;
+      
+      for (const word of words) {
+        for (const kw of keywordWords) {
+          if (word.includes(kw) || kw.includes(word)) {
+            partialMatch += 0.5;
+          }
+        }
+      }
+      
+      return Math.min(partialMatch, 1.0);
+    });
+
+    // Normalize the embedding
+    const sum = embedding.reduce((a, b) => a + b, 0);
+    if (sum > 0) {
+      return embedding.map(val => val / sum);
+    }
+    
+    return embedding;
   }
 
   private generateAnswer(query: string, results: Array<{ item: VectorItem; score: number }>): string {
@@ -179,88 +269,111 @@ export class FitnessRAGService {
       {
         id: 'squat-basics',
         title: 'Squat',
-        content: 'The squat is a fundamental compound exercise that targets the quadriceps, hamstrings, and glutes. To perform: Stand with feet shoulder-width apart, lower your body by bending at the knees and hips as if sitting back into a chair, keep your chest up and core engaged, descend until thighs are parallel to the floor, then push through your heels to return to standing.',
+        content: 'The squat is a fundamental compound exercise that targets the quadriceps, hamstrings, and glutes. To perform: Stand with feet shoulder-width apart, lower your body by bending at the knees and hips as if sitting back into a chair, keep your chest up and core engaged, descend until thighs are parallel to the floor, then push through your heels to return to standing. Common mistakes include letting knees cave inward, not keeping chest up, and not going deep enough.',
         type: 'exercise',
-        tags: ['legs', 'compound', 'strength']
+        tags: ['legs', 'compound', 'strength', 'quads', 'hamstrings', 'glutes']
       },
       {
         id: 'deadlift-basics',
         title: 'Deadlift',
-        content: 'The deadlift is a powerful full-body exercise primarily targeting the posterior chain. Setup: Stand with feet hip-width apart, bar over mid-foot. Bend at hips and knees to grip the bar. Keep back straight, chest up. Drive through heels and extend hips and knees simultaneously. Lock out at the top with shoulders back.',
+        content: 'The deadlift is a powerful full-body exercise primarily targeting the posterior chain. Setup: Stand with feet hip-width apart, bar over mid-foot. Bend at hips and knees to grip the bar. Keep back straight, chest up. Drive through heels and extend hips and knees simultaneously. Lock out at the top with shoulders back. This exercise works your hamstrings, glutes, lower back, and core muscles.',
         type: 'exercise',
-        tags: ['back', 'compound', 'strength', 'power']
+        tags: ['back', 'compound', 'strength', 'power', 'hamstrings', 'glutes', 'core']
       },
       {
         id: 'bench-press-basics',
         title: 'Bench Press',
-        content: 'The bench press is the primary upper body pushing exercise for chest, shoulders, and triceps. Lie on bench with eyes under the bar, grip slightly wider than shoulders, lower the bar to chest with control, press up powerfully while keeping feet planted and maintaining arch in back.',
+        content: 'The bench press is the primary upper body pushing exercise for chest, shoulders, and triceps. Lie on bench with eyes under the bar, grip slightly wider than shoulders, lower the bar to chest with control, press up powerfully while keeping feet planted and maintaining arch in back. Keep your core tight and don\'t bounce the bar off your chest.',
         type: 'exercise',
-        tags: ['chest', 'compound', 'upper-body']
+        tags: ['chest', 'compound', 'upper-body', 'shoulders', 'triceps']
       },
       {
         id: 'pull-up-basics',
         title: 'Pull-up',
-        content: 'Pull-ups are an excellent bodyweight exercise for back and biceps. Hang from bar with overhand grip, pull your body up until chin clears the bar, focus on pulling with your back muscles, lower with control. For beginners, use assistance bands or lat pulldown machine.',
+        content: 'Pull-ups are an excellent upper body pulling exercise that targets your back, biceps, and shoulders. Hang from a pull-up bar with hands slightly wider than shoulders, pull your body up until your chin is over the bar, then lower with control. Keep your core engaged and avoid swinging. If you can\'t do full pull-ups, start with assisted pull-ups or negative pull-ups.',
         type: 'exercise',
-        tags: ['back', 'bodyweight', 'pulling']
+        tags: ['back', 'compound', 'upper-body', 'biceps', 'shoulders']
       },
       {
-        id: 'plank-basics',
-        title: 'Plank',
-        content: 'The plank is an isometric core exercise that builds stability and endurance. Start in push-up position but rest on forearms, keep body in straight line from head to heels, engage core and glutes, breathe normally while holding position. Start with 30 seconds and progress to longer holds.',
+        id: 'push-up-basics',
+        title: 'Push-up',
+        content: 'Push-ups are a fundamental bodyweight exercise for chest, shoulders, and triceps. Start in a plank position with hands slightly wider than shoulders, lower your body until your chest nearly touches the ground, then push back up. Keep your body in a straight line from head to heels. Modify by doing knee push-ups if needed.',
         type: 'exercise',
-        tags: ['core', 'isometric', 'stability']
+        tags: ['chest', 'bodyweight', 'upper-body', 'shoulders', 'triceps']
       },
+      {
+        id: 'lunge-basics',
+        title: 'Lunge',
+        content: 'Lunges are a great unilateral leg exercise that targets quads, hamstrings, and glutes while improving balance. Step forward with one leg, lower your body until both knees are bent at 90 degrees, then push back to starting position. Keep your torso upright and core engaged. You can do walking lunges, reverse lunges, or lateral lunges.',
+        type: 'exercise',
+        tags: ['legs', 'unilateral', 'quads', 'hamstrings', 'glutes', 'balance']
+      },
+      
       // Nutrition Knowledge
       {
-        id: 'protein-intake',
+        id: 'protein-basics',
         title: 'Protein Requirements',
-        content: 'For muscle building and recovery, aim for 0.7-1g of protein per pound of body weight daily. Good sources include lean meats, fish, eggs, dairy, legumes, and plant-based proteins. Spread intake throughout the day with 20-40g per meal for optimal muscle protein synthesis.',
+        content: 'Protein is essential for muscle building and recovery. General recommendations: 0.8-1.2g per pound of body weight for active individuals, 1.2-1.6g for those building muscle, and up to 2g for intense training. Good sources include lean meats, fish, eggs, dairy, legumes, and protein powders. Spread protein intake throughout the day for optimal absorption.',
         type: 'nutrition',
-        tags: ['protein', 'macros', 'muscle-building']
+        tags: ['protein', 'muscle', 'recovery', 'macros']
       },
       {
-        id: 'pre-workout-nutrition',
-        title: 'Pre-Workout Nutrition',
-        content: 'Eat 1-3 hours before training. Include easily digestible carbs (30-60g) for energy and moderate protein (10-20g). Examples: banana with peanut butter, oatmeal with berries, rice cakes with turkey. Avoid high fat or fiber close to workout time.',
+        id: 'carbohydrates-basics',
+        title: 'Carbohydrates for Fitness',
+        content: 'Carbohydrates are your body\'s primary energy source for exercise. Complex carbs like whole grains, fruits, and vegetables provide sustained energy. Simple carbs can be useful before/during intense workouts. Aim for 3-7g per pound of body weight depending on activity level. Time carbs around workouts for optimal performance.',
         type: 'nutrition',
-        tags: ['timing', 'energy', 'performance']
+        tags: ['carbs', 'energy', 'fuel', 'macros', 'performance']
+      },
+      {
+        id: 'fats-basics',
+        title: 'Healthy Fats',
+        content: 'Fats are essential for hormone production, vitamin absorption, and overall health. Focus on healthy fats from avocados, nuts, olive oil, and fatty fish. Aim for 0.3-0.5g per pound of body weight. Avoid trans fats and limit saturated fats. Fats help with satiety and should be included in every meal.',
+        type: 'nutrition',
+        tags: ['fats', 'hormones', 'health', 'macros', 'satiety']
       },
       {
         id: 'hydration-basics',
-        title: 'Hydration for Performance',
-        content: 'Proper hydration is crucial for performance and recovery. Aim for half your body weight in ounces of water daily, more if training intensely. Drink 16-20oz 2 hours before exercise, 6-8oz every 15-20 minutes during exercise, and 16-24oz per pound lost after exercise.',
+        title: 'Hydration for Exercise',
+        content: 'Proper hydration is crucial for performance and recovery. Drink 16-20oz of water 2-3 hours before exercise, 8-10oz 10-20 minutes before, and 7-10oz every 10-20 minutes during exercise. For workouts longer than 60 minutes, consider sports drinks with electrolytes. Monitor urine color - pale yellow indicates good hydration.',
         type: 'nutrition',
-        tags: ['hydration', 'performance', 'recovery']
+        tags: ['hydration', 'water', 'electrolytes', 'performance', 'recovery']
       },
+      
       // Training Principles
       {
         id: 'progressive-overload',
         title: 'Progressive Overload',
-        content: 'Progressive overload is the fundamental principle of strength training. Gradually increase the demands on your muscles by adding weight, reps, sets, or decreasing rest time. Aim to increase load by 2.5-5% when you can complete all sets with good form.',
+        content: 'Progressive overload is the foundation of strength training. Gradually increase the stress placed on your body over time by adding weight, reps, sets, or reducing rest periods. This forces your body to adapt and grow stronger. Track your progress and aim for small, consistent improvements rather than big jumps.',
         type: 'principle',
-        tags: ['progression', 'strength', 'fundamentals']
+        tags: ['progression', 'strength', 'adaptation', 'growth']
       },
       {
-        id: 'rest-recovery',
-        title: 'Rest and Recovery',
-        content: 'Recovery is when muscles grow and adapt. Allow 48-72 hours between training the same muscle groups. Get 7-9 hours of quality sleep. Include active recovery days with light movement. Listen to your body and take extra rest when needed.',
+        id: 'recovery-importance',
+        title: 'Recovery and Rest',
+        content: 'Recovery is when your body actually gets stronger. Muscles need 48-72 hours to repair after resistance training. Include rest days, get 7-9 hours of sleep, eat properly, and consider active recovery like walking or stretching. Overtraining can lead to injury and decreased performance. Listen to your body.',
         type: 'principle',
-        tags: ['recovery', 'rest', 'adaptation']
+        tags: ['recovery', 'rest', 'sleep', 'overtraining', 'injury-prevention']
       },
       {
-        id: 'form-first',
+        id: 'form-over-weight',
         title: 'Form Over Weight',
-        content: 'Perfect form should always be the priority over lifting heavy weight. Proper form prevents injury, ensures target muscles are worked effectively, and builds better movement patterns. Master bodyweight or light weight before progressing.',
+        content: 'Always prioritize proper form over lifting heavier weights. Good form prevents injuries, ensures you\'re targeting the right muscles, and leads to better long-term progress. If your form breaks down, reduce the weight. It\'s better to lift lighter with perfect form than heavy with poor form.',
         type: 'principle',
-        tags: ['safety', 'technique', 'fundamentals']
+        tags: ['form', 'technique', 'safety', 'injury-prevention', 'effectiveness']
       },
       {
         id: 'consistency-key',
         title: 'Consistency is Key',
-        content: 'Consistency beats perfection in fitness. Aim for 3-4 quality workouts per week rather than sporadic intense sessions. Build sustainable habits, track your progress, and focus on showing up regularly. Results come from accumulated effort over time.',
+        content: 'Consistency beats perfection every time. It\'s better to work out 3 times per week consistently than to have sporadic intense sessions. Build sustainable habits that fit your lifestyle. Small, consistent efforts compound over time to create significant results. Focus on showing up regularly.',
         type: 'principle',
-        tags: ['habits', 'mindset', 'long-term']
+        tags: ['consistency', 'habits', 'sustainability', 'long-term', 'results']
+      },
+      {
+        id: 'warmup-importance',
+        title: 'Warm-up Importance',
+        content: 'A proper warm-up prepares your body for exercise by increasing blood flow, raising body temperature, and improving joint mobility. Start with 5-10 minutes of light cardio, then do dynamic stretches and movement prep specific to your workout. This reduces injury risk and improves performance.',
+        type: 'principle',
+        tags: ['warmup', 'injury-prevention', 'performance', 'mobility', 'preparation']
       }
     ];
   }

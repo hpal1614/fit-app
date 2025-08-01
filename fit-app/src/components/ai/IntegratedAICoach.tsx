@@ -69,10 +69,12 @@ export const IntegratedAICoach: React.FC<IntegratedAICoachProps> = ({
 
   const initializeRAG = async () => {
     try {
+      console.log('🚀 Initializing RAG system...');
       await fitnessRAG.initialize();
       setRagInitialized(true);
+      console.log('✅ RAG system initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize RAG:', error);
+      console.error('❌ Failed to initialize RAG:', error);
     }
   };
 
@@ -112,6 +114,8 @@ export const IntegratedAICoach: React.FC<IntegratedAICoachProps> = ({
     e.preventDefault();
     
     if (!inputText.trim() || isStreaming || !currentChatId) return;
+    
+    console.log('📝 Submit - Mode:', mode, 'RAG Initialized:', ragInitialized);
     
     const userMessage = inputText.trim();
     const messageId = Date.now().toString();
@@ -162,7 +166,9 @@ export const IntegratedAICoach: React.FC<IntegratedAICoachProps> = ({
 
       if (mode === 'research' && ragInitialized) {
         // Use RAG for research mode
+        console.log('🔬 Research mode query:', userMessage);
         const ragResponse = await fitnessRAG.query(userMessage);
+        console.log('🔬 RAG response:', ragResponse);
         fullResponse = ragResponse.answer;
         sources = ragResponse.sources;
         confidence = ragResponse.confidence;
