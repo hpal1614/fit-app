@@ -31,8 +31,8 @@ import {
   NimbusTheme,
   NimbusStreamingChat,
   NimbusNutritionTracker,
-  NimbusVoiceDemo
 } from './nimbus';
+import { SimpleVoiceTest } from './components/voice/SimpleVoiceTest';
 
 // Feature Components
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
@@ -184,7 +184,7 @@ function App() {
             className="h-full"
           />
         )}
-        {activeTab === 'voice-demo' && <NimbusVoiceDemo />}
+        {activeTab === 'voice-demo' && <SimpleVoiceTest />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
         {activeTab === 'profile' && (
           <NimbusCard variant="glass">
