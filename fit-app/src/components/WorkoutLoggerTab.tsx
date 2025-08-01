@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Pause, Plus, Clock, Check, ChevronLeft, ChevronRight,
   Mic, MicOff, Edit, Save, X, ChevronUp, ChevronDown,
-  TrendingUp, RotateCcw, MessageCircle, Sparkles
+  TrendingUp, RotateCcw, MessageCircle, Sparkles, Timer,
+  Target, Zap, Flame, Activity, Trophy
 } from 'lucide-react';
 
 interface WorkoutSet {
@@ -49,6 +50,8 @@ export const WorkoutLoggerTab: React.FC<WorkoutLoggerTabProps> = ({ workout }) =
   const [isRestTimerActive, setIsRestTimerActive] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
+  const [workoutStartTime, setWorkoutStartTime] = useState<Date | null>(null);
+  const [totalVolume, setTotalVolume] = useState(0);
 
   const weightInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,6 +71,14 @@ export const WorkoutLoggerTab: React.FC<WorkoutLoggerTabProps> = ({ workout }) =
     }
     return () => clearInterval(interval);
   }, [isRestTimerActive, restTimeRemaining]);
+
+  // Calculate total volume
+  useEffect(() => {
+    const volume = currentExercise.sets.reduce((total, set) => {
+      return total + (set.weight * set.reps);
+    }, 0);
+    setTotalVolume(volume);
+  }, [currentExercise.sets]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -99,119 +110,141 @@ export const WorkoutLoggerTab: React.FC<WorkoutLoggerTabProps> = ({ workout }) =
     return {
       weight: lastPerf.weight,
       reps: lastPerf.reps,
-      reasoning: "Perfect! Same as last time"
+      reasoning: "Maintain the same weight and reps for consistency"
     };
   };
 
   const handleSetEdit = (setIndex: number) => {
+    const set = currentExercise.sets[setIndex];
+    setTempWeight(set.weight.toString());
+    setTempReps(set.reps.toString());
     setEditingSet(setIndex);
-    const suggestion = getSmartSuggestion(setIndex);
-    setTempWeight(suggestion.weight.toString());
-    setTempReps(suggestion.reps.toString());
-    setAiSuggestion(suggestion.reasoning);
     setTimeout(() => weightInputRef.current?.focus(), 100);
   };
 
   const handleSetComplete = () => {
-    if (editingSet === null) return;
-
-    const weight = parseFloat(tempWeight) || 0;
-    const reps = parseInt(tempReps) || 0;
-
-    // Update set
-    const updatedSets = currentExercise.sets.map((set, index) => 
-      index === editingSet 
-        ? { ...set, reps, weight, rpe: currentRPE, isCompleted: true, timestamp: new Date() }
-        : set
-    );
-
-    setCurrentExercise(prev => ({
-      ...prev,
-      sets: updatedSets
-    }));
-
-    // Start rest timer
-    if (editingSet < currentExercise.sets.length - 1) {
-      setRestTimeRemaining(120);
+    if (editingSet !== null) {
+      const newSets = [...currentExercise.sets];
+      newSets[editingSet] = {
+        ...newSets[editingSet],
+        weight: parseFloat(tempWeight) || 0,
+        reps: parseInt(tempReps) || 0,
+        rpe: currentRPE,
+        isCompleted: true,
+        timestamp: new Date()
+      };
+      
+      setCurrentExercise({ ...currentExercise, sets: newSets });
+      setEditingSet(null);
+      setTempWeight('');
+      setTempReps('');
+      
+      // Start rest timer
+      setRestTimeRemaining(90); // 90 seconds rest
       setIsRestTimerActive(true);
+      
+      // Show AI suggestion for next set
+      const nextSetIndex = editingSet + 1;
+      if (nextSetIndex < newSets.length) {
+        const suggestion = getSmartSuggestion(nextSetIndex);
+        setAiSuggestion(suggestion.reasoning);
+        setTimeout(() => setAiSuggestion(''), 5000);
+      }
     }
-
-    // Reset state
-    setEditingSet(null);
-    setTempWeight('');
-    setTempReps('');
-    setCurrentRPE(5);
   };
 
   const handleQuickAdjust = (type: 'weight' | 'reps', direction: 'up' | 'down') => {
+    const currentValue = type === 'weight' ? parseFloat(tempWeight) || 0 : parseInt(tempReps) || 0;
+    const increment = type === 'weight' ? 2.5 : 1;
+    const newValue = direction === 'up' ? currentValue + increment : Math.max(0, currentValue - increment);
+    
     if (type === 'weight') {
-      setTempWeight(prev => {
-        const current = parseFloat(prev) || 0;
-        const increment = direction === 'up' ? 2.5 : -2.5;
-        return Math.max(0, current + increment).toString();
-      });
+      setTempWeight(newValue.toString());
     } else {
-      setTempReps(prev => {
-        const current = parseInt(prev) || 0;
-        const increment = direction === 'up' ? 1 : -1;
-        return Math.max(0, current + increment).toString();
-      });
+      setTempReps(newValue.toString());
     }
   };
 
+  const startWorkout = () => {
+    setWorkoutStartTime(new Date());
+  };
+
+  const getWorkoutDuration = () => {
+    if (!workoutStartTime) return 0;
+    return Math.floor((new Date().getTime() - workoutStartTime.getTime()) / 1000);
+  };
+
   const completedSets = currentExercise.sets.filter(s => s.isCompleted).length;
-  const progressPercentage = (completedSets / currentExercise.sets.length) * 100;
+  const totalSets = currentExercise.sets.length;
 
   return (
-    <div className="space-y-4">
-      {/* Exercise Header */}
-      <div className="bg-gray-900/80 backdrop-blur-lg rounded-2xl p-4 border border-gray-800">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-xl font-bold">{currentExercise.name}</h1>
+    <div className="space-y-modern animate-fade-in-up">
+      {/* Workout Header */}
+      <div className="card card-elevated">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-gradient">{currentExercise.name}</h2>
+            <p className="text-gray-400 text-sm capitalize">
+              {currentExercise.muscleGroups.join(', ')}
+            </p>
+          </div>
           <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setIsVoiceActive(!isVoiceActive)}
-              className={`p-2 rounded-full transition-all ${
-                isVoiceActive 
-                  ? 'bg-red-500 text-white animate-pulse' 
-                  : 'bg-gray-700 text-gray-400'
-              }`}
+            <button 
+              className="btn btn-primary btn-sm"
+              onClick={startWorkout}
             >
-              {isVoiceActive ? <MicOff size={16} /> : <Mic size={16} />}
+              <Play className="w-4 h-4 mr-1" />
+              Start
             </button>
-            <button className="p-2 bg-gray-700 rounded-full">
-              <TrendingUp size={16} className="text-gray-400" />
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsVoiceActive(!isVoiceActive)}
+            >
+              {isVoiceActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mb-3">
-          <div className="flex justify-between text-sm text-gray-400 mb-1">
-            <span>Progress</span>
-            <span>{completedSets}/{currentExercise.sets.length} sets</span>
+        {/* Progress Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="text-center p-3 glass rounded-lg">
+            <div className="text-2xl font-bold text-blue-400">{completedSets}/{totalSets}</div>
+            <div className="text-xs text-gray-400">Sets</div>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div
-              className="bg-gradient-to-r from-lime-400 to-green-500 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
-            />
+          <div className="text-center p-3 glass rounded-lg">
+            <div className="text-2xl font-bold text-green-400">{totalVolume}kg</div>
+            <div className="text-xs text-gray-400">Volume</div>
+          </div>
+          <div className="text-center p-3 glass rounded-lg">
+            <div className="text-2xl font-bold text-purple-400">
+              {workoutStartTime ? formatTime(getWorkoutDuration()) : '0:00'}
+            </div>
+            <div className="text-xs text-gray-400">Time</div>
           </div>
         </div>
 
-        {/* Last Performance */}
-        {currentExercise.lastPerformance && (
-          <div className="text-sm text-gray-400">
-            Last time: {currentExercise.lastPerformance.weight}kg × {currentExercise.lastPerformance.reps} reps
-          </div>
-        )}
+        {/* Last Performance & PR */}
+        <div className="flex justify-between text-sm">
+          {currentExercise.lastPerformance && (
+            <div className="flex items-center text-gray-400">
+              <Target className="w-4 h-4 mr-1" />
+              Last: {currentExercise.lastPerformance.weight}kg × {currentExercise.lastPerformance.reps}
+            </div>
+          )}
+          {currentExercise.personalRecord && (
+            <div className="flex items-center text-yellow-400">
+              <Trophy className="w-4 h-4 mr-1" />
+              PR: {currentExercise.personalRecord.weight}kg × {currentExercise.personalRecord.reps}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Voice Command Display */}
       {isVoiceActive && (
-        <div className="bg-blue-900/20 border border-blue-800 p-3 rounded-lg">
+        <div className="card glass-strong border-blue-500/20">
           <div className="flex items-center space-x-2">
-            <Mic size={16} className="text-blue-400" />
+            <Mic className="w-4 h-4 text-blue-400 animate-pulse" />
             <span className="text-sm text-blue-200">
               Listening... Say "log 8 reps at 105 kilos"
             </span>
@@ -221,221 +254,221 @@ export const WorkoutLoggerTab: React.FC<WorkoutLoggerTabProps> = ({ workout }) =
 
       {/* AI Suggestion */}
       {aiSuggestion && (
-        <div className="bg-purple-900/20 border border-purple-800 p-3 rounded-lg">
+        <div className="card glass-strong border-purple-500/20 animate-fade-in">
           <div className="flex items-center space-x-2">
-            <Sparkles size={16} className="text-purple-400" />
+            <Sparkles className="w-4 h-4 text-purple-400" />
             <span className="text-sm text-purple-200">{aiSuggestion}</span>
           </div>
         </div>
       )}
 
+      {/* Rest Timer */}
+      {isRestTimerActive && (
+        <div className="card glass-strong border-green-500/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Timer className="w-4 h-4 text-green-400" />
+              <span className="text-sm text-green-200">Rest Timer</span>
+            </div>
+            <div className="text-lg font-bold text-green-400">
+              {formatTime(restTimeRemaining)}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sets List */}
-      <div className="bg-gray-900/80 backdrop-blur-lg rounded-xl overflow-hidden border border-gray-800">
-        {/* Header */}
-        <div className="grid grid-cols-6 gap-2 p-3 bg-gray-800 text-xs font-medium text-gray-400 border-b border-gray-700">
-          <span>Set</span>
-          <span>Previous</span>
-          <span>Weight</span>
-          <span>Reps</span>
-          <span>RPE</span>
-          <span></span>
+      <div className="card card-elevated">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Sets</h3>
+          <div className="grid grid-cols-6 gap-2 p-3 glass rounded-lg text-xs font-medium text-gray-400">
+            <span>Set</span>
+            <span>Previous</span>
+            <span>Weight</span>
+            <span>Reps</span>
+            <span>RPE</span>
+            <span></span>
+          </div>
         </div>
 
-        {/* Sets */}
-        {currentExercise.sets.map((set, index) => {
-          const isEditing = editingSet === index;
-          const isCompleted = set.isCompleted;
-          const suggestion = getSmartSuggestion(index);
+        <div className="space-y-2">
+          {currentExercise.sets.map((set, index) => {
+            const isEditing = editingSet === index;
+            const isCompleted = set.isCompleted;
+            const suggestion = getSmartSuggestion(index);
 
-          return (
-            <div key={set.id} className="border-b border-gray-700 last:border-b-0">
-              <div className="grid grid-cols-6 gap-2 p-3 items-center">
-                {/* Set Number */}
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                  isCompleted ? 'bg-green-900 text-green-300' : 'bg-gray-700 text-gray-400'
-                }`}>
-                  {index + 1}
-                </div>
+            return (
+              <div key={set.id} className="p-3 glass rounded-lg transition-modern">
+                <div className="grid grid-cols-6 gap-2 items-center">
+                  {/* Set Number */}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-modern ${
+                    isCompleted ? 'gradient-success text-white' : 'glass text-gray-400'
+                  }`}>
+                    {index + 1}
+                  </div>
 
-                {/* Previous */}
-                <div className="text-xs text-gray-500">
-                  {currentExercise.lastPerformance ? 
-                    `${currentExercise.lastPerformance.weight}×${currentExercise.lastPerformance.reps}` : 
-                    '—'
-                  }
-                </div>
+                  {/* Previous */}
+                  <div className="text-xs text-gray-500">
+                    {currentExercise.lastPerformance ? 
+                      `${currentExercise.lastPerformance.weight}×${currentExercise.lastPerformance.reps}` : 
+                      '—'
+                    }
+                  </div>
 
-                {/* Weight */}
-                <div className="relative">
-                  {isEditing ? (
-                    <div className="space-y-1">
-                      <input
-                        ref={weightInputRef}
-                        type="number"
-                        value={tempWeight}
-                        onChange={(e) => setTempWeight(e.target.value)}
-                        className="w-full p-1 text-xs border border-blue-400 rounded bg-gray-800 text-white text-center"
-                        placeholder="kg"
-                      />
-                      <div className="flex justify-center space-x-1">
+                  {/* Weight */}
+                  <div className="relative">
+                    {isEditing ? (
+                      <div className="space-y-1">
+                        <input
+                          ref={weightInputRef}
+                          type="number"
+                          value={tempWeight}
+                          onChange={(e) => setTempWeight(e.target.value)}
+                          className="input w-full text-xs text-center"
+                          placeholder="kg"
+                        />
+                        <div className="flex justify-center space-x-1">
+                          <button
+                            onClick={() => handleQuickAdjust('weight', 'down')}
+                            className="w-4 h-4 glass rounded-full flex items-center justify-center hover-lift"
+                          >
+                            <ChevronDown size={10} />
+                          </button>
+                          <button
+                            onClick={() => handleQuickAdjust('weight', 'up')}
+                            className="w-4 h-4 glass rounded-full flex items-center justify-center hover-lift"
+                          >
+                            <ChevronUp size={10} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleSetEdit(index)}
+                        className={`w-full p-2 text-xs rounded-lg transition-modern ${
+                          isCompleted 
+                            ? 'gradient-success text-white' 
+                            : 'glass hover:bg-white/10'
+                        }`}
+                      >
+                        {set.weight || '—'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Reps */}
+                  <div className="relative">
+                    {isEditing ? (
+                      <div className="space-y-1">
+                        <input
+                          type="number"
+                          value={tempReps}
+                          onChange={(e) => setTempReps(e.target.value)}
+                          className="input w-full text-xs text-center"
+                          placeholder="reps"
+                        />
+                        <div className="flex justify-center space-x-1">
+                          <button
+                            onClick={() => handleQuickAdjust('reps', 'down')}
+                            className="w-4 h-4 glass rounded-full flex items-center justify-center hover-lift"
+                          >
+                            <ChevronDown size={10} />
+                          </button>
+                          <button
+                            onClick={() => handleQuickAdjust('reps', 'up')}
+                            className="w-4 h-4 glass rounded-full flex items-center justify-center hover-lift"
+                          >
+                            <ChevronUp size={10} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleSetEdit(index)}
+                        className={`w-full p-2 text-xs rounded-lg transition-modern ${
+                          isCompleted 
+                            ? 'gradient-success text-white' 
+                            : 'glass hover:bg-white/10'
+                        }`}
+                      >
+                        {set.reps || '—'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* RPE */}
+                  <div className="flex items-center justify-center">
+                    {isEditing ? (
+                      <select
+                        value={currentRPE}
+                        onChange={(e) => setCurrentRPE(parseInt(e.target.value))}
+                        className="input text-xs w-full text-center"
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(rpe => (
+                          <option key={rpe} value={rpe}>{rpe}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        set.rpe ? 'glass' : 'text-gray-500'
+                      }`}>
+                        {set.rpe || '—'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-center">
+                    {isEditing ? (
+                      <div className="flex space-x-1">
                         <button
-                          onClick={() => handleQuickAdjust('weight', 'down')}
-                          className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center"
+                          onClick={handleSetComplete}
+                          className="btn btn-success btn-sm"
                         >
-                          <ChevronDown size={10} />
+                          <Check className="w-3 h-3" />
                         </button>
                         <button
-                          onClick={() => handleQuickAdjust('weight', 'up')}
-                          className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center"
+                          onClick={() => setEditingSet(null)}
+                          className="btn btn-secondary btn-sm"
                         >
-                          <ChevronUp size={10} />
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleSetEdit(index)}
-                      className={`w-full p-2 text-xs rounded border-2 transition-all ${
-                        isCompleted 
-                          ? 'bg-green-900/20 border-green-700 text-green-300' 
-                          : 'bg-gray-700 border-gray-600 hover:border-blue-400'
-                      }`}
-                    >
-                      {set.weight || suggestion.weight}
-                    </button>
-                  )}
-                </div>
-
-                {/* Reps */}
-                <div className="relative">
-                  {isEditing ? (
-                    <div className="space-y-1">
-                      <input
-                        type="number"
-                        value={tempReps}
-                        onChange={(e) => setTempReps(e.target.value)}
-                        className="w-full p-1 text-xs border border-blue-400 rounded bg-gray-800 text-white text-center"
-                        placeholder="reps"
-                      />
-                      <div className="flex justify-center space-x-1">
-                        <button
-                          onClick={() => handleQuickAdjust('reps', 'down')}
-                          className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center"
-                        >
-                          <ChevronDown size={10} />
-                        </button>
-                        <button
-                          onClick={() => handleQuickAdjust('reps', 'up')}
-                          className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center"
-                        >
-                          <ChevronUp size={10} />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleSetEdit(index)}
-                      className={`w-full p-2 text-xs rounded border-2 transition-all ${
-                        isCompleted 
-                          ? 'bg-green-900/20 border-green-700 text-green-300' 
-                          : 'bg-gray-700 border-gray-600 hover:border-blue-400'
-                      }`}
-                    >
-                      {set.reps || suggestion.reps}
-                    </button>
-                  )}
-                </div>
-
-                {/* RPE */}
-                <div className="text-center">
-                  {isEditing ? (
-                    <select
-                      value={currentRPE}
-                      onChange={(e) => setCurrentRPE(parseInt(e.target.value))}
-                      className="w-full p-1 text-xs border border-gray-600 rounded bg-gray-800 text-white"
-                    >
-                      {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                        <option key={n} value={n}>{n}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span className="text-xs text-gray-500">
-                      {set.rpe || '—'}
-                    </span>
-                  )}
-                </div>
-
-                {/* Action */}
-                <div>
-                  {isEditing ? (
-                    <button
-                      onClick={handleSetComplete}
-                      className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center justify-center transition-colors"
-                    >
-                      <Check size={14} />
-                    </button>
-                  ) : isCompleted ? (
-                    <div className="w-8 h-8 bg-green-500 text-white rounded-lg flex items-center justify-center">
-                      <Check size={14} />
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleSetEdit(index)}
-                      className="w-8 h-8 bg-gray-600 hover:bg-gray-500 text-gray-400 rounded-lg flex items-center justify-center transition-colors"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  )}
+                    ) : (
+                      <button
+                        onClick={() => handleSetEdit(index)}
+                        disabled={isCompleted}
+                        className={`btn btn-sm ${
+                          isCompleted ? 'btn-secondary opacity-50' : 'btn-primary'
+                        }`}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Rest Timer */}
-              {isCompleted && index < currentExercise.sets.length - 1 && isRestTimerActive && (
-                <div className="p-3 bg-blue-900/20">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <Clock size={14} className="text-blue-400" />
-                    <span className="text-blue-400 font-mono text-sm">
-                      {formatTime(restTimeRemaining)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-blue-800 rounded-full h-1.5">
-                    <div 
-                      className="bg-blue-400 h-1.5 rounded-full transition-all duration-1000"
-                      style={{ width: `${100 - (restTimeRemaining / 120) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Add Set Button */}
-        <div className="p-3">
-          <button
-            className="w-full p-3 bg-gray-700 hover:bg-gray-600 rounded-lg border-2 border-dashed border-gray-600 text-gray-400 flex items-center justify-center space-x-2 transition-colors"
-          >
-            <Plus size={16} />
-            <span className="text-sm">Add Set</span>
-          </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-3">
-        <button className="p-3 bg-gray-900/80 backdrop-blur-lg rounded-lg border border-gray-800 text-center">
-          <RotateCcw size={16} className="mx-auto mb-1 text-gray-400" />
-          <span className="text-xs text-gray-400">Repeat Last</span>
-        </button>
-        <button className="p-3 bg-gray-900/80 backdrop-blur-lg rounded-lg border border-gray-800 text-center">
-          <Play size={16} className="mx-auto mb-1 text-gray-400" />
-          <span className="text-xs text-gray-400">Start Workout</span>
-        </button>
-        <button className="p-3 bg-gray-900/80 backdrop-blur-lg rounded-lg border border-gray-800 text-center">
-          <MessageCircle size={16} className="mx-auto mb-1 text-gray-400" />
-          <span className="text-xs text-gray-400">Notes</span>
-        </button>
-      </div>
+      {/* Workout Summary */}
+      {completedSets > 0 && (
+        <div className="card card-elevated">
+          <h3 className="text-lg font-semibold mb-3">Workout Summary</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 glass rounded-lg">
+              <div className="text-xl font-bold text-blue-400">{completedSets}</div>
+              <div className="text-xs text-gray-400">Sets Completed</div>
+            </div>
+            <div className="text-center p-3 glass rounded-lg">
+              <div className="text-xl font-bold text-green-400">{totalVolume}kg</div>
+              <div className="text-xs text-gray-400">Total Volume</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

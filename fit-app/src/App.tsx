@@ -22,7 +22,9 @@ import {
   Dumbbell,
   FileText,
   Share2,
-  BarChart3
+  BarChart3,
+  Activity,
+  Sparkles
 } from 'lucide-react';
 
 // Nimbus UI Components
@@ -47,7 +49,6 @@ import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
-
 
 // Hooks & Services
 import { useWorkout } from './hooks/useWorkout';
@@ -75,8 +76,8 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabType>('workouts');
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
   const [parsedWorkout, setParsedWorkout] = useState<NimbusPDFWorkout | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  
   // Initialize hooks
   const workout = useWorkout();
   const { isSupported: voiceSupported } = useVoice();
@@ -89,7 +90,8 @@ function App() {
   const userProfile = {
     name: "Himanshu P",
     level: "Intermediate",
-    team: "Transform"
+    team: "Transform",
+    avatar: "HP"
   };
 
   const userStats: UserStats = {
@@ -113,18 +115,24 @@ function App() {
   // Initialize Phase 4 features
   useEffect(() => {
     const initializePhase4 = async () => {
-      // Register PWA service worker
-      await pwaService.registerServiceWorker();
-      
-      // Start performance monitoring
-      performanceOptimizer.startPerformanceMonitoring();
-      
-      // Optimize performance
-      await performanceOptimizer.optimizeBundleSize();
-      await performanceOptimizer.optimizeResponseTimes();
-      performanceOptimizer.optimizeMemoryUsage();
-      
-      console.log('🚀 Phase 4 features initialized successfully');
+      try {
+        // Register PWA service worker
+        await pwaService.registerServiceWorker();
+        
+        // Start performance monitoring
+        performanceOptimizer.startPerformanceMonitoring();
+        
+        // Optimize performance
+        await performanceOptimizer.optimizeBundleSize();
+        await performanceOptimizer.optimizeResponseTimes();
+        performanceOptimizer.optimizeMemoryUsage();
+        
+        console.log('🚀 Phase 4 features initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize Phase 4 features:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     initializePhase4();
@@ -153,148 +161,177 @@ function App() {
     { key: 'profile', label: 'Profile', icon: User, badge: showNotificationBadge ? 1 : undefined }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="h-screen w-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full gradient-primary animate-pulse flex items-center justify-center">
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">FIT APP</h2>
+          <p className="text-gray-400">Initializing your fitness journey...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-screen w-screen bg-neutral-950 text-white relative overflow-hidden flex flex-col">
-      {/* Nimbus Background Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-primary-400 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-primary-400 to-transparent rounded-full blur-3xl" />
+    <div className="h-screen w-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white relative overflow-hidden flex flex-col">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      {/* Header with Nimbus styling */}
+      {/* Header */}
       <div className="relative z-10 flex items-center justify-between p-6 pt-12">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold text-black">
-              {userProfile.name.charAt(0)}
-            </span>
+          <div className="relative">
+            <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-lg">
+              <span className="text-lg font-bold text-white">
+                {userProfile.avatar}
+              </span>
+            </div>
+            {workout.isActive && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+            )}
           </div>
           <div>
-            <h1 className="text-2xl font-bold">FIT APP</h1>
-            <p className="text-neutral-400 text-sm">{currentTime.toLocaleTimeString()}</p>
+            <h1 className="text-2xl font-bold text-gradient">FIT APP</h1>
+            <p className="text-gray-400 text-sm flex items-center">
+              <Clock className="w-3 h-3 mr-1" />
+              {currentTime.toLocaleTimeString()}
+            </p>
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
-          <NimbusButton
-            variant="ghost"
-            size="sm"
-            icon={<Search className="w-5 h-5" />}
-            aria-label="Search"
-          />
-          <NimbusButton
-            variant="ghost"
-            size="sm"
-            icon={<Bell className="w-5 h-5" />}
+          <button className="btn btn-secondary btn-sm">
+            <Search className="w-4 h-4" />
+          </button>
+          <button 
+            className="btn btn-secondary btn-sm relative"
             onClick={() => setShowNotificationBadge(false)}
-            aria-label="Notifications"
-          />
-          <NimbusButton
-            variant="ghost"
-            size="sm"
-            icon={<Settings className="w-5 h-5" />}
-            aria-label="Settings"
-          />
+          >
+            <Bell className="w-4 h-4" />
+            {showNotificationBadge && (
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+            )}
+          </button>
+          <button className="btn btn-secondary btn-sm">
+            <Settings className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       {/* User Profile Card - Show on key tabs only */}
       {['workouts', 'analytics', 'profile'].includes(activeTab) && (
-        <div className="relative z-10 mx-6 mb-6">
-          <NimbusCard variant="glass" padding="lg">
+        <div className="relative z-10 mx-6 mb-6 animate-fade-in-up">
+          <div className="card card-elevated">
             <UserProfileCard 
               userProfile={userProfile} 
               userStats={userStats}
               isActiveWorkout={workout.isActive}
               workoutDuration={workout.duration}
             />
-          </NimbusCard>
+          </div>
         </div>
       )}
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
-        {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
-        {activeTab === 'generator' && <WorkoutGenerator />}
-        {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
-        {activeTab === 'nutrition' && <NimbusNutritionTracker />}
-        {activeTab === 'coach' && (
-          <NimbusStreamingChat 
-            context={workout.getContext()} 
-            className="h-full"
-          />
-        )}
-        {activeTab === 'voice-demo' && <SimpleVoiceTest />}
-        {activeTab === 'analytics' && <AnalyticsDashboard />}
-        {activeTab === 'pdf-upload' && (
-          <NimbusPDFUploader
-            onWorkoutParsed={(workout) => {
-              setParsedWorkout(workout);
-              setActiveTab('workouts');
-            }}
-            onError={(error) => {
-              console.error('PDF parsing error:', error);
-              // You could show a toast notification here
-            }}
-          />
-        )}
-        {activeTab === 'template-sharing' && (
-          <div className="text-center py-12">
-            <Share2 className="mx-auto w-16 h-16 text-gray-400 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Template Sharing
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Share and discover workout templates with the community
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
-              Coming soon - Advanced template sharing system
-            </p>
-          </div>
-        )}
-        {activeTab === 'advanced-analytics' && <NimbusAdvancedAnalyticsDashboard />}
-        {activeTab === 'profile' && (
-          <NimbusCard variant="glass">
-            <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
-            <div className="space-y-3">
-              <NimbusCard variant="bordered" padding="sm">
-                <div className="flex items-center justify-between">
-                  <span>Fitness Level</span>
-                  <span className="text-primary-400">{userProfile.level}</span>
-                </div>
-              </NimbusCard>
-              <NimbusCard variant="bordered" padding="sm">
-                <div className="flex items-center justify-between">
-                  <span>Team</span>
-                  <span className="text-primary-400">{userProfile.team}</span>
-                </div>
-              </NimbusCard>
-              <NimbusCard variant="bordered" padding="sm">
-                <div className="flex items-center justify-between">
-                  <span>Voice Commands</span>
-                  <span className={voiceSupported ? "text-primary-400" : "text-red-400"}>
-                    {voiceSupported ? "Enabled" : "Not Supported"}
-                  </span>
-                </div>
-              </NimbusCard>
-              <NimbusCard variant="bordered" padding="sm">
-                <div className="flex items-center justify-between">
-                  <span>PWA Features</span>
-                  <span className="text-primary-400">Active</span>
-                </div>
-              </NimbusCard>
-              <NimbusCard variant="bordered" padding="sm">
-                <div className="flex items-center justify-between">
-                  <span>Offline Storage</span>
-                  <span className="text-primary-400">Enabled</span>
-                </div>
-              </NimbusCard>
+        <div className="animate-fade-in">
+          {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
+          {activeTab === 'generator' && <WorkoutGenerator />}
+          {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
+          {activeTab === 'nutrition' && <NimbusNutritionTracker />}
+          {activeTab === 'coach' && (
+            <NimbusStreamingChat 
+              context={workout.getContext()} 
+              className="h-full"
+            />
+          )}
+          {activeTab === 'voice-demo' && <SimpleVoiceTest />}
+          {activeTab === 'analytics' && <AnalyticsDashboard />}
+          {activeTab === 'pdf-upload' && (
+            <NimbusPDFUploader
+              onWorkoutParsed={(workout) => {
+                setParsedWorkout(workout);
+                setActiveTab('workouts');
+              }}
+              onError={(error) => {
+                console.error('PDF parsing error:', error);
+              }}
+            />
+          )}
+          {activeTab === 'template-sharing' && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 gradient-primary rounded-full flex items-center justify-center">
+                <Share2 className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Template Sharing
+              </h2>
+              <p className="text-gray-400 mb-4">
+                Share and discover workout templates with the community
+              </p>
+              <div className="card inline-block">
+                <p className="text-sm text-gray-500">
+                  Coming soon - Advanced template sharing system
+                </p>
+              </div>
             </div>
-          </NimbusCard>
-        )}
+          )}
+          {activeTab === 'advanced-analytics' && <NimbusAdvancedAnalyticsDashboard />}
+          {activeTab === 'profile' && (
+            <div className="space-y-modern">
+              <div className="card card-elevated">
+                <h2 className="text-xl font-bold mb-4 text-gradient">Profile Settings</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 glass rounded-lg">
+                    <span className="flex items-center">
+                      <Activity className="w-4 h-4 mr-2 text-blue-400" />
+                      Fitness Level
+                    </span>
+                    <span className="text-blue-400 font-medium">{userProfile.level}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 glass rounded-lg">
+                    <span className="flex items-center">
+                      <Users className="w-4 h-4 mr-2 text-green-400" />
+                      Team
+                    </span>
+                    <span className="text-green-400 font-medium">{userProfile.team}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 glass rounded-lg">
+                    <span className="flex items-center">
+                      <Mic className="w-4 h-4 mr-2 text-purple-400" />
+                      Voice Commands
+                    </span>
+                    <span className={`font-medium ${voiceSupported ? "text-green-400" : "text-red-400"}`}>
+                      {voiceSupported ? "Enabled" : "Not Supported"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 glass rounded-lg">
+                    <span className="flex items-center">
+                      <Zap className="w-4 h-4 mr-2 text-yellow-400" />
+                      PWA Features
+                    </span>
+                    <span className="text-yellow-400 font-medium">Active</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 glass rounded-lg">
+                    <span className="flex items-center">
+                      <Heart className="w-4 h-4 mr-2 text-red-400" />
+                      Offline Storage
+                    </span>
+                    <span className="text-red-400 font-medium">Enabled</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-
 
       {/* Nimbus Bottom Navigation */}
       <NimbusBottomNavigation
@@ -302,8 +339,6 @@ function App() {
         activeKey={activeTab}
         onNavigate={(key) => setActiveTab(key as TabType)}
       />
-
-
     </div>
   );
 }
