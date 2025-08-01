@@ -20,12 +20,10 @@ interface KnowledgeItem {
 }
 
 export class FitnessRAGService {
-  private vectorStore: BrowserVectorStore;
   private knowledgeBase: KnowledgeItem[];
   private initialized = false;
 
   constructor() {
-    this.vectorStore = new BrowserVectorStore('fitness-knowledge');
     this.knowledgeBase = this.getDefaultKnowledgeBase();
   }
 
@@ -33,18 +31,12 @@ export class FitnessRAGService {
     if (this.initialized) return;
 
     try {
-      // Check if we need to seed the knowledge base
-      if (!this.vectorStore.hasData()) {
-        await this.seedKnowledgeBase();
-      }
-
+      console.log('🚀 RAG Service initializing...');
+      console.log('📚 Knowledge base items:', this.knowledgeBase.length);
       this.initialized = true;
-      console.log('RAG Service initialized with local vector store');
-      
-      // Run test to verify system
-      await this.testEmbeddingSystem();
+      console.log('✅ RAG Service initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize RAG service:', error);
+      console.error('❌ Failed to initialize RAG service:', error);
     }
   }
 
@@ -56,46 +48,78 @@ export class FitnessRAGService {
     try {
       console.log('🔍 RAG Query:', query);
       
-      // Generate query embedding
-      const queryVector = this.generateEmbedding(query);
-      console.log('📊 Query embedding generated, length:', queryVector.length);
-
-      // Check if vector store has data
-      if (!this.vectorStore.hasData()) {
-        console.log('⚠️ Vector store empty, seeding knowledge base...');
-        await this.seedKnowledgeBase();
+      // Simple keyword-based search
+      const queryLower = query.toLowerCase();
+      const queryWords = queryLower.split(/\s+/);
+      
+      // Score each knowledge item based on keyword matches
+      const scoredItems = this.knowledgeBase.map(item => {
+        const itemText = `${item.title} ${item.content} ${item.tags.join(' ')}`.toLowerCase();
+        let score = 0;
+        
+        // Check for exact matches
+        for (const word of queryWords) {
+          if (itemText.includes(word)) {
+            score += 2; // Higher weight for exact matches
+          }
+        }
+        
+        // Check for partial matches
+        for (const word of queryWords) {
+          for (const tag of item.tags) {
+            if (tag.includes(word) || word.includes(tag)) {
+              score += 1;
+            }
+          }
+        }
+        
+        // Check title matches (highest priority)
+        if (item.title.toLowerCase().includes(queryLower)) {
+          score += 5;
+        }
+        
+        return { item, score };
+      });
+      
+      // Sort by score and get top results
+      const topResults = scoredItems
+        .filter(result => result.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+      
+      console.log('🏆 Top results:', topResults.map(r => ({
+        title: r.item.title,
+        score: r.score
+      })));
+      
+      if (topResults.length === 0) {
+        return {
+          answer: "I don't have specific information about that in my knowledge base. Could you try asking about exercises, nutrition, or training principles?",
+          sources: [],
+          confidence: 0.1,
+          followUpQuestions: []
+        };
       }
-
-      // Search vector store
-      const results = await this.vectorStore.query(queryVector, 5);
-      console.log('🔎 Search results:', results.length, 'items found');
-
-      // Log top results for debugging
-      if (results.length > 0) {
-        console.log('🏆 Top result:', {
-          title: results[0].item.metadata.title,
-          score: results[0].score,
-          type: results[0].item.metadata.type
-        });
-      }
-
+      
       // Format response
-      const sources = results.map(r => ({
-        title: r.item.metadata.title,
-        type: r.item.metadata.type,
-        relevance: r.score
+      const topResult = topResults[0];
+      const sources = topResults.map(r => ({
+        title: r.item.title,
+        type: r.item.type,
+        relevance: Math.min(r.score / 10, 1.0) // Normalize to 0-1
       }));
-
-      const answer = this.generateAnswer(query, results);
-      const confidence = this.calculateConfidence(results);
-      const followUpQuestions = this.generateFollowUpQuestions(query, results);
-
+      
+      const answer = this.generateAnswer(query, topResult.item);
+      const confidence = Math.min(0.3 + (topResult.score / 10), 0.95);
+      const followUpQuestions = this.generateFollowUpQuestions(query, topResult.item);
+      
       console.log('✅ RAG Response generated:', {
         answerLength: answer.length,
         sourcesCount: sources.length,
-        confidence: confidence
+        confidence: confidence,
+        topScore: topResult.score
       });
-
+      
       return {
         answer,
         sources,
@@ -113,193 +137,44 @@ export class FitnessRAGService {
     }
   }
 
-  // Test method to verify embedding system
+  // Test method to verify the system
   async testEmbeddingSystem(): Promise<void> {
-    console.log('🧪 Testing embedding system...');
+    console.log('�� Testing RAG system...');
     
-    // Test query
-    const testQuery = 'pushup';
-    console.log('🔍 Test query:', testQuery);
+    const testQueries = ['pushup', 'protein', 'squat', 'how to exercise'];
     
-    // Generate embedding
-    const queryVector = this.generateEmbedding(testQuery);
-    console.log('📊 Query embedding:', queryVector.slice(0, 10), '...');
-    console.log('📊 Non-zero values:', queryVector.filter(v => v > 0).length);
-    
-    // Check knowledge base
-    console.log('📚 Knowledge base items:', this.knowledgeBase.length);
-    this.knowledgeBase.forEach(item => {
-      const itemVector = this.generateEmbedding(item.content);
-      const similarity = this.cosineSimilarity(queryVector, itemVector);
-      console.log(`📊 "${item.title}" similarity:`, similarity);
-    });
-    
-    // Test vector store
-    if (this.vectorStore.hasData()) {
-      const results = await this.vectorStore.query(queryVector, 3);
-      console.log('🏆 Vector store results:', results.map(r => ({
-        title: r.item.metadata.title,
-        score: r.score
-      })));
-    } else {
-      console.log('⚠️ Vector store has no data');
+    for (const query of testQueries) {
+      console.log(`\n🔍 Testing query: "${query}"`);
+      const result = await this.query(query);
+      console.log(`📊 Top source: ${result.sources[0]?.title || 'None'} (${Math.round(result.confidence * 100)}% confidence)`);
     }
   }
 
-  private cosineSimilarity(a: number[], b: number[]): number {
-    if (a.length !== b.length) return 0;
-    
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    
-    for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
-    }
-    
-    if (normA === 0 || normB === 0) return 0;
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-  }
-
-  private async seedKnowledgeBase(): Promise<void> {
-    console.log('🌱 Seeding fitness knowledge base...');
-    console.log('📚 Knowledge base items:', this.knowledgeBase.length);
-
-    try {
-      const vectorItems: VectorItem[] = this.knowledgeBase.map(item => {
-        const vector = this.generateEmbedding(item.content);
-        console.log(`📝 Created vector for "${item.title}":`, {
-          vectorLength: vector.length,
-          nonZeroValues: vector.filter(v => v > 0).length
-        });
-        
-        return {
-          id: item.id,
-          vector: vector,
-          metadata: item
-        };
-      });
-
-      await this.vectorStore.addItems(vectorItems);
-      console.log(`✅ Seeded ${vectorItems.length} knowledge items successfully`);
-      
-      // Verify seeding
-      if (this.vectorStore.hasData()) {
-        console.log('✅ Vector store verification: Data confirmed');
-      } else {
-        console.error('❌ Vector store verification: No data found after seeding');
-      }
-    } catch (error) {
-      console.error('❌ Failed to seed knowledge base:', error);
-      throw error;
-    }
-  }
-
-  private generateEmbedding(text: string): number[] {
-    // Enhanced keyword-based embedding for better matching
-    const keywords = [
-      // Exercise keywords
-      'squat', 'squats', 'deadlift', 'deadlifts', 'bench', 'bench press', 'press', 'row', 'rows', 'pull', 'pulls', 'push', 'pushes',
-      'curl', 'curls', 'extension', 'extensions', 'press', 'presses', 'fly', 'flies', 'lunge', 'lunges', 'step', 'steps',
-      'muscle', 'muscles', 'strength', 'power', 'endurance', 'cardio', 'hiit', 'aerobic', 'anaerobic',
-      
-      // Body parts
-      'chest', 'back', 'shoulders', 'arms', 'biceps', 'triceps', 'legs', 'quads', 'quadriceps', 'hamstrings', 'glutes', 'calves',
-      'core', 'abs', 'abdominal', 'neck', 'forearms', 'traps', 'lats', 'deltoids',
-      
-      // Nutrition keywords
-      'protein', 'proteins', 'carbs', 'carbohydrates', 'fat', 'fats', 'calories', 'calorie', 'nutrition', 'diet', 'food', 'eating',
-      'meal', 'meals', 'supplement', 'supplements', 'vitamin', 'vitamins', 'mineral', 'minerals',
-      
-      // Training keywords
-      'form', 'technique', 'safety', 'injury', 'injuries', 'warmup', 'warm up', 'recovery', 'rest', 'training', 'workout', 'workouts',
-      'exercise', 'exercises', 'beginner', 'beginners', 'intermediate', 'advanced', 'progression', 'sets', 'reps', 'repetitions',
-      'weight', 'weights', 'dumbbell', 'dumbbells', 'barbell', 'barbells', 'machine', 'machines', 'bodyweight', 'body weight',
-      
-      // Action words
-      'how', 'what', 'when', 'why', 'where', 'perform', 'performing', 'do', 'doing', 'lift', 'lifting', 'move', 'moving',
-      'stand', 'standing', 'sit', 'sitting', 'lie', 'lying', 'hold', 'holding', 'grip', 'gripping'
-    ];
-
-    const textLower = text.toLowerCase();
-    const words = textLower.split(/\s+/);
-    
-    // Create embedding with better scoring
-    const embedding = keywords.map(keyword => {
-      // Check for exact matches
-      if (textLower.includes(keyword)) {
-        return 1.0;
-      }
-      
-      // Check for partial matches
-      const keywordWords = keyword.split(/\s+/);
-      let partialMatch = 0;
-      
-      for (const word of words) {
-        for (const kw of keywordWords) {
-          if (word.includes(kw) || kw.includes(word)) {
-            partialMatch += 0.5;
-          }
-        }
-      }
-      
-      return Math.min(partialMatch, 1.0);
-    });
-
-    // Normalize the embedding
-    const sum = embedding.reduce((a, b) => a + b, 0);
-    if (sum > 0) {
-      return embedding.map(val => val / sum);
-    }
-    
-    return embedding;
-  }
-
-  private generateAnswer(query: string, results: Array<{ item: VectorItem; score: number }>): string {
-    if (results.length === 0) {
-      return "I don't have specific information about that in my knowledge base. Could you try asking about exercises, nutrition, or training principles?";
-    }
-
-    const topResult = results[0].item.metadata as KnowledgeItem;
+  private generateAnswer(query: string, topItem: KnowledgeItem): string {
     const queryLower = query.toLowerCase();
-
-    // Generate contextual answer based on query type
-    if (queryLower.includes('how') || queryLower.includes('form')) {
-      return `Based on my knowledge of ${topResult.title}:\n\n${topResult.content}\n\nThis is ${topResult.type === 'exercise' ? 'an exercise' : topResult.type} recommendation with ${Math.round(results[0].score * 100)}% relevance to your question.`;
-    }
-
-    if (queryLower.includes('what') || queryLower.includes('explain')) {
-      return `${topResult.title} is ${topResult.content}\n\nI found this in my ${topResult.type} knowledge base.`;
-    }
-
-    // Default response
-    return `Here's what I know about that:\n\n${topResult.content}\n\nThis information comes from my ${topResult.type} knowledge base.`;
-  }
-
-  private calculateConfidence(results: Array<{ score: number }>): number {
-    if (results.length === 0) return 0.1;
     
-    const avgScore = results.reduce((sum, r) => sum + r.score, 0) / results.length;
-    return Math.min(0.3 + (avgScore * 0.7), 0.95);
+    if (queryLower.includes('how') || queryLower.includes('form') || queryLower.includes('perform')) {
+      return `Here's how to perform ${topItem.title}:\n\n${topItem.content}`;
+    }
+    
+    if (queryLower.includes('what') || queryLower.includes('explain')) {
+      return `${topItem.title} is ${topItem.content}`;
+    }
+    
+    return `Here's what I know about ${topItem.title}:\n\n${topItem.content}`;
   }
 
-  private generateFollowUpQuestions(query: string, results: any[]): string[] {
-    if (results.length === 0) return [];
-
-    const topResult = results[0].item.metadata as KnowledgeItem;
-
-    if (topResult.type === 'exercise') {
+  private generateFollowUpQuestions(query: string, topItem: KnowledgeItem): string[] {
+    if (topItem.type === 'exercise') {
       return [
-        `What muscles does ${topResult.title} work?`,
-        `How many sets and reps for ${topResult.title}?`,
-        `What are common mistakes with ${topResult.title}?`,
+        `What muscles does ${topItem.title} work?`,
+        `How many sets and reps for ${topItem.title}?`,
+        `What are common mistakes with ${topItem.title}?`,
         'Can you suggest an alternative exercise?'
       ];
     }
 
-    if (topResult.type === 'nutrition') {
+    if (topItem.type === 'nutrition') {
       return [
         'How much protein do I need daily?',
         'What should I eat before a workout?',
@@ -324,42 +199,49 @@ export class FitnessRAGService {
         title: 'Squat',
         content: 'The squat is a fundamental compound exercise that targets the quadriceps, hamstrings, and glutes. To perform: Stand with feet shoulder-width apart, lower your body by bending at the knees and hips as if sitting back into a chair, keep your chest up and core engaged, descend until thighs are parallel to the floor, then push through your heels to return to standing. Common mistakes include letting knees cave inward, not keeping chest up, and not going deep enough.',
         type: 'exercise',
-        tags: ['legs', 'compound', 'strength', 'quads', 'hamstrings', 'glutes']
+        tags: ['legs', 'compound', 'strength', 'quads', 'hamstrings', 'glutes', 'squat', 'squats']
       },
       {
         id: 'deadlift-basics',
         title: 'Deadlift',
         content: 'The deadlift is a powerful full-body exercise primarily targeting the posterior chain. Setup: Stand with feet hip-width apart, bar over mid-foot. Bend at hips and knees to grip the bar. Keep back straight, chest up. Drive through heels and extend hips and knees simultaneously. Lock out at the top with shoulders back. This exercise works your hamstrings, glutes, lower back, and core muscles.',
         type: 'exercise',
-        tags: ['back', 'compound', 'strength', 'power', 'hamstrings', 'glutes', 'core']
+        tags: ['back', 'compound', 'strength', 'power', 'hamstrings', 'glutes', 'core', 'deadlift', 'deadlifts']
       },
       {
         id: 'bench-press-basics',
         title: 'Bench Press',
         content: 'The bench press is the primary upper body pushing exercise for chest, shoulders, and triceps. Lie on bench with eyes under the bar, grip slightly wider than shoulders, lower the bar to chest with control, press up powerfully while keeping feet planted and maintaining arch in back. Keep your core tight and don\'t bounce the bar off your chest.',
         type: 'exercise',
-        tags: ['chest', 'compound', 'upper-body', 'shoulders', 'triceps']
+        tags: ['chest', 'compound', 'upper-body', 'shoulders', 'triceps', 'bench', 'press']
       },
       {
         id: 'pull-up-basics',
         title: 'Pull-up',
         content: 'Pull-ups are an excellent upper body pulling exercise that targets your back, biceps, and shoulders. Hang from a pull-up bar with hands slightly wider than shoulders, pull your body up until your chin is over the bar, then lower with control. Keep your core engaged and avoid swinging. If you can\'t do full pull-ups, start with assisted pull-ups or negative pull-ups.',
         type: 'exercise',
-        tags: ['back', 'compound', 'upper-body', 'biceps', 'shoulders']
+        tags: ['back', 'compound', 'upper-body', 'biceps', 'shoulders', 'pull', 'pullup', 'pullups']
       },
       {
         id: 'push-up-basics',
         title: 'Push-up',
         content: 'Push-ups are a fundamental bodyweight exercise for chest, shoulders, and triceps. Start in a plank position with hands slightly wider than shoulders, lower your body until your chest nearly touches the ground, then push back up. Keep your body in a straight line from head to heels. Modify by doing knee push-ups if needed.',
         type: 'exercise',
-        tags: ['chest', 'bodyweight', 'upper-body', 'shoulders', 'triceps']
+        tags: ['chest', 'bodyweight', 'upper-body', 'shoulders', 'triceps', 'push', 'pushup', 'pushups']
       },
       {
         id: 'lunge-basics',
         title: 'Lunge',
         content: 'Lunges are a great unilateral leg exercise that targets quads, hamstrings, and glutes while improving balance. Step forward with one leg, lower your body until both knees are bent at 90 degrees, then push back to starting position. Keep your torso upright and core engaged. You can do walking lunges, reverse lunges, or lateral lunges.',
         type: 'exercise',
-        tags: ['legs', 'unilateral', 'quads', 'hamstrings', 'glutes', 'balance']
+        tags: ['legs', 'unilateral', 'quads', 'hamstrings', 'glutes', 'balance', 'lunge', 'lunges']
+      },
+      {
+        id: 'plank-basics',
+        title: 'Plank',
+        content: 'The plank is an isometric core exercise that builds stability and endurance. Start in push-up position but rest on forearms, keep body in straight line from head to heels, engage core and glutes, breathe normally while holding position. Start with 30 seconds and progress to longer holds.',
+        type: 'exercise',
+        tags: ['core', 'isometric', 'stability', 'plank', 'planks', 'abs']
       },
       
       // Nutrition Knowledge
@@ -368,21 +250,21 @@ export class FitnessRAGService {
         title: 'Protein Requirements',
         content: 'Protein is essential for muscle building and recovery. General recommendations: 0.8-1.2g per pound of body weight for active individuals, 1.2-1.6g for those building muscle, and up to 2g for intense training. Good sources include lean meats, fish, eggs, dairy, legumes, and protein powders. Spread protein intake throughout the day for optimal absorption.',
         type: 'nutrition',
-        tags: ['protein', 'muscle', 'recovery', 'macros']
+        tags: ['protein', 'muscle', 'recovery', 'macros', 'nutrition']
       },
       {
         id: 'carbohydrates-basics',
         title: 'Carbohydrates for Fitness',
         content: 'Carbohydrates are your body\'s primary energy source for exercise. Complex carbs like whole grains, fruits, and vegetables provide sustained energy. Simple carbs can be useful before/during intense workouts. Aim for 3-7g per pound of body weight depending on activity level. Time carbs around workouts for optimal performance.',
         type: 'nutrition',
-        tags: ['carbs', 'energy', 'fuel', 'macros', 'performance']
+        tags: ['carbs', 'energy', 'fuel', 'macros', 'performance', 'carbohydrates']
       },
       {
         id: 'fats-basics',
         title: 'Healthy Fats',
         content: 'Fats are essential for hormone production, vitamin absorption, and overall health. Focus on healthy fats from avocados, nuts, olive oil, and fatty fish. Aim for 0.3-0.5g per pound of body weight. Avoid trans fats and limit saturated fats. Fats help with satiety and should be included in every meal.',
         type: 'nutrition',
-        tags: ['fats', 'hormones', 'health', 'macros', 'satiety']
+        tags: ['fats', 'hormones', 'health', 'macros', 'satiety', 'fat']
       },
       {
         id: 'hydration-basics',
@@ -398,7 +280,7 @@ export class FitnessRAGService {
         title: 'Progressive Overload',
         content: 'Progressive overload is the foundation of strength training. Gradually increase the stress placed on your body over time by adding weight, reps, sets, or reducing rest periods. This forces your body to adapt and grow stronger. Track your progress and aim for small, consistent improvements rather than big jumps.',
         type: 'principle',
-        tags: ['progression', 'strength', 'adaptation', 'growth']
+        tags: ['progression', 'strength', 'adaptation', 'growth', 'progressive', 'overload']
       },
       {
         id: 'recovery-importance',
