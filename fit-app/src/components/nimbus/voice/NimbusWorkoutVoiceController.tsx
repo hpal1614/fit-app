@@ -6,8 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { NimbusAdvancedVoiceService, NimbusVoiceState, NimbusWorkoutCommand, NimbusNutritionCommand, NimbusWorkoutContext } from '../../../services/nimbus/NimbusAdvancedVoiceService';
 import { NimbusWaveformVisualizer } from './NimbusWaveformVisualizer';
-import { NimbusButton } from '../NimbusButton';
-import { NimbusCard } from '../NimbusCard';
+import { NimbusButton } from '../../../nimbus/components/NimbusButton';
+import { NimbusCard } from '../../../nimbus/components/NimbusCard';
 import { Mic, MicOff, Volume2, VolumeX, Settings, HelpCircle } from 'lucide-react';
 
 export interface NimbusActiveWorkout {

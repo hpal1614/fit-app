@@ -24,9 +24,9 @@ export { NimbusVoicePersonalitySelector } from './components/NimbusVoicePersonal
 export { NimbusWorkoutGenerator } from './components/NimbusWorkoutGenerator';
 
 // Advanced Voice Components
-export { NimbusWaveformVisualizer } from './components/voice/NimbusWaveformVisualizer';
-export { NimbusWorkoutVoiceController } from './components/voice/NimbusWorkoutVoiceController';
-export { NimbusVoiceDemo } from './components/voice/NimbusVoiceDemo';
+export { NimbusWaveformVisualizer } from '../components/nimbus/voice/NimbusWaveformVisualizer';
+export { NimbusWorkoutVoiceController } from '../components/nimbus/voice/NimbusWorkoutVoiceController';
+export { NimbusVoiceDemo } from '../components/nimbus/voice/NimbusVoiceDemo';
 
 // Nutrition Components
 export { NimbusNutritionTracker } from './components/nutrition/NimbusNutritionTracker';
@@ -46,7 +46,7 @@ export { NimbusVoiceService, nimbusVoice } from './services/NimbusVoiceService';
 export type { VoicePersonality, EmotionalState } from './services/NimbusVoiceService';
 
 // Advanced Voice Services
-export { NimbusAdvancedVoiceService } from './services/NimbusAdvancedVoiceService';
+export { NimbusAdvancedVoiceService } from '../services/nimbus/NimbusAdvancedVoiceService';
 export { NimbusWorkoutGenerator as NimbusWorkoutGeneratorService, nimbusWorkoutGenerator } from './services/NimbusWorkoutGenerator';
 export type { ExerciseAlternative, WorkoutGenerationConfig, GeneratedWorkout } from './services/NimbusWorkoutGenerator';
 export { NimbusNutritionService } from './services/NimbusNutritionService';

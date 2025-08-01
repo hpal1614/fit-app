@@ -314,7 +314,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         </div>
       )}
 
-      <style jsx>{`
+      <style jsx="true">{`
         @keyframes wave {
           0%, 100% { transform: scaleY(1); }
           50% { transform: scaleY(2); }

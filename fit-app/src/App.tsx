@@ -40,7 +40,7 @@ import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
-import { VoiceAssistant } from './components/VoiceAssistant';
+
 
 // Hooks & Services
 import { useWorkout } from './hooks/useWorkout';
@@ -62,7 +62,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState<TabType>('workouts');
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
-  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
+
   
   // Initialize hooks
   const workout = useWorkout();
@@ -227,15 +227,7 @@ function App() {
         )}
       </div>
 
-      {/* Voice Assistant Button */}
-      <NimbusButton
-        variant="primary"
-        size="lg"
-        icon={<Mic className="w-6 h-6" />}
-        onClick={() => setShowVoiceAssistant(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 !rounded-full shadow-lg hover:scale-110 z-50"
-        aria-label="Voice Assistant"
-      />
+
 
       {/* Nimbus Bottom Navigation */}
       <NimbusBottomNavigation
@@ -244,16 +236,7 @@ function App() {
         onNavigate={(key) => setActiveTab(key as TabType)}
       />
 
-      {/* Voice Assistant */}
-      {showVoiceAssistant && (
-        <VoiceAssistant
-          workoutContext={workout.getContext()}
-          onClose={() => setShowVoiceAssistant(false)}
-          onCommand={(command, response) => {
-            console.log('Voice command:', command, 'Response:', response);
-          }}
-        />
-      )}
+
     </div>
   );
 }

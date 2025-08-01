@@ -66,6 +66,8 @@ export class NimbusAdvancedVoiceService {
   private interruptionEnabled = true;
   private currentUtterance: SpeechSynthesisUtterance | null = null;
   private config: NimbusVoiceConfig;
+  private isInitialized = false;
+  private isDestroyed = false;
 
   constructor(config: NimbusVoiceConfig = {}) {
     this.synthesis = window.speechSynthesis;
@@ -89,24 +91,34 @@ export class NimbusAdvancedVoiceService {
   }
 
   private async initialize(config: NimbusVoiceConfig): Promise<void> {
-    // Initialize speech recognition
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      this.recognition = new SpeechRecognitionAPI();
-      this.setupSpeechRecognition();
-    } else {
-      console.warn('Speech recognition not supported in this browser');
+    if (this.isInitialized || this.isDestroyed) {
+      return;
     }
 
-    // Initialize Web Audio API for waveform visualization
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      await this.setupAudioAnalysis();
-    } catch (error) {
-      console.warn('Web Audio API not available:', error);
-    }
+      // Initialize speech recognition
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        this.recognition = new SpeechRecognitionAPI();
+        this.setupSpeechRecognition();
+      } else {
+        console.warn('Speech recognition not supported in this browser');
+      }
 
-    this.applyConfig(config);
+      // Initialize Web Audio API for waveform visualization
+      try {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        await this.setupAudioAnalysis();
+      } catch (error) {
+        console.warn('Web Audio API not available:', error);
+      }
+
+      this.applyConfig(config);
+      this.isInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize NimbusAdvancedVoiceService:', error);
+      throw error;
+    }
   }
 
   private setupSpeechRecognition(): void {
@@ -158,9 +170,13 @@ export class NimbusAdvancedVoiceService {
       console.error('Speech recognition error:', event.error);
       this.emit('error', { type: 'recognition_error', message: event.error });
       
-      // Auto-restart on network error
-      if (event.error === 'network' && this.state.mode === 'continuous') {
-        setTimeout(() => this.startContinuousListening(), 1000);
+      // Auto-restart on network error (only if not destroyed)
+      if (event.error === 'network' && this.state.mode === 'continuous' && !this.isDestroyed) {
+        setTimeout(() => {
+          if (!this.isDestroyed) {
+            this.startContinuousListening();
+          }
+        }, 1000);
       }
     };
 
@@ -168,9 +184,17 @@ export class NimbusAdvancedVoiceService {
       this.state.isListening = false;
       this.emit('stateChange', this.state);
       
-      // Auto-restart for continuous mode
-      if (this.state.mode === 'continuous') {
-        setTimeout(() => this.recognition?.start(), 100);
+      // Auto-restart for continuous mode (only if not destroyed)
+      if (this.state.mode === 'continuous' && !this.isDestroyed) {
+        setTimeout(() => {
+          if (!this.isDestroyed && this.recognition) {
+            try {
+              this.recognition.start();
+            } catch (error) {
+              console.log('Failed to restart speech recognition:', error);
+            }
+          }
+        }, 100);
       }
     };
   }
@@ -283,6 +307,11 @@ export class NimbusAdvancedVoiceService {
       throw new Error('Speech recognition not supported');
     }
 
+    if (this.state.isListening) {
+      console.log('Speech recognition already listening');
+      return true;
+    }
+
     try {
       this.state.mode = 'continuous';
       this.recognition.start();
@@ -295,9 +324,13 @@ export class NimbusAdvancedVoiceService {
 
   // Stop listening
   stopListening(): void {
-    if (this.recognition) {
+    if (this.recognition && this.state.isListening) {
       this.state.mode = 'idle';
-      this.recognition.stop();
+      try {
+        this.recognition.stop();
+      } catch (error) {
+        console.log('Speech recognition already stopped');
+      }
     }
     this.clearSilenceTimer();
   }
@@ -594,16 +627,29 @@ export class NimbusAdvancedVoiceService {
 
   // Cleanup
   destroy(): void {
+    if (this.isDestroyed) {
+      return;
+    }
+
+    this.isDestroyed = true;
     this.stopListening();
     this.stopSpeaking();
     
     if (this.waveformUpdateInterval) {
       cancelAnimationFrame(this.waveformUpdateInterval);
+      this.waveformUpdateInterval = null;
     }
     
-    if (this.audioContext) {
-      this.audioContext.close();
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      try {
+        this.audioContext.close();
+      } catch (error) {
+        console.log('AudioContext already closed');
+      }
     }
+
+    // Clear all event listeners
+    this.eventEmitter = new EventTarget();
   }
 }
 

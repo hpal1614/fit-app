@@ -6,8 +6,8 @@
 import React, { useState } from 'react';
 import { NimbusWorkoutVoiceController, NimbusActiveWorkout } from './NimbusWorkoutVoiceController';
 import { NimbusWorkoutCommand, NimbusNutritionCommand } from '../../../services/nimbus/NimbusAdvancedVoiceService';
-import { NimbusCard } from '../NimbusCard';
-import { NimbusButton } from '../NimbusButton';
+import { NimbusCard } from '../../../nimbus/components/NimbusCard';
+import { NimbusButton } from '../../../nimbus/components/NimbusButton';
 import { Play, Pause, RotateCcw, Dumbbell, Timer, Trophy } from 'lucide-react';
 
 export const NimbusVoiceDemo: React.FC = () => {
