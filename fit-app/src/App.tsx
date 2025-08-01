@@ -45,7 +45,7 @@ import { NimbusAdvancedAnalyticsDashboard } from './components/nimbus/analytics/
 
 // Feature Components
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
-import { IntelligentAIChat } from './components/ai/IntelligentAIChat';
+import { IntegratedAICoach } from './components/ai/IntegratedAICoach';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
@@ -69,7 +69,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'voice-demo' | 'analytics' | 'profile' | 'pdf-upload' | 'template-sharing' | 'advanced-analytics';
+type TabType = 'workouts' | 'generator' | 'ai-coach' | 'nutrition' | 'analytics' | 'profile';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -146,18 +146,13 @@ function App() {
     }
   }, []);
 
-  // Navigation items for NimbusBottomNavigation
+  // Simplified Navigation items
   const navigationItems: NavigationItem[] = [
     { key: 'workouts', label: 'Logger', icon: Dumbbell, badge: workout.isActive },
     { key: 'generator', label: 'Generate', icon: Target },
-    { key: 'intelligent-ai', label: 'Smart AI', icon: Brain },
+    { key: 'ai-coach', label: 'AI Coach', icon: Brain },
     { key: 'nutrition', label: 'Nutrition', icon: Apple },
-    { key: 'coach', label: 'Coach', icon: MessageCircle },
-    { key: 'voice-demo', label: 'Voice', icon: Mic },
     { key: 'analytics', label: 'Stats', icon: TrendingUp },
-    { key: 'pdf-upload', label: 'PDF', icon: FileText },
-    { key: 'template-sharing', label: 'Share', icon: Share2 },
-    { key: 'advanced-analytics', label: 'Advanced', icon: BarChart3 },
     { key: 'profile', label: 'Profile', icon: User, badge: showNotificationBadge ? 1 : undefined }
   ];
 
@@ -244,46 +239,14 @@ function App() {
         <div className="animate-fade-in">
           {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
           {activeTab === 'generator' && <WorkoutGenerator />}
-          {activeTab === 'intelligent-ai' && <IntelligentAIChat className="h-[calc(100vh-16rem)]" />}
-          {activeTab === 'nutrition' && <NimbusNutritionTracker />}
-          {activeTab === 'coach' && (
-            <NimbusStreamingChat 
+          {activeTab === 'ai-coach' && (
+            <IntegratedAICoach 
               context={workout.getContext()} 
-              className="h-full"
+              className="h-[calc(100vh-16rem)]"
             />
           )}
-          {activeTab === 'voice-demo' && <SimpleVoiceTest />}
+          {activeTab === 'nutrition' && <NimbusNutritionTracker />}
           {activeTab === 'analytics' && <AnalyticsDashboard />}
-          {activeTab === 'pdf-upload' && (
-            <NimbusPDFUploader
-              onWorkoutParsed={(workout) => {
-                setParsedWorkout(workout);
-                setActiveTab('workouts');
-              }}
-              onError={(error) => {
-                console.error('PDF parsing error:', error);
-              }}
-            />
-          )}
-          {activeTab === 'template-sharing' && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 gradient-primary rounded-full flex items-center justify-center">
-                <Share2 className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2">
-                Template Sharing
-              </h2>
-              <p className="text-gray-400 mb-4">
-                Share and discover workout templates with the community
-              </p>
-              <div className="card inline-block">
-                <p className="text-sm text-gray-500">
-                  Coming soon - Advanced template sharing system
-                </p>
-              </div>
-            </div>
-          )}
-          {activeTab === 'advanced-analytics' && <NimbusAdvancedAnalyticsDashboard />}
           {activeTab === 'profile' && (
             <div className="space-y-modern">
               <div className="card card-elevated">
