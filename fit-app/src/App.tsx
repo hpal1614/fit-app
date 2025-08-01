@@ -30,7 +30,8 @@ import {
   NimbusButton,
   NimbusTheme,
   NimbusStreamingChat,
-  NimbusNutritionTracker
+  NimbusNutritionTracker,
+  NimbusVoiceDemo
 } from './nimbus';
 
 // Feature Components
@@ -55,7 +56,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'analytics' | 'profile';
+type TabType = 'workouts' | 'generator' | 'intelligent-ai' | 'nutrition' | 'coach' | 'voice-demo' | 'analytics' | 'profile';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -107,6 +108,7 @@ function App() {
     { key: 'intelligent-ai', label: 'Smart AI', icon: Brain },
     { key: 'nutrition', label: 'Nutrition', icon: Apple },
     { key: 'coach', label: 'Coach', icon: MessageCircle },
+    { key: 'voice-demo', label: 'Voice', icon: Mic },
     { key: 'analytics', label: 'Stats', icon: TrendingUp },
     { key: 'profile', label: 'Profile', icon: User, badge: showNotificationBadge ? 1 : undefined }
   ];
@@ -182,6 +184,7 @@ function App() {
             className="h-full"
           />
         )}
+        {activeTab === 'voice-demo' && <NimbusVoiceDemo />}
         {activeTab === 'analytics' && <AnalyticsDashboard />}
         {activeTab === 'profile' && (
           <NimbusCard variant="glass">
