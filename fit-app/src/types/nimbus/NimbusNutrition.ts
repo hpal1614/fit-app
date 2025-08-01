@@ -31,7 +31,7 @@ export interface NimbusMicronutrients {
   b12?: number;
 }
 
-export type NimbusMealType = 'breakfast' | 'lunch' | 'dinner' | 'morning_snack' | 'afternoon_snack' | 'evening_snack';
+export type NimbusMealType = 'breakfast' | 'lunch' | 'dinner' | 'morning-snack' | 'afternoon-snack' | 'evening-snack';
 
 export interface NimbusNutritionGoals {
   dailyCalories: number;
@@ -144,6 +144,46 @@ export interface NimbusQuickMeal {
   instructions: string[];
   nutrition: NimbusMacros;
   tips: string[];
+}
+
+export interface NimbusAnalyticsData {
+  period: { startDate: Date; endDate: Date };
+  totalDays: number;
+  totalEntries: number;
+  averageDailyCalories: number;
+  averageDailyProtein: number;
+  averageDailyCarbs: number;
+  averageDailyFat: number;
+  trends: NimbusTrendData;
+  insights: NimbusNutritionInsight[];
+  goalProgress: NimbusGoalProgress;
+  mealDistribution: Record<string, number>;
+  topFoods: Array<{ food: string; frequency: number; totalCalories: number }>;
+  consistencyScore: number;
+}
+
+export interface NimbusTrendData {
+  caloriesTrend: 'increasing' | 'decreasing' | 'stable';
+  proteinTrend: 'increasing' | 'decreasing' | 'stable';
+  carbsTrend: 'increasing' | 'decreasing' | 'stable';
+  fatTrend: 'increasing' | 'decreasing' | 'stable';
+  trendStrength: number;
+}
+
+export interface NimbusNutritionInsight {
+  type: 'macro_balance' | 'meal_timing' | 'consistency' | 'goal_achievement';
+  title: string;
+  message: string;
+  priority: 'high' | 'medium' | 'low';
+  actionable: boolean;
+  suggestedActions?: string[];
+}
+
+export interface NimbusGoalProgress {
+  calories: { target: number; actual: number; percentage: number };
+  protein: { target: number; actual: number; percentage: number };
+  carbs: { target: number; actual: number; percentage: number };
+  fat: { target: number; actual: number; percentage: number };
 }
 
 export interface NimbusNutritionAnalytics {

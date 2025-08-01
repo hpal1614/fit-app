@@ -28,6 +28,12 @@ export { NimbusNutritionTracker } from './components/nutrition/NimbusNutritionTr
 export { NimbusMacroRing } from './components/nutrition/NimbusMacroRing';
 export { NimbusMealSection } from './components/nutrition/NimbusMealSection';
 export { NimbusFoodEntry } from './components/nutrition/NimbusFoodEntry';
+export { NimbusBarcodeScannerModal } from './components/nutrition/NimbusBarcodeScannerModal';
+export { NimbusFoodSearchModal } from './components/nutrition/NimbusFoodSearchModal';
+export { NimbusMealPlannerModal } from './components/nutrition/NimbusMealPlannerModal';
+export { NimbusNutritionAnalytics } from './components/nutrition/NimbusNutritionAnalytics';
+export { NimbusCustomFoodModal } from './components/nutrition/NimbusCustomFoodModal';
+export { NimbusEditFoodModal } from './components/nutrition/NimbusEditFoodModal';
 
 // Services
 export { NimbusAIService, nimbusAI } from './services/NimbusAIService';
@@ -36,6 +42,9 @@ export type { VoicePersonality, EmotionalState } from './services/NimbusVoiceSer
 export { NimbusWorkoutGenerator as NimbusWorkoutGeneratorService, nimbusWorkoutGenerator } from './services/NimbusWorkoutGenerator';
 export type { ExerciseAlternative, WorkoutGenerationConfig, GeneratedWorkout } from './services/NimbusWorkoutGenerator';
 export { NimbusNutritionService } from './services/NimbusNutritionService';
+export { NimbusProductScanner } from './services/NimbusProductScanner';
+export { NimbusMealPlanner } from './services/NimbusMealPlanner';
+export { NimbusNutritionAnalytics as NimbusNutritionAnalyticsService } from './services/NimbusNutritionAnalytics';
 export type { 
   NimbusNutritionEntry, 
   NimbusMacros, 

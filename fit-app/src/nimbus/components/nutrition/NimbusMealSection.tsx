@@ -23,9 +23,9 @@ export const NimbusMealSection: React.FC<NimbusMealSectionProps> = ({
     breakfast: '🌅 Breakfast',
     lunch: '☀️ Lunch', 
     dinner: '🌙 Dinner',
-    morning_snack: '🍎 Morning Snack',
-    afternoon_snack: '🥨 Afternoon Snack',
-    evening_snack: '🍫 Evening Snack'
+    'morning-snack': '🍎 Morning Snack',
+    'afternoon-snack': '🥨 Afternoon Snack',
+    'evening-snack': '🍫 Evening Snack'
   };
 
   const totalCalories = entries.reduce((sum, entry) => sum + entry.macros.calories, 0);

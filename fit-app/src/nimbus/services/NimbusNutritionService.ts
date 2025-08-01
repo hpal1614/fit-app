@@ -31,7 +31,7 @@ export class NimbusNutritionService {
   }
 
   // Save nutrition entry
-  async addEntry(entry: Omit<NimbusNutritionEntry, 'id'>): Promise<NimbusNutritionEntry> {
+  async addEntry(entry: Omit<NimbusNutritionEntry, 'id' | 'timestamp'>): Promise<NimbusNutritionEntry> {
     const newEntry: NimbusNutritionEntry = {
       ...entry,
       id: this.generateId(),
@@ -70,6 +70,18 @@ export class NimbusNutritionService {
     return entries.filter(entry => {
       const entryDate = this.formatDate(new Date(entry.timestamp));
       return entryDate === targetDate;
+    });
+  }
+
+  // Get entries in a date range
+  getEntriesInRange(startDate: Date, endDate: Date): NimbusNutritionEntry[] {
+    const entries = this.getAllEntries();
+    const start = this.formatDate(startDate);
+    const end = this.formatDate(endDate);
+    
+    return entries.filter(entry => {
+      const entryDate = this.formatDate(new Date(entry.timestamp));
+      return entryDate >= start && entryDate <= end;
     });
   }
 
@@ -167,6 +179,107 @@ export class NimbusNutritionService {
       goalAchievement,
       topFoods
     };
+  }
+
+  // Add demo data for testing
+  async addDemoData(): Promise<void> {
+    const demoEntries = [
+      {
+        foodItem: 'Oatmeal with Berries',
+        brand: 'Quaker',
+        quantity: 100,
+        unit: 'g' as const,
+        macros: {
+          calories: 150,
+          protein: 5,
+          carbs: 27,
+          fat: 3,
+          fiber: 4,
+          sugar: 1
+        },
+        meal: 'breakfast' as NimbusMealType,
+        source: 'manual' as const
+      },
+      {
+        foodItem: 'Grilled Chicken Breast',
+        brand: 'Woolworths',
+        quantity: 150,
+        unit: 'g' as const,
+        macros: {
+          calories: 250,
+          protein: 45,
+          carbs: 0,
+          fat: 5,
+          fiber: 0
+        },
+        meal: 'lunch' as NimbusMealType,
+        source: 'manual' as const
+      },
+      {
+        foodItem: 'Brown Rice',
+        brand: 'SunRice',
+        quantity: 100,
+        unit: 'g' as const,
+        macros: {
+          calories: 110,
+          protein: 2.5,
+          carbs: 23,
+          fat: 0.9,
+          fiber: 1.8
+        },
+        meal: 'lunch' as NimbusMealType,
+        source: 'manual' as const
+      },
+      {
+        foodItem: 'Greek Yogurt',
+        brand: 'Chobani',
+        quantity: 170,
+        unit: 'g' as const,
+        macros: {
+          calories: 100,
+          protein: 17,
+          carbs: 6,
+          fat: 0.5,
+          sugar: 4
+        },
+        meal: 'afternoon-snack' as NimbusMealType,
+        source: 'manual' as const
+      },
+      {
+        foodItem: 'Salmon Fillet',
+        brand: 'Tassal',
+        quantity: 120,
+        unit: 'g' as const,
+        macros: {
+          calories: 280,
+          protein: 35,
+          carbs: 0,
+          fat: 15,
+          fiber: 0
+        },
+        meal: 'dinner' as NimbusMealType,
+        source: 'manual' as const
+      },
+      {
+        foodItem: 'Broccoli',
+        brand: 'Fresh',
+        quantity: 100,
+        unit: 'g' as const,
+        macros: {
+          calories: 34,
+          protein: 2.8,
+          carbs: 7,
+          fat: 0.4,
+          fiber: 2.6
+        },
+        meal: 'dinner' as NimbusMealType,
+        source: 'manual' as const
+      }
+    ];
+
+    for (const entry of demoEntries) {
+      await this.addEntry(entry);
+    }
   }
 
   // Private helper methods
