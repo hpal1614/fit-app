@@ -40,6 +40,9 @@ export class FitnessRAGService {
 
       this.initialized = true;
       console.log('RAG Service initialized with local vector store');
+      
+      // Run test to verify system
+      await this.testEmbeddingSystem();
     } catch (error) {
       console.error('Failed to initialize RAG service:', error);
     }
@@ -108,6 +111,56 @@ export class FitnessRAGService {
         followUpQuestions: []
       };
     }
+  }
+
+  // Test method to verify embedding system
+  async testEmbeddingSystem(): Promise<void> {
+    console.log('🧪 Testing embedding system...');
+    
+    // Test query
+    const testQuery = 'pushup';
+    console.log('🔍 Test query:', testQuery);
+    
+    // Generate embedding
+    const queryVector = this.generateEmbedding(testQuery);
+    console.log('📊 Query embedding:', queryVector.slice(0, 10), '...');
+    console.log('📊 Non-zero values:', queryVector.filter(v => v > 0).length);
+    
+    // Check knowledge base
+    console.log('📚 Knowledge base items:', this.knowledgeBase.length);
+    this.knowledgeBase.forEach(item => {
+      const itemVector = this.generateEmbedding(item.content);
+      const similarity = this.cosineSimilarity(queryVector, itemVector);
+      console.log(`📊 "${item.title}" similarity:`, similarity);
+    });
+    
+    // Test vector store
+    if (this.vectorStore.hasData()) {
+      const results = await this.vectorStore.query(queryVector, 3);
+      console.log('🏆 Vector store results:', results.map(r => ({
+        title: r.item.metadata.title,
+        score: r.score
+      })));
+    } else {
+      console.log('⚠️ Vector store has no data');
+    }
+  }
+
+  private cosineSimilarity(a: number[], b: number[]): number {
+    if (a.length !== b.length) return 0;
+    
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+    
+    for (let i = 0; i < a.length; i++) {
+      dotProduct += a[i] * b[i];
+      normA += a[i] * a[i];
+      normB += b[i] * b[i];
+    }
+    
+    if (normA === 0 || normB === 0) return 0;
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 
   private async seedKnowledgeBase(): Promise<void> {

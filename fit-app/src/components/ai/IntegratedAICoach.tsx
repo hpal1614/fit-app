@@ -366,6 +366,16 @@ export const IntegratedAICoach: React.FC<IntegratedAICoachProps> = ({
                 </>
               )}
             </button>
+            <button
+              onClick={async () => {
+                console.log('🧪 Manual RAG test...');
+                await fitnessRAG.testEmbeddingSystem();
+              }}
+              className="btn btn-secondary btn-sm"
+              title="Test RAG System"
+            >
+              <Zap className="w-3 h-3" />
+            </button>
             {onClose && (
               <button
                 onClick={onClose}
