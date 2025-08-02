@@ -262,23 +262,33 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     startRestTimer();
     
     // Increment completed sets
-    setCompletedSets(prev => prev + 1);
+    setCompletedSets(prev => {
+      const newCount = prev + 1;
+      console.log(`Set completed! Total sets: ${newCount}`);
+      return newCount;
+    });
+    
+    // Smart auto-progression based on RPE
+    setTimeout(() => {
+      if (currentRPE <= 2) {
+        // Too easy - increase weight more aggressively
+        adjustWeight(currentIncrement * 2);
+        showSmartSuggestion('Set felt easy! Increasing weight for next set 💪');
+      } else if (currentRPE >= 4) {
+        // Too hard - decrease weight
+        adjustWeight(-currentIncrement);
+        showSmartSuggestion('Set was challenging! Reducing weight for next set');
+      } else {
+        // Perfect - small increase
+        adjustWeight(currentIncrement);
+        showSmartSuggestion('Perfect RPE! Small weight increase for next set');
+      }
+    }, 1000);
     
     // Check if exercise is completed for auto-advance
     setTimeout(() => {
       checkExerciseCompletion();
-    }, 500);
-    
-    // Smart auto-progression
-    setTimeout(() => {
-      if (currentRPE <= 2) {
-        adjustWeight(currentIncrement * 2);
-      } else if (currentRPE >= 4) {
-        adjustWeight(-currentIncrement);
-      } else {
-        adjustWeight(currentIncrement);
-      }
-    }, 1000);
+    }, 1500);
     
     playSound('button');
   };
@@ -527,6 +537,16 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     setSmartSuggestions(newSuggestions);
   }, [currentRPE, currentReps, currentIncrement]);
 
+  // Update overall progress when completed sets change
+  useEffect(() => {
+    setOverallWorkoutProgress(calculateOverallProgress());
+  }, [completedSets, currentExerciseIndex, completedExercises]);
+
+  // Generate weight suggestions when RPE changes
+  useEffect(() => {
+    generateWeightSuggestion();
+  }, [currentRPE, completedSets]);
+
   // Process Voice Commands
   const processVoiceCommand = (transcript: string) => {
     const command = transcript.toLowerCase();
@@ -753,6 +773,8 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     const currentIndex = workoutExercises.findIndex(e => e.id === currentExerciseIndex);
     const nextExercise = workoutExercises[currentIndex + 1];
     
+    console.log(`Advancing exercise: Current=${currentExerciseIndex}, Next=${nextExercise?.id}, Name=${nextExercise?.name}`);
+    
     if (nextExercise) {
       // Mark current exercise as completed
       setCompletedExercises(prev => [...prev, currentExerciseIndex]);
@@ -760,6 +782,11 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       // Move to next exercise
       setCurrentExerciseIndex(nextExercise.id);
       setCompletedSets(0);
+      
+      // Reset weight and reps for new exercise
+      setCurrentWeight(190); // Reset to default or load from history
+      setCurrentReps(8);
+      setCurrentRPE(3);
       
       // Start rest timer automatically
       startRestTimer();
@@ -785,11 +812,19 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
     const totalSets = currentExercise?.sets || 4;
     
+    console.log(`Checking exercise completion: ${completedSets}/${totalSets} sets, auto-advance: ${autoAdvanceEnabled}`);
+    
     if (completedSets >= totalSets && autoAdvanceEnabled) {
+      // Show completion message
+      showSmartSuggestion(`🎉 ${currentExercise?.name} completed! Moving to next exercise...`);
+      
       // Small delay to show completion
       setTimeout(() => {
         advanceToNextExercise();
-      }, 1500);
+      }, 2000);
+    } else if (completedSets >= totalSets && !autoAdvanceEnabled) {
+      // Manual advance needed
+      showSmartSuggestion(`🎉 ${currentExercise?.name} completed! Click "Next Exercise" to continue.`);
     }
   };
 
@@ -1090,9 +1125,21 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                 </span>
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Bench Press</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {workoutExercises.find(e => e.id === currentExerciseIndex)?.name || 'Loading...'}
+            </h1>
             <div className="text-gray-300">
-              Set {completedSets + 1} of {workoutExercises.find(e => e.id === currentExerciseIndex)?.sets} • Personal record zone
+              Set {completedSets + 1} of {workoutExercises.find(e => e.id === currentExerciseIndex)?.sets} • {(() => {
+                const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+                const totalSets = currentExercise?.sets || 4;
+                if (completedSets >= totalSets) {
+                  return 'Exercise completed! 🎉';
+                } else if (completedSets === 0) {
+                  return 'Ready to start! 💪';
+                } else {
+                  return 'Keep going! 🔥';
+                }
+              })()}
             </div>
           </div>
           
@@ -1672,6 +1719,26 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         >
           {showFailureOptions ? 'Completed Full Set' : 'Log Set'}
         </button>
+
+        {/* Next Exercise Button - Show when exercise is completed and auto-advance is disabled */}
+        {(() => {
+          const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+          const totalSets = currentExercise?.sets || 4;
+          const isExerciseCompleted = completedSets >= totalSets;
+          
+          return isExerciseCompleted && !autoAdvanceEnabled ? (
+            <button 
+              onClick={advanceToNextExercise}
+              className="w-full h-14 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition-modern mt-3"
+            >
+              🚀 Next Exercise: {(() => {
+                const currentIndex = workoutExercises.findIndex(e => e.id === currentExerciseIndex);
+                const nextExercise = workoutExercises[currentIndex + 1];
+                return nextExercise ? nextExercise.name : 'Complete Workout';
+              })()}
+            </button>
+          ) : null;
+        })()}
 
         {/* Failure Options */}
         {showFailureOptions && (
