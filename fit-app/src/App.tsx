@@ -45,6 +45,7 @@ import { NimbusAdvancedAnalyticsDashboard } from './components/nimbus/analytics/
 
 // Feature Components
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
+import { EnhancedWorkoutLogger } from './components/EnhancedWorkoutLogger';
 import { IntegratedAICoach } from './components/ai/IntegratedAICoach';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
@@ -237,7 +238,7 @@ function App() {
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
         <div className="animate-fade-in">
-          {activeTab === 'workouts' && <WorkoutLoggerTab workout={workout} />}
+          {activeTab === 'workouts' && <EnhancedWorkoutLogger workout={workout} />}
           {activeTab === 'generator' && <WorkoutGenerator />}
           {activeTab === 'ai-coach' && (
             <IntegratedAICoach 

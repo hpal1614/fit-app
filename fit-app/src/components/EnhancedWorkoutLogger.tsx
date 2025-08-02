@@ -5,7 +5,6 @@ import {
   AlertTriangle, Heart, Dumbbell, Clock, TrendingUp, 
   ChevronDown, ChevronUp, Check, X, ArrowRight, ArrowLeft
 } from 'lucide-react';
-import { useWorkout } from '../hooks/useWorkout';
 
 interface Set {
   id: string;
@@ -19,19 +18,8 @@ interface Set {
   originalReps?: number;
 }
 
-interface Exercise {
-  id: string;
-  name: string;
-  sets: Set[];
-  targetSets: number;
-  targetReps: number;
-  equipment: string;
-  location: string;
-  completed: boolean;
-}
-
-export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
-  // State Management
+export const EnhancedWorkoutLogger: React.FC = () => {
+  // Core State
   const [currentWeight, setCurrentWeight] = useState(190);
   const [currentReps, setCurrentReps] = useState(8);
   const [currentRPE, setCurrentRPE] = useState(3);
@@ -42,7 +30,6 @@ export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
   const [showTemplate, setShowTemplate] = useState(false);
   const [showDropSet, setShowDropSet] = useState(false);
   const [showFailureOptions, setShowFailureOptions] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentCarouselSlide, setCurrentCarouselSlide] = useState(0);
   const [voiceText, setVoiceText] = useState('🎤 "190 for 8, felt perfect"');
   const [previousSet, setPreviousSet] = useState('175 kg × 8 reps • RPE 7/10');
@@ -50,23 +37,6 @@ export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
   // Refs
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Mock workout data
-  const workoutData = {
-    name: 'Chest Day',
-    currentExercise: 'Bench Press',
-    exerciseIndex: 2,
-    totalExercises: 6,
-    currentSet: 3,
-    totalSets: 4,
-    exercises: [
-      { name: 'Barbell Bench Press', completed: true, sets: 4, reps: '8' },
-      { name: 'Bench Press', completed: false, sets: 4, reps: '8', current: true },
-      { name: 'Incline Dumbbell Press', completed: false, sets: 4, reps: '8-10' },
-      { name: 'Cable Chest Fly', completed: false, sets: 3, reps: '12' },
-      { name: 'Push-ups', completed: false, sets: 2, reps: 'AMRAP' }
-    ]
-  };
 
   // Audio System
   const initAudio = () => {
@@ -201,7 +171,6 @@ export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
 
   const completeNormalSet = () => {
     setShowFailureOptions(false);
-    updateSetProgress();
     updatePreviousSet();
     startRestTimer();
     
@@ -253,7 +222,6 @@ export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
     setPreviousSet(`${originalWeight}lbs → ${newWeight}lbs (Drop Set)`);
     
     setShowDropSet(false);
-    updateSetProgress();
     startRestTimer();
     playSound('button');
   };
@@ -267,10 +235,6 @@ export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
   // Utility Functions
   const updatePreviousSet = () => {
     setPreviousSet(`${currentWeight} lbs × ${currentReps} reps • RPE ${currentRPE}/5`);
-  };
-
-  const updateSetProgress = () => {
-    // Update set progress logic
   };
 
   const formatTime = (seconds: number) => {
@@ -301,11 +265,11 @@ export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
       {/* Exercise Header */}
       <div className="card card-elevated">
         <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-2">
-          {workoutData.name} • Exercise {workoutData.exerciseIndex}/{workoutData.totalExercises}
+          Chest Day • Exercise 2/6
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2">{workoutData.currentExercise}</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Bench Press</h1>
         <div className="text-gray-300">
-          Set {workoutData.currentSet} of {workoutData.totalSets} • Personal record zone
+          Set 3 of 4 • Personal record zone
         </div>
         
         {/* Workout Template Toggle */}
@@ -591,10 +555,7 @@ export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
         <div className="flex transition-transform duration-300" style={{ transform: `translateX(-${currentCarouselSlide * 50}%)` }}>
           {/* Progress Card */}
           <div className="flex-shrink-0 w-1/2 pr-2">
-            <div 
-              onClick={() => setShowAnalytics(!showAnalytics)}
-              className="p-4 glass-strong backdrop-blur-xl rounded-2xl border border-gray-800 cursor-pointer hover:scale-105 transition-modern"
-            >
+            <div className="p-4 glass-strong backdrop-blur-xl rounded-2xl border border-gray-800 cursor-pointer hover:scale-105 transition-modern">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold text-white">Workout Progress</div>
                 <div className="text-gray-400">⌃</div>
@@ -681,4 +642,4 @@ export const WorkoutLoggerTab: React.FC<{ workout: any }> = ({ workout }) => {
       </div>
     </div>
   );
-};
+}; 
