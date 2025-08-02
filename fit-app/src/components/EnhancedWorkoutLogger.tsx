@@ -2266,7 +2266,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
       {/* Enhanced Rest Timer Modal */}
       <RestTimer
-        timeRemaining={restTime}
+        initialTime={restTime}
         isVisible={showRestTimerModal}
         soundEnabled={restTimerSoundEnabled}
         onComplete={() => {
@@ -2276,18 +2276,10 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         onSkip={() => {
           setShowRestTimerModal(false);
           setTimerRunning(false);
-          if (timerIntervalRef.current) {
-            clearInterval(timerIntervalRef.current);
-            timerIntervalRef.current = null;
-          }
         }}
         onClose={() => {
           setShowRestTimerModal(false);
           setTimerRunning(false);
-          if (timerIntervalRef.current) {
-            clearInterval(timerIntervalRef.current);
-            timerIntervalRef.current = null;
-          }
         }}
         onSoundToggle={setRestTimerSoundEnabled}
         onOpenSettings={() => setShowRestTimerSettings(true)}

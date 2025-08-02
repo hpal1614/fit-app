@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Clock, Play, Pause, SkipForward, Volume2, VolumeX, Settings, Plus, Minus } from 'lucide-react';
 
 interface RestTimerProps {
-  timeRemaining: number;
+  initialTime?: number;
   onComplete?: () => void;
   onSkip?: () => void;
   onClose?: () => void;
@@ -15,7 +15,7 @@ interface RestTimerProps {
 }
 
 export const RestTimer: React.FC<RestTimerProps> = ({
-  timeRemaining,
+  initialTime = 120,
   onComplete,
   onSkip,
   onClose,
@@ -26,10 +26,13 @@ export const RestTimer: React.FC<RestTimerProps> = ({
   onSoundToggle,
   onOpenSettings
 }) => {
+  const [timeRemaining, setTimeRemaining] = useState(initialTime);
   const [isPaused, setIsPaused] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const completionAudioRef = useRef<HTMLAudioElement | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize audio elements
   useEffect(() => {
@@ -45,23 +48,72 @@ export const RestTimer: React.FC<RestTimerProps> = ({
     audioRef.current.volume = 0.3;
   }, []);
 
-  // Handle completion
+  // Start timer when component becomes visible
   useEffect(() => {
-    if (timeRemaining <= 0 && onComplete) {
-      setShowCompletionMessage(true);
-      
-      // Play completion sound
-      if (soundEnabled && completionAudioRef.current) {
-        completionAudioRef.current.play().catch(console.error);
-      }
-      
-      // Hide completion message after 3 seconds
-      setTimeout(() => {
-        setShowCompletionMessage(false);
-        onComplete();
-      }, 3000);
+    if (isVisible && !isRunning) {
+      setTimeRemaining(initialTime);
+      setIsRunning(true);
+      setIsPaused(false);
+      startTimer();
     }
-  }, [timeRemaining, onComplete, soundEnabled]);
+  }, [isVisible, initialTime]);
+
+  // Timer logic
+  const startTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+    
+    timerIntervalRef.current = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          clearInterval(timerIntervalRef.current!);
+          timerIntervalRef.current = null;
+          setIsRunning(false);
+          setShowCompletionMessage(true);
+          
+          // Play completion sound
+          if (soundEnabled && completionAudioRef.current) {
+            completionAudioRef.current.play().catch(console.error);
+          }
+          
+          // Hide completion message after 3 seconds
+          setTimeout(() => {
+            setShowCompletionMessage(false);
+            if (onComplete) onComplete();
+          }, 3000);
+          
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Pause/Resume timer
+  const pauseTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setIsPaused(true);
+  };
+
+  const resumeTimer = () => {
+    if (isPaused && isRunning) {
+      startTimer();
+      setIsPaused(false);
+    }
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Play button sound
   const playButtonSound = () => {
@@ -86,18 +138,34 @@ export const RestTimer: React.FC<RestTimerProps> = ({
 
   // Handle pause/resume
   const handlePauseResume = () => {
-    setIsPaused(!isPaused);
+    if (isPaused) {
+      resumeTimer();
+    } else {
+      pauseTimer();
+    }
     playButtonSound();
   };
 
   // Handle skip
   const handleSkip = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setIsRunning(false);
+    setIsPaused(false);
     playButtonSound();
     if (onSkip) onSkip();
   };
 
   // Handle close
   const handleClose = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setIsRunning(false);
+    setIsPaused(false);
     playButtonSound();
     if (onClose) onClose();
   };
@@ -111,6 +179,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
 
   // Handle time adjustment
   const handleTimeAdjust = (seconds: number) => {
+    setTimeRemaining(prev => Math.max(10, prev + seconds));
     if (onTimeAdjust) onTimeAdjust(seconds);
     playButtonSound();
   };
