@@ -2306,11 +2306,11 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         <div className="fixed bottom-5 right-5 z-40">
           <button
             onClick={() => setShowRestTimerModal(true)}
-            className="p-3 glass-strong backdrop-blur-xl rounded-full shadow-lg hover:bg-white/10 transition-modern"
+            className="p-4 glass-strong backdrop-blur-xl rounded-full shadow-lg hover:bg-white/10 transition-modern animate-pulse"
             title="Rest Timer Active - Click to view"
           >
             <div className="text-center">
-              <div className="text-lg font-bold text-white">
+              <div className="text-xl font-bold text-white">
                 {formatTime(restTime)}
               </div>
               <div className="text-xs text-gray-300">Rest</div>

@@ -46,8 +46,19 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md animate-fade-in-up">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-t-2xl shadow-2xl p-6 w-full max-w-md animate-slide-up-from-bottom"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Drag Handle */}
+        <div className="flex justify-center mb-4">
+          <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+        </div>
+        
         <div className="text-center">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
