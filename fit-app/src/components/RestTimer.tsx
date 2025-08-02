@@ -36,58 +36,48 @@ export const RestTimer: React.FC<RestTimerProps> = ({
 
   // Initialize audio elements
   useEffect(() => {
-    // Create audio context for better sound control
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    // Create completion sound function
-    const playCompletionSound = () => {
-      if (!soundEnabled) return;
-      
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      // Create a whistle-like sound
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
-      oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.2);
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.3);
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.5);
+    // Create simple beep sound using oscillator
+    const createBeep = (frequency: number, duration: number) => {
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = frequency;
+        gainNode.gain.value = 0.3;
+        
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + duration);
+        
+        // Cleanup after sound plays
+        setTimeout(() => {
+          audioContext.close();
+        }, duration * 1000 + 100);
+      } catch (error) {
+        console.error('Error creating beep sound:', error);
+      }
     };
     
-    // Create button sound function
+    // Create sound functions
+    const playCompletionSound = () => {
+      if (!soundEnabled) return;
+      // Play a sequence of beeps for completion
+      createBeep(800, 0.2);
+      setTimeout(() => createBeep(1000, 0.2), 200);
+      setTimeout(() => createBeep(1200, 0.2), 400);
+    };
+    
     const playButtonSound = () => {
       if (!soundEnabled) return;
-      
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-      
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.1);
+      createBeep(400, 0.1);
     };
     
     // Store the sound functions
     completionAudioRef.current = { play: playCompletionSound };
     audioRef.current = { play: playButtonSound };
-    
-    // Cleanup
-    return () => {
-      audioContext.close();
-    };
   }, [soundEnabled]);
 
   // Start timer when component becomes visible
@@ -216,9 +206,27 @@ export const RestTimer: React.FC<RestTimerProps> = ({
   const handleSoundToggle = () => {
     const newSoundEnabled = !soundEnabled;
     if (onSoundToggle) onSoundToggle(newSoundEnabled);
-    // Test sound when toggling
+    // Test sound when toggling - this ensures user interaction
     if (newSoundEnabled && audioRef.current) {
-      audioRef.current.play();
+      // Create a new audio context on user interaction
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 400;
+        gainNode.gain.value = 0.3;
+        
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.1);
+        
+        setTimeout(() => audioContext.close(), 200);
+      } catch (error) {
+        console.error('Error playing test sound:', error);
+      }
     }
   };
 
@@ -274,8 +282,55 @@ export const RestTimer: React.FC<RestTimerProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    if (soundEnabled && completionAudioRef.current) {
-                      completionAudioRef.current.play();
+                    if (soundEnabled) {
+                      // Create a new audio context on user interaction
+                      try {
+                        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        // Play completion sound sequence
+                        oscillator.frequency.value = 800;
+                        gainNode.gain.value = 0.3;
+                        
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.2);
+                        
+                        setTimeout(() => {
+                          const oscillator2 = audioContext.createOscillator();
+                          const gainNode2 = audioContext.createGain();
+                          
+                          oscillator2.connect(gainNode2);
+                          gainNode2.connect(audioContext.destination);
+                          
+                          oscillator2.frequency.value = 1000;
+                          gainNode2.gain.value = 0.3;
+                          
+                          oscillator2.start();
+                          oscillator2.stop(audioContext.currentTime + 0.2);
+                        }, 200);
+                        
+                        setTimeout(() => {
+                          const oscillator3 = audioContext.createOscillator();
+                          const gainNode3 = audioContext.createGain();
+                          
+                          oscillator3.connect(gainNode3);
+                          gainNode3.connect(audioContext.destination);
+                          
+                          oscillator3.frequency.value = 1200;
+                          gainNode3.gain.value = 0.3;
+                          
+                          oscillator3.start();
+                          oscillator3.stop(audioContext.currentTime + 0.2);
+                        }, 400);
+                        
+                        setTimeout(() => audioContext.close(), 800);
+                      } catch (error) {
+                        console.error('Error playing test sound:', error);
+                      }
                     }
                   }}
                   className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
