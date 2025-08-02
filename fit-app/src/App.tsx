@@ -52,6 +52,7 @@ import { IntegratedAICoach } from './components/ai/IntegratedAICoach';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
+import { WorkoutExerciseConnector } from './components/WorkoutExerciseConnector';
 
 // Hooks & Services
 import { useWorkout } from './hooks/useWorkout';
@@ -72,7 +73,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'ai-coach' | 'nutrition' | 'analytics' | 'profile';
+type TabType = 'workouts' | 'generator' | 'ai-coach' | 'nutrition' | 'analytics' | 'profile' | 'connector';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -171,6 +172,7 @@ function App() {
     { key: 'ai-coach', label: 'AI Coach', icon: Brain },
     { key: 'nutrition', label: 'Nutrition', icon: Apple },
     { key: 'analytics', label: 'Stats', icon: TrendingUp },
+    { key: 'connector', label: 'Connector', icon: Plus },
     { key: 'profile', label: 'Profile', icon: User, badge: showNotificationBadge ? 1 : undefined }
   ];
 
@@ -297,6 +299,7 @@ function App() {
           )}
           {activeTab === 'nutrition' && <NimbusNutritionTracker />}
           {activeTab === 'analytics' && <AnalyticsDashboard />}
+          {activeTab === 'connector' && <WorkoutExerciseConnector />}
           {activeTab === 'profile' && (
             <div className="space-y-modern">
               <div className="card card-elevated">
