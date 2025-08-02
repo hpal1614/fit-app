@@ -2291,6 +2291,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         }}
         onSoundToggle={setRestTimerSoundEnabled}
         onOpenSettings={() => setShowRestTimerSettings(true)}
+        onTimeAdjust={adjustTimerTime}
       />
 
       {/* Rest Timer Settings Modal */}

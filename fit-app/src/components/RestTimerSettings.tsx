@@ -47,49 +47,49 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center p-4"
+      className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end justify-center p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-t-2xl shadow-2xl p-6 w-full max-w-md animate-slide-up-from-bottom"
+        className="bg-gray-900 rounded-t-2xl shadow-2xl p-6 w-full max-w-md animate-slide-up-from-bottom"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle */}
         <div className="flex justify-center mb-4">
-          <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          <div className="w-12 h-1 bg-gray-600 rounded-full"></div>
         </div>
         
         <div className="text-center">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
-              <Settings size={24} className="text-gray-600" />
-              <h3 className="text-xl font-bold text-gray-900">Rest Timer Settings</h3>
+              <Settings size={24} className="text-gray-400" />
+              <h3 className="text-xl font-bold text-white">Rest Timer Settings</h3>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
               title="Close Settings"
             >
-              ✕
+              <span className="text-gray-400 text-lg">✕</span>
             </button>
           </div>
 
           {/* Sound Settings */}
           <div className="mb-6">
-            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+            <h4 className="font-semibold text-gray-200 mb-3 flex items-center">
               <Volume2 size={16} className="mr-2" />
               Sound Settings
             </h4>
             
             <div className="space-y-3">
               {/* Sound Toggle */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">Enable Sounds</span>
+              <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                <span className="text-sm font-medium text-gray-300">Enable Sounds</span>
                 <button
                   onClick={() => handleSettingChange('soundEnabled', !localSettings.soundEnabled)}
                   className={`w-12 h-6 rounded-full transition-colors ${
-                    localSettings.soundEnabled ? 'bg-blue-500' : 'bg-gray-300'
+                    localSettings.soundEnabled ? 'bg-blue-500' : 'bg-gray-600'
                   }`}
                 >
                   <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
@@ -101,7 +101,7 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
               {/* Completion Sound */}
               {localSettings.soundEnabled && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Completion Sound</label>
+                  <label className="text-sm font-medium text-gray-300">Completion Sound</label>
                   <div className="grid grid-cols-2 gap-2">
                     {soundOptions.map(option => (
                       <button
@@ -109,12 +109,12 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
                         onClick={() => handleSettingChange('completionSound', option.value)}
                         className={`p-3 rounded-lg border-2 transition-colors ${
                           localSettings.completionSound === option.value
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-blue-500 bg-blue-900/50 text-blue-300'
+                            : 'border-gray-600 hover:border-gray-500 bg-gray-800'
                         }`}
                       >
                         <div className="text-lg mb-1">{option.icon}</div>
-                        <div className="text-xs">{option.label}</div>
+                        <div className="text-xs text-gray-300">{option.label}</div>
                       </button>
                     ))}
                   </div>
@@ -125,7 +125,7 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
 
           {/* Timer Settings */}
           <div className="mb-6">
-            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+            <h4 className="font-semibold text-gray-200 mb-3 flex items-center">
               <Clock size={16} className="mr-2" />
               Timer Settings
             </h4>
@@ -133,11 +133,11 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
             <div className="space-y-3">
               {/* Default Rest Time */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Default Rest Time</label>
+                <label className="text-sm font-medium text-gray-300">Default Rest Time</label>
                 <select
                   value={localSettings.defaultRestTime}
                   onChange={(e) => handleSettingChange('defaultRestTime', parseInt(e.target.value))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-600 bg-gray-800 text-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {defaultRestTimes.map(option => (
                     <option key={option.value} value={option.value}>
@@ -148,12 +148,12 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
               </div>
 
               {/* Auto Start Next Set */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">Auto-start next set</span>
+              <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                <span className="text-sm font-medium text-gray-300">Auto-start next set</span>
                 <button
                   onClick={() => handleSettingChange('autoStartNextSet', !localSettings.autoStartNextSet)}
                   className={`w-12 h-6 rounded-full transition-colors ${
-                    localSettings.autoStartNextSet ? 'bg-green-500' : 'bg-gray-300'
+                    localSettings.autoStartNextSet ? 'bg-green-500' : 'bg-gray-600'
                   }`}
                 >
                   <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
@@ -166,19 +166,19 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
 
           {/* Display Settings */}
           <div className="mb-6">
-            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+            <h4 className="font-semibold text-gray-200 mb-3 flex items-center">
               <Bell size={16} className="mr-2" />
               Display Settings
             </h4>
             
             <div className="space-y-3">
               {/* Motivational Messages */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">Show motivational messages</span>
+              <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                <span className="text-sm font-medium text-gray-300">Show motivational messages</span>
                 <button
                   onClick={() => handleSettingChange('showMotivationalMessages', !localSettings.showMotivationalMessages)}
                   className={`w-12 h-6 rounded-full transition-colors ${
-                    localSettings.showMotivationalMessages ? 'bg-purple-500' : 'bg-gray-300'
+                    localSettings.showMotivationalMessages ? 'bg-purple-500' : 'bg-gray-600'
                   }`}
                 >
                   <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
@@ -193,7 +193,7 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 p-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex-1 p-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
             >
               Close
             </button>
@@ -210,7 +210,7 @@ export const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({
                 setLocalSettings(defaultSettings);
                 onSettingsChange(defaultSettings);
               }}
-              className="flex-1 p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Reset to Defaults
             </button>
