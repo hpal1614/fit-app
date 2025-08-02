@@ -12,6 +12,7 @@ import { EXERCISE_DATABASE, getExercisesByMuscleGroup, searchExercises } from '.
 import { MuscleGroup } from '../types/workout';
 import { DatabaseService } from '../services/databaseService';
 import RestTimer from './RestTimer';
+import RestTimerSettings from './RestTimerSettings';
 
 interface Set {
   id: string;
@@ -100,7 +101,15 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   
   // New Rest Timer Modal State
   const [showRestTimerModal, setShowRestTimerModal] = useState(false);
+  const [showRestTimerSettings, setShowRestTimerSettings] = useState(false);
   const [restTimerSoundEnabled, setRestTimerSoundEnabled] = useState(true);
+  const [restTimerSettings, setRestTimerSettings] = useState({
+    soundEnabled: true,
+    defaultRestTime: 120,
+    completionSound: 'whistle' as const,
+    showMotivationalMessages: true,
+    autoStartNextSet: false
+  });
   
   // Refs
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -2281,6 +2290,15 @@ export const EnhancedWorkoutLogger: React.FC = () => {
           }
         }}
         onSoundToggle={setRestTimerSoundEnabled}
+        onOpenSettings={() => setShowRestTimerSettings(true)}
+      />
+
+      {/* Rest Timer Settings Modal */}
+      <RestTimerSettings
+        isVisible={showRestTimerSettings}
+        onClose={() => setShowRestTimerSettings(false)}
+        settings={restTimerSettings}
+        onSettingsChange={setRestTimerSettings}
       />
 
       {/* Floating Rest Timer Indicator */}

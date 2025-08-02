@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Clock, Play, Pause, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Clock, Play, Pause, SkipForward, Volume2, VolumeX, Settings } from 'lucide-react';
 
 interface RestTimerProps {
   timeRemaining: number;
@@ -10,6 +10,7 @@ interface RestTimerProps {
   isVisible?: boolean;
   soundEnabled?: boolean;
   onSoundToggle?: (enabled: boolean) => void;
+  onOpenSettings?: () => void;
 }
 
 export const RestTimer: React.FC<RestTimerProps> = ({
@@ -20,7 +21,8 @@ export const RestTimer: React.FC<RestTimerProps> = ({
   className = '',
   isVisible = false,
   soundEnabled = true,
-  onSoundToggle
+  onSoundToggle,
+  onOpenSettings
 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [showCompletionMessage, setShowCompletionMessage] = useState(false);
@@ -138,6 +140,15 @@ export const RestTimer: React.FC<RestTimerProps> = ({
               >
                 {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
               </button>
+              {onOpenSettings && (
+                <button
+                  onClick={onOpenSettings}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  title="Timer Settings"
+                >
+                  <Settings size={16} />
+                </button>
+              )}
               <button
                 onClick={handleClose}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
