@@ -4,9 +4,13 @@ import {
   Plus, Minus, Mic, Settings, RotateCcw, SkipForward, 
   AlertTriangle, Heart, Dumbbell, Clock, TrendingUp, 
   ChevronDown, ChevronUp, Check, X, ArrowRight, ArrowLeft,
-  RefreshCw, Shield, Lightbulb, MapPin, Users, Wifi
+  RefreshCw, Shield, Lightbulb, Users, Wifi
 } from 'lucide-react';
 import { getFixedVoiceService } from '../services/fixedVoiceService';
+import { nimbusAI } from '../nimbus/services/NimbusAIService';
+import { EXERCISE_DATABASE, getExercisesByMuscleGroup, searchExercises } from '../constants/exercises';
+import { MuscleGroup } from '../types/workout';
+import { DatabaseService } from '../services/databaseService';
 
 interface Set {
   id: string;
@@ -28,16 +32,11 @@ interface AlternativeExercise {
   equipment: string;
 }
 
-interface EquipmentStatus {
-  name: string;
-  status: 'available' | 'busy' | 'maintenance';
-  waitTime?: string;
-  location?: string;
-}
+
 
 interface SmartSuggestion {
   id: string;
-  type: 'weight' | 'exercise' | 'form' | 'equipment' | 'motivation';
+  type: 'weight' | 'exercise' | 'form' | 'motivation';
   message: string;
   action?: () => void;
   priority: 'low' | 'medium' | 'high';
@@ -55,7 +54,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [showTemplate, setShowTemplate] = useState(false);
   const [showDropSet, setShowDropSet] = useState(false);
   const [showFailureOptions, setShowFailureOptions] = useState(false);
-  const [currentCarouselSlide, setCurrentCarouselSlide] = useState(0);
   const [voiceText, setVoiceText] = useState('🎤 "190 for 8, felt perfect"');
   const [previousSet, setPreviousSet] = useState('175 kg × 8 reps • RPE 7/10');
   
@@ -63,12 +61,29 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [showAlternativesModal, setShowAlternativesModal] = useState(false);
   const [showDifficultyModal, setShowDifficultyModal] = useState(false);
   const [showPainModal, setShowPainModal] = useState(false);
-  const [selectedReason, setSelectedReason] = useState<'equipment' | 'difficulty' | 'pain'>('equipment');
+  const [selectedReason, setSelectedReason] = useState<'difficulty' | 'pain'>('difficulty');
   const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([]);
-  const [equipmentStatus, setEquipmentStatus] = useState<EquipmentStatus[]>([]);
   const [voiceService, setVoiceService] = useState<ReturnType<typeof getFixedVoiceService> | null>(null);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [voiceConfidence, setVoiceConfidence] = useState(0);
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(1);
+  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [completedSets, setCompletedSets] = useState(2); // Track completed sets
+  const [showAlternativeExercises, setShowAlternativeExercises] = useState(false);
+  const [alternativeExercises, setAlternativeExercises] = useState<any[]>([]);
+  const [isGeneratingAlternatives, setIsGeneratingAlternatives] = useState(false);
+  const [showExerciseSwapper, setShowExerciseSwapper] = useState(false);
+  const [allExercises, setAllExercises] = useState<any[]>([]);
+  const [isLoadingAllExercises, setIsLoadingAllExercises] = useState(false);
+  const [overallWorkoutProgress, setOverallWorkoutProgress] = useState(0);
+  const [completedExercises, setCompletedExercises] = useState<number[]>([]);
+  const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
+  const [showProgressInfo, setShowProgressInfo] = useState(false);
+  const [weightSuggestion, setWeightSuggestion] = useState<string>('');
+  const [suggestionReason, setSuggestionReason] = useState<string>('');
+  const [exerciseHistory, setExerciseHistory] = useState<Set[]>([]);
   
   // Refs
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -220,6 +235,14 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     updatePreviousSet();
     startRestTimer();
     
+    // Increment completed sets
+    setCompletedSets(prev => prev + 1);
+    
+    // Check if exercise is completed for auto-advance
+    setTimeout(() => {
+      checkExerciseCompletion();
+    }, 500);
+    
     // Smart auto-progression
     setTimeout(() => {
       if (currentRPE <= 2) {
@@ -347,31 +370,67 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     };
   }, []);
 
-  // Initialize Equipment Status
+  // Update overall progress when exercises change
   useEffect(() => {
-    const mockEquipmentStatus: EquipmentStatus[] = [
-      { name: 'Bench Press', status: 'available', location: 'Free Weights Area' },
-      { name: 'Incline Bench', status: 'busy', waitTime: '~5 min', location: 'Free Weights Area' },
-      { name: 'Cable Machine', status: 'available', location: 'Cable Station' },
-      { name: 'Dumbbells 25-30lbs', status: 'available', location: 'Dumbbell Rack' },
-      { name: 'Squat Rack', status: 'maintenance', location: 'Powerlifting Area' }
-    ];
-    
-    setEquipmentStatus(mockEquipmentStatus);
-    
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      setEquipmentStatus(prev => 
-        prev.map(item => ({
-          ...item,
-          status: Math.random() > 0.8 ? 
-            (item.status === 'available' ? 'busy' : 'available') : item.status
-        }))
-      );
-    }, 30000); // Update every 30 seconds
+    setOverallWorkoutProgress(calculateOverallProgress());
+  }, [completedSets, completedExercises, currentExerciseIndex]);
 
-    return () => clearInterval(interval);
-  }, []);
+  // Update weight suggestions when RPE or sets change
+  useEffect(() => {
+    generateWeightSuggestion();
+  }, [currentRPE, completedSets, currentWeight]);
+
+  // Load exercise history and smart defaults
+  useEffect(() => {
+    loadExerciseHistory();
+  }, [currentExerciseIndex]);
+
+  // Load exercise history for smart defaults
+  const loadExerciseHistory = async () => {
+    try {
+      // Get the current exercise
+      const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+      if (!currentExercise) return;
+
+      // Load recent sets for this exercise from database
+      const db = DatabaseService.getInstance();
+      const workoutHistory = await db.getWorkoutHistory(20); // Last 20 workouts
+      
+      const exerciseSets: Set[] = [];
+      workoutHistory.forEach(workout => {
+        workout.exercises.forEach(exercise => {
+          if (exercise.exercise.name.toLowerCase().includes(currentExercise.name.toLowerCase())) {
+            exercise.sets.forEach(set => {
+              if (set.completed) {
+                exerciseSets.push(set);
+              }
+            });
+          }
+        });
+      });
+
+      setExerciseHistory(exerciseSets);
+
+      // Set smart defaults based on recent performance
+      if (exerciseSets.length > 0) {
+        const recentSets = exerciseSets.slice(-3); // Last 3 sets
+        const avgWeight = recentSets.reduce((sum, set) => sum + set.weight, 0) / recentSets.length;
+        const avgReps = recentSets.reduce((sum, set) => sum + set.reps, 0) / recentSets.length;
+        
+        // Set smart defaults
+        setCurrentWeight(Math.round(avgWeight));
+        setCurrentReps(Math.round(avgReps));
+        
+        // Update previous set display
+        const lastSet = recentSets[recentSets.length - 1];
+        if (lastSet) {
+          setPreviousSet(`${lastSet.weight} lbs × ${lastSet.reps} reps • RPE ${lastSet.rpe}/5`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load exercise history:', error);
+    }
+  };
 
   // Generate Smart Suggestions
   useEffect(() => {
@@ -397,16 +456,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         });
       }
       
-      // Equipment availability suggestions
-      const busyEquipment = equipmentStatus.filter(e => e.status === 'busy');
-      if (busyEquipment.length > 0) {
-        suggestions.push({
-          id: 'equipment-busy',
-          type: 'equipment',
-          message: `${busyEquipment[0].name} is busy. Available in ${busyEquipment[0].waitTime}`,
-          priority: 'medium'
-        });
-      }
+
       
       // Form suggestions
       if (currentRPE >= 4 && currentReps < 6) {
@@ -433,7 +483,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
     const newSuggestions = generateSuggestions();
     setSmartSuggestions(newSuggestions);
-  }, [currentRPE, currentReps, currentIncrement, equipmentStatus]);
+  }, [currentRPE, currentReps, currentIncrement]);
 
   // Process Voice Commands
   const processVoiceCommand = (transcript: string) => {
@@ -533,14 +583,8 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   };
 
   // Helper Functions for Modals
-  const getAlternativeExercises = (reason: 'equipment' | 'difficulty' | 'pain'): AlternativeExercise[] => {
+  const getAlternativeExercises = (reason: 'difficulty' | 'pain'): AlternativeExercise[] => {
     const alternatives: Record<string, AlternativeExercise[]> = {
-      equipment: [
-        { id: 'incline-bench', name: 'Incline Barbell Press', muscles: 'Chest, Shoulders', reason: 'Uses incline bench instead', equipment: 'Incline bench + Barbell' },
-        { id: 'dumbbell-bench', name: 'Dumbbell Bench Press', muscles: 'Chest, Triceps', reason: 'Only needs dumbbells', equipment: 'Dumbbells + Flat bench' },
-        { id: 'push-ups', name: 'Push-ups', muscles: 'Chest, Triceps', reason: 'No equipment needed', equipment: 'Bodyweight only' },
-        { id: 'cable-press', name: 'Cable Chest Press', muscles: 'Chest, Triceps', reason: 'Uses cable machine', equipment: 'Cable machine + D-handles' }
-      ],
       difficulty: [
         { id: 'incline-dumbbell', name: 'Incline Dumbbell Press', muscles: 'Chest, Shoulders', reason: 'Easier angle', equipment: 'Incline bench + Dumbbells' },
         { id: 'machine-press', name: 'Machine Chest Press', muscles: 'Chest, Triceps', reason: 'Guided movement', equipment: 'Chest press machine' },
@@ -555,7 +599,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       ]
     };
     
-    return alternatives[reason] || alternatives.equipment;
+    return alternatives[reason] || alternatives.difficulty;
   };
 
   const switchToExercise = (exercise: AlternativeExercise) => {
@@ -634,6 +678,307 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     showSmartSuggestion('Showing safe alternatives for your comfort.');
   };
 
+  // Workout exercises data
+  const workoutExercises = [
+    { id: 1, name: 'Bench Press', sets: 4, reps: '8-10', equipment: 'Barbell + Bench', status: 'current' },
+    { id: 2, name: 'Incline Dumbbell Press', sets: 3, reps: '8-10', equipment: 'Dumbbells + Incline Bench', status: 'next' },
+    { id: 3, name: 'Cable Chest Fly', sets: 3, reps: '12-15', equipment: 'Cable Machine', status: 'upcoming' },
+    { id: 4, name: 'Dips', sets: 3, reps: '8-12', equipment: 'Dip Bars', status: 'upcoming' },
+    { id: 5, name: 'Push-ups', sets: 3, reps: '15-20', equipment: 'Bodyweight', status: 'upcoming' },
+    { id: 6, name: 'Chest Stretch', sets: 1, reps: '30s hold', equipment: 'None', status: 'upcoming' }
+  ];
+
+  // Calculate workout progress
+  const calculateProgress = () => {
+    const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+    const totalSets = currentExercise?.sets || 4;
+    const progress = Math.round((completedSets / totalSets) * 100);
+    return Math.min(progress, 100);
+  };
+
+  // Calculate overall workout progress
+  const calculateOverallProgress = () => {
+    const totalExercises = workoutExercises.length;
+    const completedCount = completedExercises.length;
+    const currentExerciseProgress = completedSets / (workoutExercises.find(e => e.id === currentExerciseIndex)?.sets || 4);
+    
+    const overallProgress = ((completedCount + currentExerciseProgress) / totalExercises) * 100;
+    return Math.min(Math.round(overallProgress), 100);
+  };
+
+  // Auto-advance to next exercise
+  const advanceToNextExercise = () => {
+    const currentIndex = workoutExercises.findIndex(e => e.id === currentExerciseIndex);
+    const nextExercise = workoutExercises[currentIndex + 1];
+    
+    if (nextExercise) {
+      // Mark current exercise as completed
+      setCompletedExercises(prev => [...prev, currentExerciseIndex]);
+      
+      // Move to next exercise
+      setCurrentExerciseIndex(nextExercise.id);
+      setCompletedSets(0);
+      
+      // Start rest timer automatically
+      startRestTimer();
+      
+      // Show smart suggestion
+      showSmartSuggestion(`Moving to ${nextExercise.name}. Great work! 💪`);
+      
+      // Update overall progress
+      setOverallWorkoutProgress(calculateOverallProgress());
+      
+      playSound('complete');
+    } else {
+      // Workout completed!
+      setCompletedExercises(prev => [...prev, currentExerciseIndex]);
+      setOverallWorkoutProgress(100);
+      showSmartSuggestion('🎉 Workout completed! Amazing job today!');
+      playSound('complete');
+    }
+  };
+
+  // Check if exercise is completed and auto-advance
+  const checkExerciseCompletion = () => {
+    const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+    const totalSets = currentExercise?.sets || 4;
+    
+    if (completedSets >= totalSets && autoAdvanceEnabled) {
+      // Small delay to show completion
+      setTimeout(() => {
+        advanceToNextExercise();
+      }, 1500);
+    }
+  };
+
+  // Generate smart weight suggestions based on RPE and progression
+  const generateWeightSuggestion = () => {
+    const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+    const totalSets = currentExercise?.sets || 4;
+    
+    // Base suggestions on RPE and set completion
+    if (completedSets === 0) {
+      // First set - suggest based on previous performance
+      setWeightSuggestion(`${currentWeight} lbs`);
+      setSuggestionReason('Start with current weight');
+      return;
+    }
+    
+    // Analyze RPE patterns for completed sets
+    const rpeLevel = currentRPE;
+    const setsCompleted = completedSets;
+    const setsRemaining = totalSets - setsCompleted;
+    
+    let suggestedWeight = currentWeight;
+    let reason = '';
+    
+    if (rpeLevel <= 2) {
+      // Too easy - suggest increase
+      if (setsCompleted >= 2) {
+        suggestedWeight = currentWeight + 5;
+        reason = `RPE ${rpeLevel}/5 - Ready for progression!`;
+      } else {
+        suggestedWeight = currentWeight + 2.5;
+        reason = `RPE ${rpeLevel}/5 - Slightly increase weight`;
+      }
+    } else if (rpeLevel === 3) {
+      // Perfect - maintain or slight increase
+      if (setsCompleted >= 3) {
+        suggestedWeight = currentWeight + 2.5;
+        reason = `RPE ${rpeLevel}/5 - Perfect! Ready for small increase`;
+      } else {
+        suggestedWeight = currentWeight;
+        reason = `RPE ${rpeLevel}/5 - Perfect weight, maintain`;
+      }
+    } else if (rpeLevel === 4) {
+      // Challenging - maintain weight
+      suggestedWeight = currentWeight;
+      reason = `RPE ${rpeLevel}/5 - Challenging but doable`;
+    } else if (rpeLevel >= 5) {
+      // Too hard - suggest decrease
+      suggestedWeight = Math.max(currentWeight - 5, 0);
+      reason = `RPE ${rpeLevel}/5 - Consider reducing weight`;
+    }
+    
+    // Adjust for remaining sets
+    if (setsRemaining <= 1 && rpeLevel >= 4) {
+      suggestedWeight = Math.max(suggestedWeight - 2.5, 0);
+      reason += ' (Final set - reduce for safety)';
+    }
+    
+    // Ensure we don't suggest negative weight
+    suggestedWeight = Math.max(suggestedWeight, 0);
+    
+    setWeightSuggestion(`${suggestedWeight} lbs`);
+    setSuggestionReason(reason);
+  };
+
+  // Generate alternative exercises
+  // Load all exercises from database
+  const loadAllExercises = async () => {
+    if (isLoadingAllExercises) return;
+    
+    setIsLoadingAllExercises(true);
+    try {
+      // Get all exercises from our database
+      const allExercisesFromDB = EXERCISE_DATABASE.map(exercise => ({
+        id: exercise.id,
+        name: exercise.name,
+        category: exercise.category,
+        muscleGroups: exercise.muscleGroups,
+        equipment: exercise.equipment,
+        difficulty: exercise.difficulty,
+        instructions: exercise.instructions,
+        tips: exercise.tips
+      }));
+      
+      setAllExercises(allExercisesFromDB);
+    } catch (error) {
+      console.error('Failed to load exercises:', error);
+      setAllExercises([]);
+    } finally {
+      setIsLoadingAllExercises(false);
+    }
+  };
+
+  const generateAlternativeExercises = async () => {
+    if (isGeneratingAlternatives) return;
+    
+    setIsGeneratingAlternatives(true);
+    try {
+      const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+      
+      // First, try to find alternatives from our database
+      let alternatives = [];
+      
+      // Search by exercise name for variations
+      const searchResults = searchExercises(currentExercise?.name || '');
+      
+      // Get exercises that target similar muscle groups
+      const chestExercises = getExercisesByMuscleGroup(MuscleGroup.CHEST);
+      const shoulderExercises = getExercisesByMuscleGroup(MuscleGroup.SHOULDERS);
+      const tricepExercises = getExercisesByMuscleGroup(MuscleGroup.TRICEPS);
+      
+      // Combine and filter unique exercises
+      const allRelated = [...chestExercises, ...shoulderExercises, ...tricepExercises];
+      const uniqueAlternatives = allRelated.filter(exercise => 
+        exercise.name !== currentExercise?.name
+      ).slice(0, 5);
+      
+      alternatives = [...searchResults, ...uniqueAlternatives];
+      
+      // If we don't have enough alternatives, use AI to generate more
+      if (alternatives.length < 3) {
+        const prompt = `I'm doing ${currentExercise?.name} but want alternatives. Suggest 3-4 different exercises that target similar muscles (chest, shoulders, triceps) but use different equipment or movement patterns. Keep each suggestion under 30 words.`;
+        
+        let aiResponse = '';
+        const stream = nimbusAI.streamMessage(prompt, {
+          currentExercise: currentExercise?.name,
+          targetMuscles: ['chest', 'shoulders', 'triceps'],
+          needAlternatives: true
+        });
+        
+        for await (const chunk of stream) {
+          aiResponse += chunk;
+        }
+        
+        // Parse AI suggestions
+        const aiSuggestions = aiResponse
+          .split('\n')
+          .filter(line => line.trim().length > 0)
+          .map(line => line.replace(/^\d+\.\s*/, '').trim())
+          .slice(0, 3)
+          .map(suggestion => ({
+            id: `ai-${Date.now()}-${Math.random()}`,
+            name: suggestion,
+            equipment: 'AI Suggested',
+            reason: 'Alternative movement pattern'
+          }));
+        
+        alternatives = [...alternatives, ...aiSuggestions];
+      }
+      
+      setAlternativeExercises(alternatives.slice(0, 6));
+      
+    } catch (error) {
+      console.error('Alternative exercise generation failed:', error);
+      // Fallback alternatives
+      setAlternativeExercises([
+        { id: 'dumbbell-press', name: 'Dumbbell Bench Press', equipment: 'Dumbbells + Bench', reason: 'Similar movement, different equipment' },
+        { id: 'incline-press', name: 'Incline Barbell Press', equipment: 'Barbell + Incline Bench', reason: 'Upper chest focus' },
+        { id: 'push-ups', name: 'Push-ups', equipment: 'Bodyweight', reason: 'No equipment needed' },
+        { id: 'dips', name: 'Dips', equipment: 'Dip Bars', reason: 'Compound movement' },
+        { id: 'cable-press', name: 'Cable Chest Press', equipment: 'Cable Machine', reason: 'Constant tension' }
+      ]);
+    } finally {
+      setIsGeneratingAlternatives(false);
+    }
+  };
+
+  const generateAISuggestions = async () => {
+    if (isGeneratingAI) return;
+    
+    setIsGeneratingAI(true);
+    try {
+      const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+      const prompt = `I'm doing ${currentExercise?.name} with ${currentWeight} lbs for ${currentReps} reps. My RPE is ${currentRPE}/10. Give me 2-3 specific, actionable suggestions for this exercise. Keep each suggestion under 50 words.`;
+      
+      let fullResponse = '';
+      const stream = nimbusAI.streamMessage(prompt, {
+        currentExercise: currentExercise?.name,
+        currentWeight,
+        currentReps,
+        currentRPE,
+        workoutContext: 'strength training'
+      });
+      
+      for await (const chunk of stream) {
+        fullResponse += chunk;
+      }
+      
+      // Parse the response into individual suggestions
+      const suggestions = fullResponse
+        .split('\n')
+        .filter(line => line.trim().length > 0)
+        .map(line => line.replace(/^\d+\.\s*/, '').trim())
+        .slice(0, 3);
+      
+      setAiSuggestions(suggestions);
+    } catch (error) {
+      console.error('AI suggestion generation failed:', error);
+      setAiSuggestions([
+        "Focus on controlled breathing - inhale on the way down, exhale on the way up",
+        "Keep your core tight and maintain proper form throughout the movement",
+        "Consider your RPE - if it feels too easy, you might be ready to increase weight"
+      ]);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const selectExercise = (exerciseId: number) => {
+    setCurrentExerciseIndex(exerciseId);
+    setShowExerciseSelector(false);
+    showSmartSuggestion(`Switched to ${workoutExercises.find(e => e.id === exerciseId)?.name}`);
+    playSound('button');
+  };
+
+  const swapExercise = (newExercise: any) => {
+    // Update the current exercise in the workout
+    const updatedWorkoutExercises = workoutExercises.map(exercise => 
+      exercise.id === currentExerciseIndex 
+        ? { ...exercise, name: newExercise.name, equipment: newExercise.equipment }
+        : exercise
+    );
+    
+    // Reset progress for the new exercise
+    setCompletedSets(0);
+    
+    showSmartSuggestion(`Swapped to ${newExercise.name}`);
+    setShowExerciseSwapper(false);
+    playSound('button');
+  };
+
   const skipExercise = () => {
     showSmartSuggestion('Exercise skipped. Your safety comes first!');
     setShowPainModal(false);
@@ -645,12 +990,137 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     <div className="space-y-modern animate-fade-in-up">
       {/* Exercise Header */}
       <div className="card card-elevated">
-        <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-2">
-          Chest Day • Exercise 2/6
-        </div>
-        <h1 className="text-3xl font-bold text-white mb-2">Bench Press</h1>
-        <div className="text-gray-300">
-          Set 3 of 4 • Personal record zone
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-gray-400 font-medium tracking-wider uppercase">
+                Chest Day • Exercise {workoutExercises.findIndex(e => e.id === currentExerciseIndex) + 1}/{workoutExercises.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowProgressInfo(!showProgressInfo)}
+                  className="relative w-3 h-3 bg-blue-500 rounded-full hover:bg-blue-400 transition-all duration-300 animate-pulse hover:animate-none hover:scale-110 shadow-lg hover:shadow-blue-500/50 cursor-pointer group"
+                  title="Click for progress info"
+                >
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                    Click for info
+                  </div>
+                </button>
+                <span className="text-xs text-blue-400 font-medium">
+                  Workout: {calculateOverallProgress()}%
+                </span>
+              </div>
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">Bench Press</h1>
+            <div className="text-gray-300">
+              Set {completedSets + 1} of {workoutExercises.find(e => e.id === currentExerciseIndex)?.sets} • Personal record zone
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* Auto-Advance Toggle */}
+            <button
+              onClick={() => setAutoAdvanceEnabled(!autoAdvanceEnabled)}
+              className={`px-3 py-2 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                autoAdvanceEnabled 
+                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                  : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+              }`}
+            >
+              {autoAdvanceEnabled ? 'Auto ✓' : 'Auto ✗'}
+            </button>
+            
+            {/* Change Exercise Button */}
+            <button
+              onClick={() => {
+                setShowExerciseSwapper(!showExerciseSwapper);
+                if (!showExerciseSwapper) {
+                  loadAllExercises();
+                }
+              }}
+              disabled={isLoadingAllExercises}
+              className="px-3 py-2 text-xs bg-purple-500/20 text-purple-400 rounded-full hover:bg-purple-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              {isLoadingAllExercises ? (
+                <>
+                  <div className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Change Exercise
+                </>
+              )}
+            </button>
+            
+            {/* Alternative Exercise Button */}
+            <button
+              onClick={() => {
+                setShowAlternativeExercises(!showAlternativeExercises);
+                if (!showAlternativeExercises) {
+                  generateAlternativeExercises();
+                }
+              }}
+              disabled={isGeneratingAlternatives}
+              className="px-3 py-2 text-xs bg-lime-500/20 text-lime-400 rounded-full hover:bg-lime-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+            >
+              {isGeneratingAlternatives ? (
+                <>
+                  <div className="w-3 h-3 border border-lime-400 border-t-transparent rounded-full animate-spin"></div>
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Alternatives
+                </>
+              )}
+            </button>
+            
+            {/* Progress Ring */}
+            <div className="w-16 h-16 relative">
+              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
+                <span className="text-xs text-gray-400 font-medium">Exercise</span>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              </div>
+              <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+                {/* Background circle */}
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  stroke="rgba(34, 197, 94, 0.2)"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                {/* Progress circle */}
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  stroke="url(#progressGradient)"
+                  strokeWidth="4"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 28}`}
+                  strokeDashoffset={`${2 * Math.PI * 28 * (1 - calculateProgress() / 100)}`}
+                  className="transition-all duration-500 ease-out drop-shadow-lg"
+                  filter="drop-shadow(0 0 8px rgba(34, 197, 94, 0.3))"
+                />
+                {/* Gradient definition */}
+                <defs>
+                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#22c55e" />
+                    <stop offset="100%" stopColor="#4ade80" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-green-400">{calculateProgress()}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         
         {/* Workout Template Toggle */}
@@ -667,50 +1137,96 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         {/* Template Section */}
         {showTemplate && (
           <div className="mt-4 space-y-3 animate-fade-in">
-            {/* Current Progress */}
-            <div className="p-4 glass-strong border border-green-500/20 rounded-lg">
-              <div className="text-xs text-green-400 font-medium tracking-wider uppercase mb-2">
-                Current Progress
-              </div>
-              <div className="w-full h-2 bg-gray-800 rounded-full mb-2">
-                <div className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full" style={{ width: '75%' }}></div>
-              </div>
-              <div className="text-xs text-gray-400 text-center">Set 3 of 4 • 75% complete</div>
-            </div>
-            
-            {/* Next Exercise */}
+            {/* Exercise Selector */}
             <div className="p-4 glass rounded-lg">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs text-gray-400 font-medium tracking-wider uppercase">Up Next:</span>
-                <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">~3 min</span>
+                <span className="text-xs text-gray-400 font-medium tracking-wider uppercase">Choose Exercise:</span>
+                <button 
+                  onClick={() => setShowExerciseSelector(!showExerciseSelector)}
+                  className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full hover:bg-green-500/20 transition-colors"
+                >
+                  {showExerciseSelector ? 'Hide' : 'Show'}
+                </button>
               </div>
-              <div className="mb-3">
-                <div className="text-lg font-semibold text-white mb-1">Incline Dumbbell Press</div>
-                <div className="text-sm text-gray-400 mb-2">4 sets × 8-10 reps</div>
-                <div className="text-xs text-green-400 bg-green-500/10 px-3 py-1 rounded-lg inline-block">
-                  🏋️ Equipment: Incline bench + Dumbbells (25-30 lbs)
+              
+              {showExerciseSelector && (
+                <div className="space-y-2 mb-3">
+                  {workoutExercises.map((exercise) => (
+                    <button
+                      key={exercise.id}
+                      onClick={() => selectExercise(exercise.id)}
+                      className={`w-full p-3 rounded-lg text-left transition-modern ${
+                        exercise.id === currentExerciseIndex 
+                          ? 'glass-strong border border-green-500/20' 
+                          : 'glass hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-semibold text-white">{exercise.name}</div>
+                          <div className="text-xs text-gray-400">{exercise.sets} sets × {exercise.reps}</div>
+                          <div className="text-xs text-green-400">🏋️ {exercise.equipment}</div>
+                        </div>
+                        <div className={`text-xs px-2 py-1 rounded-full ${
+                          exercise.status === 'current' ? 'bg-blue-500/20 text-blue-400' :
+                          exercise.status === 'next' ? 'bg-green-500/20 text-green-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {exercise.status}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>📍</span>
-                <span>Usually available near free weights section</span>
+              )}
+              
+              {/* Current Exercise Info */}
+              <div className="p-3 glass-strong border border-green-500/20 rounded-lg">
+                <div className="text-sm font-semibold text-white mb-1">
+                  {workoutExercises.find(e => e.id === currentExerciseIndex)?.name}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {workoutExercises.find(e => e.id === currentExerciseIndex)?.sets} sets × {workoutExercises.find(e => e.id === currentExerciseIndex)?.reps}
+                </div>
+                <div className="text-xs text-green-400 mt-1">
+                  🏋️ {workoutExercises.find(e => e.id === currentExerciseIndex)?.equipment}
+                </div>
               </div>
             </div>
             
             {/* AI Suggestions */}
             <div className="p-4 glass rounded-lg border-l-4 border-purple-500">
-              <div className="text-xs text-purple-400 font-medium tracking-wider uppercase mb-3">
-                💡 AI Coach Says
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs text-purple-400 font-medium tracking-wider uppercase">
+                  💡 AI Coach Says
+                </div>
+                <button
+                  onClick={generateAISuggestions}
+                  disabled={isGeneratingAI}
+                  className="text-xs text-purple-400 bg-purple-500/10 px-2 py-1 rounded-full hover:bg-purple-500/20 transition-colors disabled:opacity-50"
+                >
+                  {isGeneratingAI ? 'Generating...' : 'Refresh'}
+                </button>
               </div>
               <div className="space-y-2">
-                <div className="flex items-start gap-2 p-2 glass rounded">
-                  <span className="text-sm">🎯</span>
-                  <span className="text-xs text-gray-300">Your bench is strong today - consider +5lbs on incline</span>
-                </div>
-                <div className="flex items-start gap-2 p-2 glass rounded">
-                  <span className="text-sm">⚡</span>
-                  <span className="text-xs text-gray-300">Incline bench is usually busy at this time - have backup ready</span>
-                </div>
+                {aiSuggestions.length > 0 ? (
+                  aiSuggestions.map((suggestion, index) => (
+                    <div key={index} className="flex items-start gap-2 p-2 glass rounded">
+                      <span className="text-sm">{index === 0 ? '🎯' : index === 1 ? '⚡' : '💪'}</span>
+                      <span className="text-xs text-gray-300">{suggestion}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4">
+                    <button
+                      onClick={generateAISuggestions}
+                      disabled={isGeneratingAI}
+                      className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                      {isGeneratingAI ? 'Generating AI suggestions...' : 'Get AI suggestions'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -940,34 +1456,11 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
       </div>
 
-      {/* Sticky Carousel */}
+      {/* Sticky Timer */}
       <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-[335px]">
-        <div className="flex transition-transform duration-300" style={{ transform: `translateX(-${currentCarouselSlide * 50}%)` }}>
-          {/* Progress Card */}
-          <div className="flex-shrink-0 w-1/2 pr-2">
-            <div className="p-4 glass-strong backdrop-blur-xl rounded-2xl border border-gray-800 cursor-pointer hover:scale-105 transition-modern">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-semibold text-white">Workout Progress</div>
-                <div className="text-gray-400">⌃</div>
-              </div>
-              <div className="flex items-center">
-                <div className="w-12 h-12 relative mr-4">
-                  <div className="w-full h-full rounded-full bg-gradient-to-r from-green-500 to-green-400 flex items-center justify-center">
-                    <div className="w-9 h-9 rounded-full bg-gray-900 flex items-center justify-center">
-                      <span className="text-xs font-semibold text-green-400">70%</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold text-white">Chest Day • Exercise 2/6</div>
-                  <div className="text-xs text-gray-400">Bench Press • Set 3 of 3 • PR Zone</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div className="w-full">
           {/* Timer Card */}
-          <div className="flex-shrink-0 w-1/2 pl-2">
+          <div className="w-full">
             <div className={`p-4 glass-strong backdrop-blur-xl rounded-2xl border transition-modern ${getTimerCardClass()}`}>
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold text-white">Rest Timer</div>
@@ -1015,20 +1508,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
           </div>
         </div>
 
-        {/* Carousel Dots */}
-        <div className="flex justify-center gap-2 mt-3">
-          {[0, 1].map(slide => (
-            <button
-              key={slide}
-              onClick={() => setCurrentCarouselSlide(slide)}
-              className={`w-1.5 h-1.5 rounded-full transition-modern ${
-                currentCarouselSlide === slide 
-                  ? 'bg-green-500 scale-125' 
-                  : 'bg-gray-600 hover:bg-green-500'
-              }`}
-            />
-          ))}
-        </div>
+
       </div>
 
       {/* Smart Suggestions Display */}
@@ -1160,6 +1640,216 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
       )}
 
+      {/* Exercise Swapper Modal */}
+      {showExerciseSwapper && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Change Exercise</h3>
+              <button
+                onClick={() => setShowExerciseSwapper(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-400 mb-3">
+                Choose any exercise from our database to replace the current exercise
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+                {['All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'].map(category => (
+                  <button
+                    key={category}
+                    className="px-3 py-2 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {allExercises.map((exercise) => (
+                <button
+                  key={exercise.id}
+                  onClick={() => swapExercise(exercise)}
+                  className="w-full p-4 glass rounded-lg text-left hover:bg-white/5 transition-modern"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="text-lg font-semibold text-white mb-1">{exercise.name}</div>
+                      <div className="text-sm text-gray-400 mb-2">
+                        {exercise.muscleGroups?.join(', ') || 'Multiple muscle groups'}
+                      </div>
+                      <div className="text-xs text-purple-400">
+                        Equipment: {exercise.equipment?.join(', ') || 'Bodyweight'}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 ml-4">
+                      Difficulty: {exercise.difficulty || 'N/A'}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-gray-800">
+              <p className="text-xs text-gray-500 text-center">
+                💡 Choose any exercise to completely replace your current exercise. Progress will reset for the new exercise.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alternative Exercises Modal */}
+      {showAlternativeExercises && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Alternative Exercises</h3>
+              <button
+                onClick={() => setShowAlternativeExercises(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {alternativeExercises.map((exercise) => (
+                <button
+                  key={exercise.id}
+                  onClick={() => {
+                    showSmartSuggestion(`Switched to ${exercise.name}`);
+                    setShowAlternativeExercises(false);
+                    playSound('button');
+                  }}
+                  className="w-full p-4 glass rounded-lg text-left hover:bg-white/5 transition-modern"
+                >
+                  <div className="text-lg font-semibold text-white mb-1">{exercise.name}</div>
+                  <div className="text-sm text-blue-400 mb-2">🏋️ {exercise.equipment}</div>
+                  <div className="text-xs text-gray-400">{exercise.reason}</div>
+                </button>
+              ))}
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-gray-800">
+              <p className="text-xs text-gray-500 text-center">
+                💡 AI-powered suggestions based on your current exercise and available equipment
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Progress Info Modal */}
+      {showProgressInfo && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Progress Tracking</h3>
+              <button
+                onClick={() => setShowProgressInfo(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="p-4 glass rounded-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-green-400 text-sm">●</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-white">Green Ring & Dot</div>
+                    <div className="text-xs text-gray-400">Current exercise progress</div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-300">
+                  Shows your progress for the current exercise (e.g., 3/4 sets completed = 75%)
+                </p>
+              </div>
+              
+              <div className="p-4 glass rounded-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-blue-400 text-sm">●</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-white">Blue Dot & Text</div>
+                    <div className="text-xs text-gray-400">Overall workout progress</div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-300">
+                  Shows your progress through the entire workout (e.g., 2/6 exercises completed = 33%)
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-gray-800">
+              <p className="text-xs text-gray-500 text-center">
+                💡 Green = Current Exercise • Blue = Overall Workout
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Workout Completion Modal */}
+      {overallWorkoutProgress === 100 && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md text-center">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-green-500 to-green-400 rounded-full flex items-center justify-center">
+              <span className="text-3xl">🎉</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4">Workout Complete!</h3>
+            <p className="text-gray-300 mb-6">
+              Amazing job! You've completed all {workoutExercises.length} exercises.
+            </p>
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between items-center p-3 glass rounded-lg">
+                <span className="text-gray-400">Exercises Completed</span>
+                <span className="text-white font-semibold">{workoutExercises.length}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 glass rounded-lg">
+                <span className="text-gray-400">Total Sets</span>
+                <span className="text-white font-semibold">
+                  {workoutExercises.reduce((total, exercise) => total + exercise.sets, 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 glass rounded-lg">
+                <span className="text-gray-400">Workout Duration</span>
+                <span className="text-white font-semibold">~45 min</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setOverallWorkoutProgress(0);
+                  setCompletedExercises([]);
+                  setCurrentExerciseIndex(1);
+                  setCompletedSets(0);
+                }}
+                className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Start New Workout
+              </button>
+              <button
+                onClick={() => setOverallWorkoutProgress(0)}
+                className="w-full p-3 glass text-gray-300 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                Review Workout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pain Report Modal */}
       {showPainModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1206,29 +1896,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
       )}
 
-      {/* Equipment Status Overlay */}
-      <div className="fixed top-4 left-4 z-40">
-        <div className="p-3 glass-strong rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <MapPin className="w-4 h-4 text-green-400" />
-            <span className="text-xs font-medium text-white">Equipment Status</span>
-          </div>
-          <div className="space-y-1">
-            {equipmentStatus.slice(0, 3).map(equipment => (
-              <div key={equipment.name} className="flex items-center gap-2 text-xs">
-                <div className={`w-2 h-2 rounded-full ${
-                  equipment.status === 'available' ? 'bg-green-500' :
-                  equipment.status === 'busy' ? 'bg-yellow-500' : 'bg-red-500'
-                }`}></div>
-                <span className="text-gray-300">{equipment.name}</span>
-                {equipment.waitTime && (
-                  <span className="text-gray-500">({equipment.waitTime})</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 }; 

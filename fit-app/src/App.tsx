@@ -24,7 +24,9 @@ import {
   Share2,
   BarChart3,
   Activity,
-  Sparkles
+  Sparkles,
+  X,
+  Camera
 } from 'lucide-react';
 
 // Nimbus UI Components
@@ -78,6 +80,8 @@ function App() {
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
   const [parsedWorkout, setParsedWorkout] = useState<NimbusPDFWorkout | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   // Initialize hooks
   const workout = useWorkout();
@@ -92,7 +96,8 @@ function App() {
     name: "Himanshu P",
     level: "Intermediate",
     team: "Transform",
-    avatar: "HP"
+    avatar: "HP",
+    profileImage: profileImage
   };
 
   const userStats: UserStats = {
@@ -112,6 +117,18 @@ function App() {
   useEffect(() => {
     databaseService.initialize();
   }, []);
+
+  // Handle escape key to close profile modal
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showProfileModal) {
+        setShowProfileModal(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showProfileModal]);
 
   // Initialize Phase 4 features
   useEffect(() => {
@@ -184,11 +201,25 @@ function App() {
       <div className="relative z-10 flex items-center justify-between p-6 pt-12">
         <div className="flex items-center space-x-4">
           <div className="relative">
-            <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-lg font-bold text-white">
-                {userProfile.avatar}
-              </span>
-            </div>
+            <button 
+              onClick={() => setShowProfileModal(true)}
+              className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group overflow-hidden relative"
+            >
+              {profileImage ? (
+                <img 
+                  src={profileImage} 
+                  alt={userProfile.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-lg font-bold text-white group-hover:text-lime-300 transition-colors">
+                  {userProfile.avatar}
+                </span>
+              )}
+              <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Camera className="w-5 h-5 text-white" />
+              </div>
+            </button>
             {workout.isActive && (
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
             )}
@@ -221,16 +252,34 @@ function App() {
         </div>
       </div>
 
-      {/* User Profile Card - Show on key tabs only */}
-      {['workouts', 'analytics', 'profile'].includes(activeTab) && (
-        <div className="relative z-10 mx-6 mb-6 animate-fade-in-up">
-          <div className="card card-elevated">
-            <UserProfileCard 
-              userProfile={userProfile} 
-              userStats={userStats}
-              isActiveWorkout={workout.isActive}
-              workoutDuration={workout.duration}
-            />
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowProfileModal(false)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-md animate-fade-in-up">
+            <div className="card card-elevated">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowProfileModal(false)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+              
+              <UserProfileCard 
+                userProfile={userProfile} 
+                userStats={userStats}
+                isActiveWorkout={workout.isActive}
+                workoutDuration={workout.duration}
+                onAvatarChange={setProfileImage}
+              />
+            </div>
           </div>
         </div>
       )}
