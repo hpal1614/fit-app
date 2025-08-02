@@ -36,17 +36,59 @@ export const RestTimer: React.FC<RestTimerProps> = ({
 
   // Initialize audio elements
   useEffect(() => {
-    // Create audio for timer completion (whistle sound)
-    completionAudioRef.current = new Audio();
-    // Using a simple beep sound for completion
-    completionAudioRef.current.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
-    completionAudioRef.current.volume = 0.7;
+    // Create audio context for better sound control
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     
-    // Create audio for button clicks
-    audioRef.current = new Audio();
-    audioRef.current.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
-    audioRef.current.volume = 0.3;
-  }, []);
+    // Create completion sound function
+    const playCompletionSound = () => {
+      if (!soundEnabled) return;
+      
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Create a whistle-like sound
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.2);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.3);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.5);
+    };
+    
+    // Create button sound function
+    const playButtonSound = () => {
+      if (!soundEnabled) return;
+      
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.1);
+    };
+    
+    // Store the sound functions
+    completionAudioRef.current = { play: playCompletionSound };
+    audioRef.current = { play: playButtonSound };
+    
+    // Cleanup
+    return () => {
+      audioContext.close();
+    };
+  }, [soundEnabled]);
 
   // Start timer when component becomes visible
   useEffect(() => {
@@ -74,7 +116,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
           
           // Play completion sound
           if (soundEnabled && completionAudioRef.current) {
-            completionAudioRef.current.play().catch(console.error);
+            completionAudioRef.current.play();
           }
           
           // Hide completion message after 3 seconds
@@ -118,7 +160,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
   // Play button sound
   const playButtonSound = () => {
     if (soundEnabled && audioRef.current) {
-      audioRef.current.play().catch(console.error);
+      audioRef.current.play();
     }
   };
 
@@ -174,7 +216,10 @@ export const RestTimer: React.FC<RestTimerProps> = ({
   const handleSoundToggle = () => {
     const newSoundEnabled = !soundEnabled;
     if (onSoundToggle) onSoundToggle(newSoundEnabled);
-    playButtonSound();
+    // Test sound when toggling
+    if (newSoundEnabled && audioRef.current) {
+      audioRef.current.play();
+    }
   };
 
   // Handle time adjustment
@@ -226,6 +271,17 @@ export const RestTimer: React.FC<RestTimerProps> = ({
                   title={soundEnabled ? 'Mute Sound' : 'Unmute Sound'}
                 >
                   {soundEnabled ? <Volume2 size={16} className="text-gray-400" /> : <VolumeX size={16} className="text-gray-400" />}
+                </button>
+                <button
+                  onClick={() => {
+                    if (soundEnabled && completionAudioRef.current) {
+                      completionAudioRef.current.play();
+                    }
+                  }}
+                  className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
+                  title="Test Completion Sound"
+                >
+                  <span className="text-gray-400 text-sm">🔊</span>
                 </button>
                 {onOpenSettings && (
                   <button
