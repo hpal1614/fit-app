@@ -11,6 +11,7 @@ import { nimbusAI } from '../nimbus/services/NimbusAIService';
 import { EXERCISE_DATABASE, getExercisesByMuscleGroup, searchExercises } from '../constants/exercises';
 import { MuscleGroup } from '../types/workout';
 import { DatabaseService } from '../services/databaseService';
+import RestTimer from './RestTimer';
 
 interface Set {
   id: string;
@@ -96,6 +97,10 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [weightSuggestion, setWeightSuggestion] = useState<string>('');
   const [suggestionReason, setSuggestionReason] = useState<string>('');
   const [exerciseHistory, setExerciseHistory] = useState<Set[]>([]);
+  
+  // New Rest Timer Modal State
+  const [showRestTimerModal, setShowRestTimerModal] = useState(false);
+  const [restTimerSoundEnabled, setRestTimerSoundEnabled] = useState(true);
   
   // Refs
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -208,6 +213,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
   const startRestTimer = () => {
     setTimerRunning(true);
+    setShowRestTimerModal(true);
     setCurrentCarouselSlide(1);
     
     if (timerIntervalRef.current) {
@@ -221,7 +227,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
           timerIntervalRef.current = null;
           setTimerRunning(false);
           setCurrentCarouselSlide(0);
-          playSound('complete');
           return 135;
         }
         return prev - 1;
@@ -1709,60 +1714,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
       </div>
 
-      {/* Sticky Timer */}
-      <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-[335px]">
-        <div className="w-full">
-          {/* Timer Card */}
-          <div className="w-full">
-            <div className={`p-4 glass-strong backdrop-blur-xl rounded-2xl border transition-modern ${getTimerCardClass()}`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-semibold text-white">Rest Timer</div>
-                <div className="text-gray-400">⏱</div>
-              </div>
-              <div className="text-3xl font-light text-white text-center mb-1">
-                {formatTime(restTime)}
-              </div>
-              <div className="text-xs text-gray-400 text-center mb-3">
-                {timerRunning ? 'Rest remaining' : 'Set your rest time'}
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <button 
-                  onClick={() => adjustTimerTime(-30)}
-                  className="w-8 h-8 rounded-full glass hover:bg-white/10 transition-modern flex items-center justify-center text-xs"
-                >
-                  -30
-                </button>
-                <button 
-                  onClick={() => adjustTimerTime(-10)}
-                  className="w-8 h-8 rounded-full glass hover:bg-white/10 transition-modern flex items-center justify-center text-xs"
-                >
-                  -10
-                </button>
-                <button 
-                  onClick={toggleTimer}
-                  className="w-10 h-10 rounded-full glass hover:bg-white/10 transition-modern flex items-center justify-center"
-                >
-                  {timerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                </button>
-                <button 
-                  onClick={() => adjustTimerTime(10)}
-                  className="w-8 h-8 rounded-full glass hover:bg-white/10 transition-modern flex items-center justify-center text-xs"
-                >
-                  +10
-                </button>
-                <button 
-                  onClick={() => adjustTimerTime(30)}
-                  className="w-8 h-8 rounded-full glass hover:bg-white/10 transition-modern flex items-center justify-center text-xs"
-                >
-                  +30
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
-
-      </div>
 
       {/* Smart Suggestions Display */}
       {smartSuggestions.length > 0 && (
@@ -2300,6 +2252,68 @@ export const EnhancedWorkoutLogger: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Enhanced Rest Timer Modal */}
+      <RestTimer
+        timeRemaining={restTime}
+        isVisible={showRestTimerModal}
+        soundEnabled={restTimerSoundEnabled}
+        onComplete={() => {
+          setShowRestTimerModal(false);
+          playSound('complete');
+        }}
+        onSkip={() => {
+          setShowRestTimerModal(false);
+          setTimerRunning(false);
+          if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+          }
+        }}
+        onClose={() => {
+          setShowRestTimerModal(false);
+          setTimerRunning(false);
+          if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+          }
+        }}
+        onSoundToggle={setRestTimerSoundEnabled}
+      />
+
+      {/* Floating Rest Timer Indicator */}
+      {timerRunning && !showRestTimerModal && (
+        <div className="fixed bottom-5 right-5 z-40">
+          <button
+            onClick={() => setShowRestTimerModal(true)}
+            className="p-3 glass-strong backdrop-blur-xl rounded-full shadow-lg hover:bg-white/10 transition-modern"
+            title="Rest Timer Active - Click to view"
+          >
+            <div className="text-center">
+              <div className="text-lg font-bold text-white">
+                {formatTime(restTime)}
+              </div>
+              <div className="text-xs text-gray-300">Rest</div>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Test Rest Timer Button (for development) */}
+      {!timerRunning && (
+        <div className="fixed bottom-5 left-5 z-40">
+          <button
+            onClick={() => {
+              setRestTime(30); // Set to 30 seconds for testing
+              startRestTimer();
+            }}
+            className="p-3 bg-blue-500 hover:bg-blue-600 rounded-full shadow-lg text-white transition-colors"
+            title="Test Rest Timer"
+          >
+            <Clock className="w-5 h-5" />
+          </button>
         </div>
       )}
 
