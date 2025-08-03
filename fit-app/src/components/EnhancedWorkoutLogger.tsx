@@ -1314,10 +1314,27 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
       {/* Weight Card Carousel */}
       <div className="card card-elevated">
-        <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-4">Weight Cards</div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-xs text-gray-400 font-medium tracking-wider uppercase">Weight Cards</div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">Swipe to navigate</span>
+            <div className="flex gap-1">
+              {(workoutExercises || []).map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === currentExerciseIndex 
+                      ? 'bg-fitness-blue' 
+                      : 'bg-gray-400'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
         
         {/* Carousel Container */}
-        <div className="flex overflow-x-auto pb-6 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
+        <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4 px-4" style={{ scrollSnapType: 'x mandatory' }}>
           {(workoutExercises || []).map((exercise, index) => {
             const isCurrent = index === currentExerciseIndex;
             
@@ -1325,14 +1342,29 @@ export const EnhancedWorkoutLogger: React.FC = () => {
               <div
                 key={exercise?.id || index}
                 className={`
-                  flex-shrink-0 w-full bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300
-                  ${isCurrent ? 'border-fitness-blue scale-105' : 'border-gray-700'}
-                  scroll-snap-align-center
+                  flex-shrink-0 bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300
+                  ${isCurrent ? 'border-fitness-blue scale-105 shadow-xl' : 'border-gray-700 opacity-80'}
+                  scroll-snap-align-center hover:scale-102
                 `}
-                style={{ scrollSnapAlign: 'center', minWidth: '100%' }}
+                style={{ 
+                  scrollSnapAlign: 'center', 
+                  minWidth: 'calc(100vw - 2rem)',
+                  maxWidth: 'calc(100vw - 2rem)',
+                  width: 'calc(100vw - 2rem)'
+                }}
               >
                 {/* Weight Card Content */}
-                <div className="p-4">
+                <div className="p-6">
+                  {/* Exercise Name Header */}
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-white mb-1">
+                      {exercise?.exercise?.name || 'Exercise'}
+                    </h3>
+                    <div className="text-xs text-gray-400">
+                      Card {index + 1} of {(workoutExercises || []).length}
+                    </div>
+                  </div>
+                  
                   {/* Exercise Header */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
