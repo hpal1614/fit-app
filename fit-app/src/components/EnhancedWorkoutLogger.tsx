@@ -13,7 +13,6 @@ import { MuscleGroup } from '../types/workout';
 import { DatabaseService } from '../services/databaseService';
 import RestTimer from './RestTimer';
 import RestTimerSettings from './RestTimerSettings';
-import { ExerciseCardFlow } from './ExerciseCardFlow';
 
 interface Set {
   id: string;
@@ -99,7 +98,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [weightSuggestion, setWeightSuggestion] = useState<string>('');
   const [suggestionReason, setSuggestionReason] = useState<string>('');
   const [exerciseHistory, setExerciseHistory] = useState<Set[]>([]);
-  const [showCardFlow, setShowCardFlow] = useState(false);
   
   // New Rest Timer Modal State
   const [showRestTimerModal, setShowRestTimerModal] = useState(false);
@@ -264,33 +262,23 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     startRestTimer();
     
     // Increment completed sets
-    setCompletedSets(prev => {
-      const newCount = prev + 1;
-      console.log(`Set completed! Total sets: ${newCount}`);
-      return newCount;
-    });
-    
-    // Smart auto-progression based on RPE
-    setTimeout(() => {
-      if (currentRPE <= 2) {
-        // Too easy - increase weight more aggressively
-        adjustWeight(currentIncrement * 2);
-        showSmartSuggestion('Set felt easy! Increasing weight for next set 💪');
-      } else if (currentRPE >= 4) {
-        // Too hard - decrease weight
-        adjustWeight(-currentIncrement);
-        showSmartSuggestion('Set was challenging! Reducing weight for next set');
-      } else {
-        // Perfect - small increase
-        adjustWeight(currentIncrement);
-        showSmartSuggestion('Perfect RPE! Small weight increase for next set');
-      }
-    }, 1000);
+    setCompletedSets(prev => prev + 1);
     
     // Check if exercise is completed for auto-advance
     setTimeout(() => {
       checkExerciseCompletion();
-    }, 1500);
+    }, 500);
+    
+    // Smart auto-progression
+    setTimeout(() => {
+      if (currentRPE <= 2) {
+        adjustWeight(currentIncrement * 2);
+      } else if (currentRPE >= 4) {
+        adjustWeight(-currentIncrement);
+      } else {
+        adjustWeight(currentIncrement);
+      }
+    }, 1000);
     
     playSound('button');
   };
@@ -539,16 +527,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     setSmartSuggestions(newSuggestions);
   }, [currentRPE, currentReps, currentIncrement]);
 
-  // Update overall progress when completed sets change
-  useEffect(() => {
-    setOverallWorkoutProgress(calculateOverallProgress());
-  }, [completedSets, currentExerciseIndex, completedExercises]);
-
-  // Generate weight suggestions when RPE changes
-  useEffect(() => {
-    generateWeightSuggestion();
-  }, [currentRPE, completedSets]);
-
   // Process Voice Commands
   const processVoiceCommand = (transcript: string) => {
     const command = transcript.toLowerCase();
@@ -775,8 +753,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     const currentIndex = workoutExercises.findIndex(e => e.id === currentExerciseIndex);
     const nextExercise = workoutExercises[currentIndex + 1];
     
-    console.log(`Advancing exercise: Current=${currentExerciseIndex}, Next=${nextExercise?.id}, Name=${nextExercise?.name}`);
-    
     if (nextExercise) {
       // Mark current exercise as completed
       setCompletedExercises(prev => [...prev, currentExerciseIndex]);
@@ -784,11 +760,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       // Move to next exercise
       setCurrentExerciseIndex(nextExercise.id);
       setCompletedSets(0);
-      
-      // Reset weight and reps for new exercise
-      setCurrentWeight(190); // Reset to default or load from history
-      setCurrentReps(8);
-      setCurrentRPE(3);
       
       // Start rest timer automatically
       startRestTimer();
@@ -814,19 +785,11 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
     const totalSets = currentExercise?.sets || 4;
     
-    console.log(`Checking exercise completion: ${completedSets}/${totalSets} sets, auto-advance: ${autoAdvanceEnabled}`);
-    
     if (completedSets >= totalSets && autoAdvanceEnabled) {
-      // Show completion message
-      showSmartSuggestion(`🎉 ${currentExercise?.name} completed! Moving to next exercise...`);
-      
       // Small delay to show completion
       setTimeout(() => {
         advanceToNextExercise();
-      }, 2000);
-    } else if (completedSets >= totalSets && !autoAdvanceEnabled) {
-      // Manual advance needed
-      showSmartSuggestion(`🎉 ${currentExercise?.name} completed! Click "Next Exercise" to continue.`);
+      }, 1500);
     }
   };
 
@@ -1104,34 +1067,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
   return (
     <div className="space-y-modern animate-fade-in-up">
-      {/* Card Flow View */}
-      {showCardFlow && (
-        <div className="card card-elevated">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white">Exercise Flow</h2>
-            <span className="text-sm text-gray-400">
-              {workoutExercises.findIndex(e => e.id === currentExerciseIndex) + 1} of {workoutExercises.length}
-            </span>
-          </div>
-          <ExerciseCardFlow
-            workoutExercises={workoutExercises}
-            currentExerciseIndex={currentExerciseIndex}
-            completedSets={completedSets}
-            onExerciseChange={(exerciseId) => {
-              setCurrentExerciseIndex(exerciseId);
-              setCompletedSets(0);
-            }}
-            onSetComplete={() => {
-              setCompletedSets(prev => prev + 1);
-            }}
-            onExerciseComplete={(exerciseId) => {
-              console.log(`Exercise ${exerciseId} completed!`);
-              // Handle exercise completion
-            }}
-          />
-        </div>
-      )}
-
       {/* Exercise Header */}
       <div className="card card-elevated">
         <div className="flex items-center justify-between mb-4">
@@ -1155,21 +1090,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                 </span>
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {workoutExercises.find(e => e.id === currentExerciseIndex)?.name || 'Loading...'}
-            </h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Bench Press</h1>
             <div className="text-gray-300">
-              Set {completedSets + 1} of {workoutExercises.find(e => e.id === currentExerciseIndex)?.sets} • {(() => {
-                const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
-                const totalSets = currentExercise?.sets || 4;
-                if (completedSets >= totalSets) {
-                  return 'Exercise completed! 🎉';
-                } else if (completedSets === 0) {
-                  return 'Ready to start! 💪';
-                } else {
-                  return 'Keep going! 🔥';
-                }
-              })()}
+              Set {completedSets + 1} of {workoutExercises.find(e => e.id === currentExerciseIndex)?.sets} • Personal record zone
             </div>
           </div>
           
@@ -1184,18 +1107,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
               }`}
             >
               {autoAdvanceEnabled ? 'Auto ✓' : 'Auto ✗'}
-            </button>
-            
-            {/* Card Flow Toggle */}
-            <button
-              onClick={() => setShowCardFlow(!showCardFlow)}
-              className={`px-3 py-2 text-xs rounded-full transition-colors flex items-center gap-1 ${
-                showCardFlow 
-                  ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
-                  : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
-              }`}
-            >
-              {showCardFlow ? '📱 Card View' : '📋 List View'}
             </button>
             
             {/* Change Exercise Button */}
@@ -1761,26 +1672,6 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         >
           {showFailureOptions ? 'Completed Full Set' : 'Log Set'}
         </button>
-
-        {/* Next Exercise Button - Show when exercise is completed and auto-advance is disabled */}
-        {(() => {
-          const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
-          const totalSets = currentExercise?.sets || 4;
-          const isExerciseCompleted = completedSets >= totalSets;
-          
-          return isExerciseCompleted && !autoAdvanceEnabled ? (
-            <button 
-              onClick={advanceToNextExercise}
-              className="w-full h-14 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition-modern mt-3"
-            >
-              🚀 Next Exercise: {(() => {
-                const currentIndex = workoutExercises.findIndex(e => e.id === currentExerciseIndex);
-                const nextExercise = workoutExercises[currentIndex + 1];
-                return nextExercise ? nextExercise.name : 'Complete Workout';
-              })()}
-            </button>
-          ) : null;
-        })()}
 
         {/* Failure Options */}
         {showFailureOptions && (

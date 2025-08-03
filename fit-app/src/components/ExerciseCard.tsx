@@ -1,35 +1,19 @@
 import React from 'react';
-import { Target, Clock, TrendingUp, Info, Plus, Minus, Check } from 'lucide-react';
+import { Target, Clock, TrendingUp, Info } from 'lucide-react';
 import type { WorkoutExercise, Exercise } from '../types/workout';
 
 interface ExerciseCardProps {
   exercise: WorkoutExercise | Exercise;
   isActive?: boolean;
-  isSelected?: boolean;
-  isCompleted?: boolean;
   onExerciseSelect?: () => void;
-  onExerciseDeselect?: () => void;
-  onAddToWorkout?: () => void;
-  onRemoveFromWorkout?: () => void;
   className?: string;
-  showSelectionControls?: boolean;
-  showProgress?: boolean;
-  showWorkoutControls?: boolean;
 }
 
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
   isActive = false,
-  isSelected = false,
-  isCompleted = false,
   onExerciseSelect,
-  onExerciseDeselect,
-  onAddToWorkout,
-  onRemoveFromWorkout,
-  className = '',
-  showSelectionControls = false,
-  showProgress = true,
-  showWorkoutControls = false
+  className = ''
 }) => {
   // Handle both WorkoutExercise and Exercise types
   const exerciseData = 'exercise' in exercise ? exercise.exercise : exercise;
@@ -76,39 +60,20 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
     }
   };
 
-  // Handle selection
-  const handleSelection = () => {
-    if (isSelected && onExerciseDeselect) {
-      onExerciseDeselect();
-    } else if (!isSelected && onExerciseSelect) {
-      onExerciseSelect();
-    }
-  };
-
   return (
     <div 
       className={`
         exercise-card bg-white rounded-xl shadow-lg p-6 transition-all duration-300
         ${isActive ? 'ring-2 ring-fitness-blue shadow-xl' : 'hover:shadow-lg'}
-        ${isSelected ? 'ring-2 ring-green-500 bg-green-50' : ''}
-        ${isCompleted ? 'ring-2 ring-green-500 bg-green-50' : ''}
-        ${(onExerciseSelect || onExerciseDeselect) ? 'cursor-pointer' : ''}
+        ${onExerciseSelect ? 'cursor-pointer' : ''}
         ${className}
       `}
-      onClick={handleSelection}
+      onClick={onExerciseSelect}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-xl font-bold text-gray-900">{name}</h3>
-            {isSelected && (
-              <Check size={16} className="text-green-600" />
-            )}
-            {isCompleted && (
-              <div className="text-green-600 text-sm font-medium">✓ Completed</div>
-            )}
-          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">{name}</h3>
           
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-3">
@@ -127,7 +92,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
         </div>
 
         {/* Progress Ring (for active exercises) */}
-        {showProgress && isActive && workoutExercise && (
+        {isActive && workoutExercise && (
           <div className="relative w-16 h-16 ml-4">
             <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 24 24">
               <circle
@@ -155,35 +120,6 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             </div>
           </div>
         )}
-
-        {/* Selection Controls */}
-        {showSelectionControls && (
-          <div className="flex items-center gap-2 ml-4">
-            {isSelected ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemoveFromWorkout?.();
-                }}
-                className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                title="Remove from workout"
-              >
-                <Minus size={16} />
-              </button>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddToWorkout?.();
-                }}
-                className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
-                title="Add to workout"
-              >
-                <Plus size={16} />
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Muscle Groups */}
@@ -207,7 +143,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
       )}
 
       {/* Sets Information (for workout exercises) */}
-      {showProgress && workoutExercise && (
+      {workoutExercise && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Sets Progress</span>
@@ -297,7 +233,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
       )}
 
       {/* Action Buttons */}
-      {showWorkoutControls && isActive && (
+      {isActive && (
         <div className="flex space-x-2 pt-4 border-t border-gray-100">
           <button className="flex-1 bg-fitness-blue text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
             Log Set

@@ -48,11 +48,11 @@ import { NimbusAdvancedAnalyticsDashboard } from './components/nimbus/analytics/
 // Feature Components
 import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
 import { EnhancedWorkoutLogger } from './components/EnhancedWorkoutLogger';
+import { WeightCardCarouselDemo } from './components/WeightCardCarouselDemo';
 import { IntegratedAICoach } from './components/ai/IntegratedAICoach';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
-import { WorkoutExerciseConnector } from './components/WorkoutExerciseConnector';
 
 // Hooks & Services
 import { useWorkout } from './hooks/useWorkout';
@@ -73,7 +73,7 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'ai-coach' | 'nutrition' | 'analytics' | 'profile' | 'connector';
+type TabType = 'workouts' | 'generator' | 'ai-coach' | 'nutrition' | 'analytics' | 'profile';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -83,6 +83,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [useNewWorkoutSystem, setUseNewWorkoutSystem] = useState(false);
 
   // Initialize hooks
   const workout = useWorkout();
@@ -172,7 +173,6 @@ function App() {
     { key: 'ai-coach', label: 'AI Coach', icon: Brain },
     { key: 'nutrition', label: 'Nutrition', icon: Apple },
     { key: 'analytics', label: 'Stats', icon: TrendingUp },
-    { key: 'connector', label: 'Connector', icon: Plus },
     { key: 'profile', label: 'Profile', icon: User, badge: showNotificationBadge ? 1 : undefined }
   ];
 
@@ -252,6 +252,23 @@ function App() {
             <Settings className="w-4 h-4" />
           </button>
         </div>
+        
+        {/* New Workout System Toggle */}
+        {activeTab === 'workouts' && (
+          <div className="flex items-center space-x-2 ml-4">
+            <span className="text-xs text-gray-400">System:</span>
+            <button
+              onClick={() => setUseNewWorkoutSystem(!useNewWorkoutSystem)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                useNewWorkoutSystem 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {useNewWorkoutSystem ? 'New Cards' : 'Old System'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Profile Modal */}
@@ -289,7 +306,15 @@ function App() {
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
         <div className="animate-fade-in">
-          {activeTab === 'workouts' && <EnhancedWorkoutLogger workout={workout} />}
+          {activeTab === 'workouts' && (
+            <div>
+              {useNewWorkoutSystem ? (
+                <WeightCardCarouselDemo />
+              ) : (
+                <EnhancedWorkoutLogger workout={workout} />
+              )}
+            </div>
+          )}
           {activeTab === 'generator' && <WorkoutGenerator />}
           {activeTab === 'ai-coach' && (
             <IntegratedAICoach 
@@ -299,7 +324,6 @@ function App() {
           )}
           {activeTab === 'nutrition' && <NimbusNutritionTracker />}
           {activeTab === 'analytics' && <AnalyticsDashboard />}
-          {activeTab === 'connector' && <WorkoutExerciseConnector />}
           {activeTab === 'profile' && (
             <div className="space-y-modern">
               <div className="card card-elevated">
