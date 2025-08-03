@@ -1348,9 +1348,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                 `}
                 style={{ 
                   scrollSnapAlign: 'center', 
-                  minWidth: '100vw',
-                  maxWidth: '100vw',
-                  width: '100vw'
+                  minWidth: '100%',
+                  maxWidth: '100%',
+                  width: '100%'
                 }}
               >
                 {/* Weight Card Content */}
