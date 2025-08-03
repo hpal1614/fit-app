@@ -1368,27 +1368,55 @@ export const EnhancedWorkoutLogger: React.FC = () => {
           </div>
         </div>
         
-        {/* Carousel Container */}
-        <div className="w-full overflow-hidden">
-          <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-6 px-4" style={{ scrollSnapType: 'x mandatory' }}>
-          {(workoutExercises || []).map((exercise, index) => {
-            const isCurrent = index === currentExerciseIndex;
+                {/* Single Card Container */}
+        <div className="w-full flex justify-center">
+          <div className="w-full max-w-md mx-auto relative">
+            {/* Card Counter */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+              <div className="bg-gray-800/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white">
+                Card {currentExerciseIndex + 1} of {workoutExercises?.length || 0}
+              </div>
+            </div>
             
-            return (
-              <div
-                key={exercise?.id || index}
-                className={`
-                  flex-shrink-0 bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300 max-h-[80vh] overflow-y-auto overflow-x-hidden
-                  ${isCurrent ? 'border-fitness-blue scale-105 shadow-xl' : 'border-gray-700 opacity-80'}
-                  scroll-snap-align-center hover:scale-102
-                `}
-                style={{ 
-                  scrollSnapAlign: 'center', 
-                  minWidth: 'calc(100vw - 12rem)',
-                  maxWidth: 'calc(100vw - 12rem)',
-                  width: 'calc(100vw - 12rem)'
-                }}
+            {/* Navigation Buttons */}
+            <div className="absolute top-1/2 -translate-y-1/2 left-0 z-10">
+              <button
+                onClick={() => setCurrentExerciseIndex(prev => Math.max(0, prev - 1))}
+                disabled={currentExerciseIndex === 0}
+                className={`p-2 rounded-full shadow-lg transition-all ${
+                  currentExerciseIndex === 0 
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                    : 'bg-fitness-blue text-white hover:bg-blue-600'
+                }`}
               >
+                ←
+              </button>
+            </div>
+            
+            <div className="absolute top-1/2 -translate-y-1/2 right-0 z-10">
+              <button
+                onClick={() => setCurrentExerciseIndex(prev => Math.min((workoutExercises?.length || 1) - 1, prev + 1))}
+                disabled={currentExerciseIndex === (workoutExercises?.length || 1) - 1}
+                className={`p-2 rounded-full shadow-lg transition-all ${
+                  currentExerciseIndex === (workoutExercises?.length || 1) - 1 
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                    : 'bg-fitness-blue text-white hover:bg-blue-600'
+                }`}
+              >
+                →
+              </button>
+            </div>
+            {(workoutExercises || []).map((exercise, index) => {
+              const isCurrent = index === currentExerciseIndex;
+              
+              // Only render the current card
+              if (!isCurrent) return null;
+              
+              return (
+                <div
+                  key={exercise?.id || index}
+                  className="w-full bg-gray-900 rounded-xl shadow-lg border-2 border-fitness-blue transition-all duration-300 max-h-[80vh] overflow-y-auto overflow-x-hidden"
+                >
                 {/* Weight Card Content */}
                 <div className="p-2 sm:p-3">
                   {/* Exercise Name Header */}
