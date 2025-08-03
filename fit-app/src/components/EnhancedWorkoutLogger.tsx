@@ -1369,7 +1369,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
         
         {/* Carousel Container */}
-        <div className="flex overflow-x-auto pb-6 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
+        <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4 px-4" style={{ scrollSnapType: 'x mandatory' }}>
           {(workoutExercises || []).map((exercise, index) => {
             const isCurrent = index === currentExerciseIndex;
             
@@ -1383,9 +1383,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                 `}
                 style={{ 
                   scrollSnapAlign: 'center', 
-                  minWidth: 'calc(100vw - 3rem)',
-                  maxWidth: 'calc(100vw - 3rem)',
-                  width: 'calc(100vw - 3rem)'
+                  minWidth: 'calc(100vw - 6rem)',
+                  maxWidth: 'calc(100vw - 6rem)',
+                  width: 'calc(100vw - 6rem)'
                 }}
               >
                 {/* Weight Card Content */}
