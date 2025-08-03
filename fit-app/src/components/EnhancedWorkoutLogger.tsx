@@ -1369,7 +1369,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
         
         {/* Carousel Container */}
-        <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4 px-4" style={{ scrollSnapType: 'x mandatory' }}>
+        <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4 px-2" style={{ scrollSnapType: 'x mandatory' }}>
           {(workoutExercises || []).map((exercise, index) => {
             const isCurrent = index === currentExerciseIndex;
             
@@ -1383,16 +1383,16 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                 `}
                 style={{ 
                   scrollSnapAlign: 'center', 
-                  minWidth: 'calc(100vw - 6rem)',
-                  maxWidth: 'calc(100vw - 6rem)',
-                  width: 'calc(100vw - 6rem)'
+                  minWidth: 'calc(100vw - 4rem)',
+                  maxWidth: 'calc(100vw - 4rem)',
+                  width: 'calc(100vw - 4rem)'
                 }}
               >
                 {/* Weight Card Content */}
-                <div className="p-4 sm:p-6">
+                <div className="p-3 sm:p-4">
                   {/* Exercise Name Header */}
-                  <div className="text-center mb-4 sm:mb-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
+                  <div className="text-center mb-3 sm:mb-4">
+                    <h3 className="text-sm sm:text-base font-semibold text-white mb-1">
                       {exercise?.exercise?.name || 'Exercise'}
                     </h3>
                     <div className="text-xs text-gray-400">
@@ -1422,9 +1422,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
                   {/* Workout History Section */}
                   {exerciseHistory.length > 0 && (
-                    <div className="mb-3 sm:mb-4">
+                    <div className="mb-2 sm:mb-3">
                       {/* History Table */}
-                      <div className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg mb-3">
+                      <div className="p-2 bg-blue-500/5 border border-blue-500/10 rounded-lg mb-2">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-blue-400 font-medium text-sm">Last Workout</span>
                           <span className="text-gray-400 text-xs">Monday, 15 Jul</span>
@@ -1473,9 +1473,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                           
                           {/* Table Rows */}
                           {exerciseHistory.slice(-3).map((set, index) => (
-                            <div key={index} className="space-y-2">
+                            <div key={index} className="space-y-1">
                               {/* Main Set Row */}
-                              <div className={`grid gap-1 items-center p-2 rounded-lg transition-colors ${
+                              <div className={`grid gap-1 items-center p-1 rounded-lg transition-colors ${
                                 index < getExerciseState(exercise?.id || '').completedSets 
                                   ? 'bg-green-500/20 border border-green-500/30' 
                                   : expandedSetIndex === index 
