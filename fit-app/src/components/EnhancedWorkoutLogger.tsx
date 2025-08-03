@@ -59,6 +59,16 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [voiceText, setVoiceText] = useState('🎤 "190 for 8, felt perfect"');
   const [previousSet, setPreviousSet] = useState('175 kg × 8 reps • RPE 7/10');
   
+  // Per-Exercise State (for carousel cards)
+  const [exerciseStates, setExerciseStates] = useState<{
+    [exerciseId: string]: {
+      weight: number;
+      reps: number;
+      rpe: number;
+      completedSets: number;
+    }
+  }>({});
+  
   // New Enhanced Features State
   const [showAlternativesModal, setShowAlternativesModal] = useState(false);
   const [showDifficultyModal, setShowDifficultyModal] = useState(false);
@@ -173,6 +183,31 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     setCurrentRPE(rpe);
     updatePreviousSet();
     playSound('button');
+  };
+  
+  // Per-exercise state helpers
+  const getExerciseState = (exerciseId: string) => {
+    return exerciseStates[exerciseId] || {
+      weight: 190,
+      reps: 8,
+      rpe: 3,
+      completedSets: 0
+    };
+  };
+  
+  const updateExerciseState = (exerciseId: string, updates: Partial<{
+    weight: number;
+    reps: number;
+    rpe: number;
+    completedSets: number;
+  }>) => {
+    setExerciseStates(prev => ({
+      ...prev,
+      [exerciseId]: {
+        ...getExerciseState(exerciseId),
+        ...updates
+      }
+    }));
   };
 
   // Voice System
@@ -1381,7 +1416,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Set Progress</div>
-                      <div className="text-sm font-medium text-green-400">Set {completedSets + 1} of {exercise?.sets || 4}</div>
+                      <div className="text-sm font-medium text-green-400">Set {getExerciseState(exercise?.id || '').completedSets + 1} of {exercise?.sets || 4}</div>
                     </div>
                   </div>
 
@@ -1441,7 +1476,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                             <div key={index} className="space-y-2">
                               {/* Main Set Row */}
                               <div className={`grid gap-1 items-center p-2 rounded-lg transition-colors ${
-                                index < completedSets 
+                                index < getExerciseState(exercise?.id || '').completedSets 
                                   ? 'bg-green-500/20 border border-green-500/30' 
                                   : expandedSetIndex === index 
                                     ? 'bg-gray-800/50' 
@@ -1461,7 +1496,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                 {tableSettings.showWeight && (
                                   <div className="flex items-center gap-1">
                                     <button
-                                      onClick={() => setCurrentWeight(prev => Math.max(0, prev - 5))}
+                                      onClick={() => updateExerciseState(exercise?.id || '', { 
+                                        weight: Math.max(0, getExerciseState(exercise?.id || '').weight - 5) 
+                                      })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
                                       -
@@ -1470,10 +1507,12 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                       onClick={() => openPlateCalculator(set.weight, 'weight')}
                                       className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
                                     >
-                                      {index < completedSets ? currentWeight : set.weight}
+                                      {index < getExerciseState(exercise?.id || '').completedSets ? getExerciseState(exercise?.id || '').weight : set.weight}
                                     </div>
                                     <button
-                                      onClick={() => setCurrentWeight(prev => prev + 5)}
+                                      onClick={() => updateExerciseState(exercise?.id || '', { 
+                                        weight: getExerciseState(exercise?.id || '').weight + 5 
+                                      })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
                                       +
@@ -1484,7 +1523,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                 {tableSettings.showReps && (
                                   <div className="flex items-center gap-1">
                                     <button
-                                      onClick={() => setCurrentReps(prev => Math.max(0, prev - 1))}
+                                      onClick={() => updateExerciseState(exercise?.id || '', { 
+                                        reps: Math.max(1, getExerciseState(exercise?.id || '').reps - 1) 
+                                      })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
                                       -
@@ -1493,10 +1534,12 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                       onClick={() => openPlateCalculator(set.reps, 'reps')}
                                       className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
                                     >
-                                      {index < completedSets ? currentReps : set.reps}
+                                      {index < getExerciseState(exercise?.id || '').completedSets ? getExerciseState(exercise?.id || '').reps : set.reps}
                                     </div>
                                     <button
-                                      onClick={() => setCurrentReps(prev => prev + 1)}
+                                      onClick={() => updateExerciseState(exercise?.id || '', { 
+                                        reps: getExerciseState(exercise?.id || '').reps + 1 
+                                      })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
                                       +
@@ -1507,16 +1550,20 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                 {tableSettings.showRPE && (
                                   <div className="flex items-center gap-1">
                                     <button
-                                      onClick={() => setCurrentRPE(prev => Math.max(1, prev - 1))}
+                                      onClick={() => updateExerciseState(exercise?.id || '', { 
+                                        rpe: Math.max(1, getExerciseState(exercise?.id || '').rpe - 1) 
+                                      })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
                                       -
                                     </button>
                                     <div className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs">
-                                      {index < completedSets ? currentRPE : set.rpe}
+                                      {index < getExerciseState(exercise?.id || '').completedSets ? getExerciseState(exercise?.id || '').rpe : set.rpe}
                                     </div>
                                     <button
-                                      onClick={() => setCurrentRPE(prev => Math.min(10, prev + 1))}
+                                      onClick={() => updateExerciseState(exercise?.id || '', { 
+                                        rpe: Math.min(10, getExerciseState(exercise?.id || '').rpe + 1) 
+                                      })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
                                       +
@@ -1527,39 +1574,47 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                 <div className="flex items-center justify-center">
                                   <button
                                     onClick={() => {
-                                      if (index < completedSets) {
+                                      const currentState = getExerciseState(exercise?.id || '');
+                                      if (index < currentState.completedSets) {
                                         // Unlog set
-                                        setCompletedSets(prev => prev - 1);
+                                        updateExerciseState(exercise?.id || '', { 
+                                          completedSets: currentState.completedSets - 1 
+                                        });
                                         showSmartSuggestion('Set unlogged');
                                       } else {
                                         // Log set
-                                        setCompletedSets(prev => prev + 1);
+                                        updateExerciseState(exercise?.id || '', { 
+                                          completedSets: currentState.completedSets + 1 
+                                        });
                                         startRestTimer();
                                         showSmartSuggestion('Set logged successfully!');
                                       }
                                     }}
                                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
-                                      index < completedSets 
+                                      index < getExerciseState(exercise?.id || '').completedSets 
                                         ? 'bg-red-500 text-white hover:bg-red-600' 
                                         : 'bg-green-500 text-white hover:bg-green-600'
                                     }`}
                                   >
-                                    {index < completedSets ? '↺' : '▶'}
+                                    {index < getExerciseState(exercise?.id || '').completedSets ? '↺' : '▶'}
                                   </button>
                                 </div>
                               </div>
                               
                               {/* Expanded Set Actions */}
                               <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    showSmartSuggestion('Set marked as failed');
-                                    setCompletedSets(prev => prev + 1);
-                                  }}
-                                  className="flex-1 py-2 bg-red-500/20 text-red-300 rounded text-xs font-medium hover:bg-red-500/30 transition-colors"
-                                >
-                                  ❌ Mark Failed
-                                </button>
+                                                              <button
+                                onClick={() => {
+                                  const currentState = getExerciseState(exercise?.id || '');
+                                  showSmartSuggestion('Set marked as failed');
+                                  updateExerciseState(exercise?.id || '', { 
+                                    completedSets: currentState.completedSets + 1 
+                                  });
+                                }}
+                                className="flex-1 py-2 bg-red-500/20 text-red-300 rounded text-xs font-medium hover:bg-red-500/30 transition-colors"
+                              >
+                                ❌ Mark Failed
+                              </button>
                                 <button
                                   onClick={() => setShowDropSetForIndex(index)}
                                   className="flex-1 py-2 bg-purple-500/20 text-purple-300 rounded text-xs font-medium hover:bg-purple-500/30 transition-colors"
