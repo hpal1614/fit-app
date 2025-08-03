@@ -1370,7 +1370,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         
         {/* Carousel Container */}
         <div className="w-full overflow-hidden">
-          <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4 px-2" style={{ scrollSnapType: 'x mandatory' }}>
+          <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-6 px-4" style={{ scrollSnapType: 'x mandatory' }}>
           {(workoutExercises || []).map((exercise, index) => {
             const isCurrent = index === currentExerciseIndex;
             
@@ -1378,15 +1378,15 @@ export const EnhancedWorkoutLogger: React.FC = () => {
               <div
                 key={exercise?.id || index}
                 className={`
-                  flex-shrink-0 bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300 max-h-[80vh] overflow-y-auto
+                  flex-shrink-0 bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300 max-h-[80vh] overflow-y-auto overflow-x-hidden
                   ${isCurrent ? 'border-fitness-blue scale-105 shadow-xl' : 'border-gray-700 opacity-80'}
                   scroll-snap-align-center hover:scale-102
                 `}
                 style={{ 
                   scrollSnapAlign: 'center', 
-                  minWidth: 'calc(100vw - 8rem)',
-                  maxWidth: 'calc(100vw - 8rem)',
-                  width: 'calc(100vw - 8rem)'
+                  minWidth: 'calc(100vw - 12rem)',
+                  maxWidth: 'calc(100vw - 12rem)',
+                  width: 'calc(100vw - 12rem)'
                 }}
               >
                 {/* Weight Card Content */}
@@ -1433,7 +1433,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                         
                         <div className="space-y-2">
                           <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs text-gray-400 font-medium">Last Workout - {exercise?.exercise?.name || 'Exercise'}:</div>
+                            <div className="text-xs text-gray-400 font-medium break-words">Last Workout - {exercise?.exercise?.name || 'Exercise'}:</div>
                             <button
                               onClick={() => setShowTableSettings(!showTableSettings)}
                               className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
@@ -1463,7 +1463,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                           )}
                           
                           {/* Table Header */}
-                          <div className="grid grid-cols-6 gap-1 text-xs text-gray-400 font-medium px-1">
+                          <div className="grid grid-cols-6 gap-1 text-xs text-gray-400 font-medium px-1 min-w-0">
                             <div className="text-center">Set</div>
                             {tableSettings.showPrevious && <div className="text-center">Previous</div>}
                             {tableSettings.showWeight && <div className="text-center">Weight</div>}
