@@ -467,15 +467,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     generateWeightSuggestion();
   }, [currentExerciseState.rpe, currentExerciseState.completedSets, currentExerciseState.weight]);
 
-  // Scroll to current exercise when index changes
-  useEffect(() => {
-    if (carouselRef.current) {
-      const container = carouselRef.current;
-      const cardWidth = container.scrollWidth / workoutExercises.length;
-      const scrollPosition = currentExerciseIndex * cardWidth;
-      container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
-    }
-  }, [currentExerciseIndex, workoutExercises.length]);
+
 
   // Load exercise history and smart defaults
   useEffect(() => {
@@ -840,6 +832,16 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     { id: 4, name: 'Push-ups', sets: 3, reps: '15-20', equipment: 'Bodyweight', status: 'upcoming' },
     { id: 5, name: 'Chest Stretch', sets: 1, reps: '30s hold', equipment: 'None', status: 'upcoming' }
   ];
+
+  // Scroll to current exercise when index changes
+  useEffect(() => {
+    if (carouselRef.current) {
+      const container = carouselRef.current;
+      const cardWidth = container.scrollWidth / workoutExercises.length;
+      const scrollPosition = currentExerciseIndex * cardWidth;
+      container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
+    }
+  }, [currentExerciseIndex, workoutExercises.length]);
 
   // Calculate workout progress
   const calculateProgress = () => {
