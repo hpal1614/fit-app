@@ -166,16 +166,6 @@
   background: var(--gray-500);
 }
 
-/* Hide scrollbar for horizontal scrolling */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
-}
-
 /* Focus states for accessibility */
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-fitness-blue focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;

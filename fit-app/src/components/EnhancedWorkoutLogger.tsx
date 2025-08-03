@@ -1312,291 +1312,315 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         )}
       </div>
 
-      {/* Optimized Set Logging Card */}
+      {/* Weight Card Carousel */}
       <div className="card card-elevated">
-        {/* Smart Header with Context */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div>
-              <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Previous Set</div>
-              <div className="text-sm font-medium text-white">{previousSet}</div>
-            </div>
-            {weightSuggestion && (
-              <div className="flex items-center gap-2 px-2 py-1 bg-green-500/10 rounded-full border border-green-500/20">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-400 font-medium">{weightSuggestion}</span>
-              </div>
-            )}
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Set Progress</div>
-            <div className="text-sm font-medium text-green-400">Set {completedSets + 1} of {workoutExercises.find(e => e.id === currentExerciseIndex)?.sets}</div>
-          </div>
-        </div>
-
-        {/* Workout History Section */}
-        {exerciseHistory.length > 0 && (
-          <div className="mb-4">
-            {/* History Table */}
-            <div className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-blue-400 font-medium text-sm">Last Workout</span>
-                <span className="text-gray-400 text-xs">Monday, 15 Jul</span>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs text-gray-400 font-medium">Last Workout - Bench Press:</div>
-                  <button
-                    onClick={() => setShowTableSettings(!showTableSettings)}
-                    className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
-                  >
-                    ⚙️ Settings
-                  </button>
-                </div>
-                
-                {/* Table Settings */}
-                {showTableSettings && (
-                  <div className="p-3 bg-gray-800/30 rounded-lg mb-3 animate-fade-in">
-                    <div className="text-xs text-gray-400 font-medium mb-2">Show/Hide Columns:</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(tableSettings).map(([key, value]) => (
-                        <label key={key} className="flex items-center gap-2 text-xs text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={value}
-                            onChange={(e) => setTableSettings(prev => ({ ...prev, [key]: e.target.checked }))}
-                            className="w-3 h-3 text-blue-500 bg-gray-700 border-gray-600 rounded"
-                          />
-                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                        </label>
-                      ))}
+        <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-4">Weight Cards</div>
+        
+        {/* Carousel Container */}
+        <div className="flex overflow-x-auto pb-6 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
+          {workoutExercises.map((exercise, index) => {
+            const isCurrent = index === currentExerciseIndex;
+            
+            return (
+              <div
+                key={exercise.id}
+                className={`
+                  flex-shrink-0 w-full bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300
+                  ${isCurrent ? 'border-fitness-blue scale-105' : 'border-gray-700'}
+                  scroll-snap-align-center
+                `}
+                style={{ scrollSnapAlign: 'center', minWidth: '100%' }}
+              >
+                {/* Weight Card Content */}
+                <div className="p-4">
+                  {/* Exercise Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Previous Set</div>
+                        <div className="text-sm font-medium text-white">{previousSet}</div>
+                      </div>
+                      {weightSuggestion && (
+                        <div className="flex items-center gap-2 px-2 py-1 bg-green-500/10 rounded-full border border-green-500/20">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-xs text-green-400 font-medium">{weightSuggestion}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Set Progress</div>
+                      <div className="text-sm font-medium text-green-400">Set {completedSets + 1} of {exercise.sets}</div>
                     </div>
                   </div>
-                )}
-                
-                {/* Table Header */}
-                <div className="grid grid-cols-6 gap-1 text-xs text-gray-400 font-medium px-1">
-                  <div className="text-center">Set</div>
-                  {tableSettings.showPrevious && <div className="text-center">Previous</div>}
-                  {tableSettings.showWeight && <div className="text-center">Weight</div>}
-                  {tableSettings.showReps && <div className="text-center">Reps</div>}
-                  {tableSettings.showRPE && <div className="text-center">RPE</div>}
-                  <div className="text-center">Action</div>
-                </div>
-                
-                {/* Table Rows */}
-                {exerciseHistory.slice(-3).map((set, index) => (
-                  <div key={index} className="space-y-2">
-                    {/* Main Set Row */}
-                    <div className={`grid gap-1 items-center p-2 rounded-lg transition-colors ${
-                      index < completedSets 
-                        ? 'bg-green-500/20 border border-green-500/30' 
-                        : expandedSetIndex === index 
-                          ? 'bg-gray-800/50' 
-                          : 'bg-gray-800/30'
-                    }`} style={{
-                      gridTemplateColumns: `auto ${tableSettings.showPrevious ? '1fr' : ''} ${tableSettings.showWeight ? '1fr' : ''} ${tableSettings.showReps ? '1fr' : ''} ${tableSettings.showRPE ? '1fr' : ''} auto`
-                    }}>
-                      <div className="text-gray-400 text-xs text-center">Set {index + 1}</div>
-                      
-                      {tableSettings.showPrevious && (
-                        <div className="text-white text-xs text-center">
-                          {set.weight} × {set.reps}
-                          <div className="text-gray-500 text-xs">RPE {set.rpe}</div>
+
+                  {/* Workout History Section */}
+                  {exerciseHistory.length > 0 && (
+                    <div className="mb-4">
+                      {/* History Table */}
+                      <div className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-blue-400 font-medium text-sm">Last Workout</span>
+                          <span className="text-gray-400 text-xs">Monday, 15 Jul</span>
                         </div>
-                      )}
-                      
-                      {tableSettings.showWeight && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setCurrentWeight(prev => Math.max(0, prev - 5))}
-                            className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                          >
-                            -
-                          </button>
-                          <div 
-                            onClick={() => openPlateCalculator(set.weight, 'weight')}
-                            className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
-                          >
-                            {index < completedSets ? currentWeight : set.weight}
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs text-gray-400 font-medium">Last Workout - {exercise.exercise.name}:</div>
+                            <button
+                              onClick={() => setShowTableSettings(!showTableSettings)}
+                              className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
+                            >
+                              ⚙️ Settings
+                            </button>
                           </div>
-                          <button
-                            onClick={() => setCurrentWeight(prev => prev + 5)}
-                            className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                          >
-                            +
-                          </button>
-                        </div>
-                      )}
-                      
-                      {tableSettings.showReps && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setCurrentReps(prev => Math.max(0, prev - 1))}
-                            className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                          >
-                            -
-                          </button>
-                          <div 
-                            onClick={() => openPlateCalculator(set.reps, 'reps')}
-                            className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
-                          >
-                            {index < completedSets ? currentReps : set.reps}
+                          
+                          {/* Table Settings */}
+                          {showTableSettings && (
+                            <div className="p-3 bg-gray-800/30 rounded-lg mb-3 animate-fade-in">
+                              <div className="text-xs text-gray-400 font-medium mb-2">Show/Hide Columns:</div>
+                              <div className="grid grid-cols-2 gap-2">
+                                {Object.entries(tableSettings).map(([key, value]) => (
+                                  <label key={key} className="flex items-center gap-2 text-xs text-gray-300">
+                                    <input
+                                      type="checkbox"
+                                      checked={value}
+                                      onChange={(e) => setTableSettings(prev => ({ ...prev, [key]: e.target.checked }))}
+                                      className="w-3 h-3 text-blue-500 bg-gray-700 border-gray-600 rounded"
+                                    />
+                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Table Header */}
+                          <div className="grid grid-cols-6 gap-1 text-xs text-gray-400 font-medium px-1">
+                            <div className="text-center">Set</div>
+                            {tableSettings.showPrevious && <div className="text-center">Previous</div>}
+                            {tableSettings.showWeight && <div className="text-center">Weight</div>}
+                            {tableSettings.showReps && <div className="text-center">Reps</div>}
+                            {tableSettings.showRPE && <div className="text-center">RPE</div>}
+                            <div className="text-center">Action</div>
                           </div>
-                          <button
-                            onClick={() => setCurrentReps(prev => prev + 1)}
-                            className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                          >
-                            +
-                          </button>
+                          
+                          {/* Table Rows */}
+                          {exerciseHistory.slice(-3).map((set, index) => (
+                            <div key={index} className="space-y-2">
+                              {/* Main Set Row */}
+                              <div className={`grid gap-1 items-center p-2 rounded-lg transition-colors ${
+                                index < completedSets 
+                                  ? 'bg-green-500/20 border border-green-500/30' 
+                                  : expandedSetIndex === index 
+                                    ? 'bg-gray-800/50' 
+                                    : 'bg-gray-800/30'
+                              }`} style={{
+                                gridTemplateColumns: `auto ${tableSettings.showPrevious ? '1fr' : ''} ${tableSettings.showWeight ? '1fr' : ''} ${tableSettings.showReps ? '1fr' : ''} ${tableSettings.showRPE ? '1fr' : ''} auto`
+                              }}>
+                                <div className="text-gray-400 text-xs text-center">Set {index + 1}</div>
+                                
+                                {tableSettings.showPrevious && (
+                                  <div className="text-white text-xs text-center">
+                                    {set.weight} × {set.reps}
+                                    <div className="text-gray-500 text-xs">RPE {set.rpe}</div>
+                                  </div>
+                                )}
+                                
+                                {tableSettings.showWeight && (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => setCurrentWeight(prev => Math.max(0, prev - 5))}
+                                      className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
+                                    >
+                                      -
+                                    </button>
+                                    <div 
+                                      onClick={() => openPlateCalculator(set.weight, 'weight')}
+                                      className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
+                                    >
+                                      {index < completedSets ? currentWeight : set.weight}
+                                    </div>
+                                    <button
+                                      onClick={() => setCurrentWeight(prev => prev + 5)}
+                                      className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                {tableSettings.showReps && (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => setCurrentReps(prev => Math.max(0, prev - 1))}
+                                      className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
+                                    >
+                                      -
+                                    </button>
+                                    <div 
+                                      onClick={() => openPlateCalculator(set.reps, 'reps')}
+                                      className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
+                                    >
+                                      {index < completedSets ? currentReps : set.reps}
+                                    </div>
+                                    <button
+                                      onClick={() => setCurrentReps(prev => prev + 1)}
+                                      className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                {tableSettings.showRPE && (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => setCurrentRPE(prev => Math.max(1, prev - 1))}
+                                      className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
+                                    >
+                                      -
+                                    </button>
+                                    <div className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs">
+                                      {index < completedSets ? currentRPE : set.rpe}
+                                    </div>
+                                    <button
+                                      onClick={() => setCurrentRPE(prev => Math.min(10, prev + 1))}
+                                      className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                <div className="flex items-center justify-center">
+                                  <button
+                                    onClick={() => {
+                                      if (index < completedSets) {
+                                        // Unlog set
+                                        setCompletedSets(prev => prev - 1);
+                                        showSmartSuggestion('Set unlogged');
+                                      } else {
+                                        // Log set
+                                        setCompletedSets(prev => prev + 1);
+                                        startRestTimer();
+                                        showSmartSuggestion('Set logged successfully!');
+                                      }
+                                    }}
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
+                                      index < completedSets 
+                                        ? 'bg-red-500 text-white hover:bg-red-600' 
+                                        : 'bg-green-500 text-white hover:bg-green-600'
+                                    }`}
+                                  >
+                                    {index < completedSets ? '↺' : '▶'}
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              {/* Expanded Set Actions */}
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    showSmartSuggestion('Set marked as failed');
+                                    setCompletedSets(prev => prev + 1);
+                                  }}
+                                  className="flex-1 py-2 bg-red-500/20 text-red-300 rounded text-xs font-medium hover:bg-red-500/30 transition-colors"
+                                >
+                                  ❌ Mark Failed
+                                </button>
+                                <button
+                                  onClick={() => setShowDropSetForIndex(index)}
+                                  className="flex-1 py-2 bg-purple-500/20 text-purple-300 rounded text-xs font-medium hover:bg-purple-500/30 transition-colors"
+                                >
+                                  🔽 Drop Set
+                                </button>
+                              </div>
+                              
+                              {/* Drop Set Section */}
+                              {showDropSetForIndex === index && (
+                                <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20 animate-fade-in">
+                                  <div className="text-xs text-purple-400 font-medium mb-2">Drop Set Configuration:</div>
+                                  <div className="space-y-2 mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-400">Started at:</span>
+                                      <span className="text-sm text-white">{currentWeight} lbs × {currentReps} reps</span>
+                                    </div>
+                                    <div className="text-center text-purple-400 text-sm">↓</div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-400">Dropped to:</span>
+                                      <input 
+                                        type="number" 
+                                        defaultValue={Math.round(currentWeight * 0.8)}
+                                        className="w-16 p-1 bg-gray-700 rounded text-center text-sm"
+                                      />
+                                      <span className="text-sm text-white">lbs ×</span>
+                                      <input 
+                                        type="number" 
+                                        defaultValue={Math.floor(currentReps * 0.4)}
+                                        className="w-12 p-1 bg-gray-700 rounded text-center text-sm"
+                                      />
+                                      <span className="text-sm text-white">reps</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => {
+                                        showSmartSuggestion('Drop set logged successfully');
+                                        setShowDropSetForIndex(null);
+                                      }}
+                                      className="flex-1 py-2 bg-purple-500 text-white rounded text-xs font-medium hover:bg-purple-600 transition-colors"
+                                    >
+                                      Confirm Drop
+                                    </button>
+                                    <button
+                                      onClick={() => setShowDropSetForIndex(null)}
+                                      className="flex-1 py-2 bg-gray-600 text-gray-300 rounded text-xs font-medium hover:bg-gray-500 transition-colors"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      )}
-                      
-                      {tableSettings.showRPE && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setCurrentRPE(prev => Math.max(1, prev - 1))}
-                            className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                          >
-                            -
-                          </button>
-                          <div className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs">
-                            {index < completedSets ? currentRPE : set.rpe}
-                          </div>
-                          <button
-                            onClick={() => setCurrentRPE(prev => Math.min(10, prev + 1))}
-                            className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                          >
-                            +
-                          </button>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-center">
-                        <button
-                          onClick={() => {
-                            if (index < completedSets) {
-                              // Unlog set
-                              setCompletedSets(prev => prev - 1);
-                              showSmartSuggestion('Set unlogged');
-                            } else {
-                              // Log set
-                              setCompletedSets(prev => prev + 1);
-                              startRestTimer();
-                              showSmartSuggestion('Set logged successfully!');
-                            }
-                          }}
-                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
-                            index < completedSets 
-                              ? 'bg-red-500 text-white hover:bg-red-600' 
-                              : 'bg-green-500 text-white hover:bg-green-600'
-                          }`}
-                        >
-                          {index < completedSets ? '↺' : '▶'}
-                        </button>
                       </div>
-                    </div>
-                    
-                    {/* Expanded Set Actions */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          showSmartSuggestion('Set marked as failed');
-                          setCompletedSets(prev => prev + 1);
-                        }}
-                        className="flex-1 py-2 bg-red-500/20 text-red-300 rounded text-xs font-medium hover:bg-red-500/30 transition-colors"
-                      >
-                        ❌ Mark Failed
-                      </button>
-                      <button
-                        onClick={() => setShowDropSetForIndex(index)}
-                        className="flex-1 py-2 bg-purple-500/20 text-purple-300 rounded text-xs font-medium hover:bg-purple-500/30 transition-colors"
-                      >
-                        🔽 Drop Set
-                      </button>
-                    </div>
-                    
-                    {/* Drop Set Section */}
-                    {showDropSetForIndex === index && (
-                      <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20 animate-fade-in">
-                        <div className="text-xs text-purple-400 font-medium mb-2">Drop Set Configuration:</div>
-                        <div className="space-y-2 mb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-400">Started at:</span>
-                            <span className="text-sm text-white">{currentWeight} lbs × {currentReps} reps</span>
+                      
+                      {/* Quick Load Last Set */}
+                      <div className="mt-3 pt-3 border-t border-gray-700/30">
+                        <div className="flex items-center justify-between p-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-400 text-xs">Smart Default:</span>
+                            <span className="text-white text-sm">
+                              {exerciseHistory[exerciseHistory.length - 1]?.weight || currentWeight} lbs × {exerciseHistory[exerciseHistory.length - 1]?.reps || currentReps} reps
+                            </span>
+                            <span className="text-gray-500 text-xs">
+                              RPE {exerciseHistory[exerciseHistory.length - 1]?.rpe || currentRPE}
+                            </span>
                           </div>
-                          <div className="text-center text-purple-400 text-sm">↓</div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-400">Dropped to:</span>
-                            <input 
-                              type="number" 
-                              defaultValue={Math.round(currentWeight * 0.8)}
-                              className="w-16 p-1 bg-gray-700 rounded text-center text-sm"
-                            />
-                            <span className="text-sm text-white">lbs ×</span>
-                            <input 
-                              type="number" 
-                              defaultValue={Math.floor(currentReps * 0.4)}
-                              className="w-12 p-1 bg-gray-700 rounded text-center text-sm"
-                            />
-                            <span className="text-sm text-white">reps</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
                           <button
                             onClick={() => {
-                              showSmartSuggestion('Drop set logged successfully');
-                              setShowDropSetForIndex(null);
+                              const lastSet = exerciseHistory[exerciseHistory.length - 1];
+                              if (lastSet) {
+                                setCurrentWeight(lastSet.weight);
+                                setCurrentReps(lastSet.reps);
+                                setRPE(lastSet.rpe);
+                                showSmartSuggestion('Loaded last set from previous workout');
+                              }
                             }}
-                            className="flex-1 py-2 bg-purple-500 text-white rounded text-xs font-medium hover:bg-purple-600 transition-colors"
+                            className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded hover:bg-green-500/30 transition-colors"
                           >
-                            Confirm Drop
-                          </button>
-                          <button
-                            onClick={() => setShowDropSetForIndex(null)}
-                            className="flex-1 py-2 bg-gray-600 text-gray-300 rounded text-xs font-medium hover:bg-gray-500 transition-colors"
-                          >
-                            Cancel
+                            Apply
                           </button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Quick Load Last Set */}
-            <div className="mt-3 pt-3 border-t border-gray-700/30">
-              <div className="flex items-center justify-between p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-400 text-xs">Smart Default:</span>
-                  <span className="text-white text-sm">
-                    {exerciseHistory[exerciseHistory.length - 1]?.weight || currentWeight} lbs × {exerciseHistory[exerciseHistory.length - 1]?.reps || currentReps} reps
-                  </span>
-                  <span className="text-gray-500 text-xs">
-                    RPE {exerciseHistory[exerciseHistory.length - 1]?.rpe || currentRPE}
-                  </span>
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={() => {
-                    const lastSet = exerciseHistory[exerciseHistory.length - 1];
-                    if (lastSet) {
-                      setCurrentWeight(lastSet.weight);
-                      setCurrentReps(lastSet.reps);
-                      setRPE(lastSet.rpe);
-                      showSmartSuggestion('Loaded last set from previous workout');
-                    }
-                  }}
-                  className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded hover:bg-green-500/30 transition-colors"
-                >
-                  Apply
-                </button>
               </div>
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
 
       {/* Voice Input */}
