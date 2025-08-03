@@ -1370,7 +1370,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         
         {/* Carousel Container */}
         <div className="w-full overflow-hidden">
-          <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4" style={{ scrollSnapType: 'x mandatory' }}>
+          <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4 px-2" style={{ scrollSnapType: 'x mandatory' }}>
           {(workoutExercises || []).map((exercise, index) => {
             const isCurrent = index === currentExerciseIndex;
             
@@ -1378,19 +1378,19 @@ export const EnhancedWorkoutLogger: React.FC = () => {
               <div
                 key={exercise?.id || index}
                 className={`
-                  flex-shrink-0 bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300
+                  flex-shrink-0 bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300 max-h-[80vh] overflow-y-auto
                   ${isCurrent ? 'border-fitness-blue scale-105 shadow-xl' : 'border-gray-700 opacity-80'}
                   scroll-snap-align-center hover:scale-102
                 `}
                 style={{ 
                   scrollSnapAlign: 'center', 
-                  minWidth: '100%',
-                  maxWidth: '100%',
-                  width: '100%'
+                  minWidth: 'calc(100vw - 8rem)',
+                  maxWidth: 'calc(100vw - 8rem)',
+                  width: 'calc(100vw - 8rem)'
                 }}
               >
                 {/* Weight Card Content */}
-                <div className="p-3 sm:p-4">
+                <div className="p-2 sm:p-3">
                   {/* Exercise Name Header */}
                   <div className="text-center mb-3 sm:mb-4">
                     <h3 className="text-sm sm:text-base font-semibold text-white mb-1">
