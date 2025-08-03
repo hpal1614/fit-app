@@ -1361,7 +1361,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                       {exercise?.exercise?.name || 'Exercise'}
                     </h3>
                     <div className="text-xs text-gray-400">
-                      Card {index + 1} of {(workoutExercises || []).length}
+                      Card {index + 1} of {workoutExercises?.length || 0}
                     </div>
                   </div>
                   
