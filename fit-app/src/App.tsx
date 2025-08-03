@@ -83,7 +83,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [useNewWorkoutSystem, setUseNewWorkoutSystem] = useState(false);
+
 
   // Initialize hooks
   const workout = useWorkout();
@@ -253,22 +253,7 @@ function App() {
           </button>
         </div>
         
-        {/* New Workout System Toggle */}
-        {activeTab === 'workouts' && (
-          <div className="flex items-center space-x-2 ml-4">
-            <span className="text-xs text-gray-400">System:</span>
-            <button
-              onClick={() => setUseNewWorkoutSystem(!useNewWorkoutSystem)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                useNewWorkoutSystem 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {useNewWorkoutSystem ? 'New Cards' : 'Old System'}
-            </button>
-          </div>
-        )}
+
       </div>
 
       {/* Profile Modal */}
@@ -308,11 +293,7 @@ function App() {
         <div className="animate-fade-in">
           {activeTab === 'workouts' && (
             <div>
-              {useNewWorkoutSystem ? (
-                <WeightCardCarouselDemo />
-              ) : (
-                <EnhancedWorkoutLogger workout={workout} />
-              )}
+              <WeightCardCarouselDemo />
             </div>
           )}
           {activeTab === 'generator' && <WorkoutGenerator />}
