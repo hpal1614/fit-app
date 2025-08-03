@@ -1318,12 +1318,12 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         
         {/* Carousel Container */}
         <div className="flex overflow-x-auto pb-6 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
-          {workoutExercises.map((exercise, index) => {
+          {(workoutExercises || []).map((exercise, index) => {
             const isCurrent = index === currentExerciseIndex;
             
             return (
               <div
-                key={exercise.id}
+                key={exercise?.id || index}
                 className={`
                   flex-shrink-0 w-full bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300
                   ${isCurrent ? 'border-fitness-blue scale-105' : 'border-gray-700'}
@@ -1349,7 +1349,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Set Progress</div>
-                      <div className="text-sm font-medium text-green-400">Set {completedSets + 1} of {exercise.sets}</div>
+                      <div className="text-sm font-medium text-green-400">Set {completedSets + 1} of {exercise?.sets || 4}</div>
                     </div>
                   </div>
 
@@ -1365,7 +1365,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                         
                         <div className="space-y-2">
                           <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs text-gray-400 font-medium">Last Workout - {exercise.exercise.name}:</div>
+                            <div className="text-xs text-gray-400 font-medium">Last Workout - {exercise?.exercise?.name || 'Exercise'}:</div>
                             <button
                               onClick={() => setShowTableSettings(!showTableSettings)}
                               className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
