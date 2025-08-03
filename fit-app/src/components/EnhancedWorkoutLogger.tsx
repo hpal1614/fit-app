@@ -1473,19 +1473,19 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                           </div>
                           
                           {/* Table Rows */}
-                          {exerciseHistory.slice(-3).map((set, index) => (
-                            <div key={index} className="space-y-1">
+                          {exerciseHistory.slice(-3).map((set, setIndex) => (
+                            <div key={setIndex} className="space-y-1">
                               {/* Main Set Row */}
                               <div className={`grid gap-1 items-center p-1 rounded-lg transition-colors ${
-                                index < getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets 
+                                setIndex < getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets 
                                   ? 'bg-green-500/20 border border-green-500/30' 
-                                  : expandedSetIndex === index 
+                                  : expandedSetIndex === setIndex 
                                     ? 'bg-gray-800/50' 
                                     : 'bg-gray-800/30'
                               }`} style={{
                                 gridTemplateColumns: `auto ${tableSettings.showPrevious ? '1fr' : ''} ${tableSettings.showWeight ? '1fr' : ''} ${tableSettings.showReps ? '1fr' : ''} ${tableSettings.showRPE ? '1fr' : ''} auto`
                               }}>
-                                <div className="text-gray-400 text-xs text-center">Set {index + 1}</div>
+                                <div className="text-gray-400 text-xs text-center">Set {setIndex + 1}</div>
                                 
                                 {tableSettings.showPrevious && (
                                   <div className="text-white text-xs text-center">
