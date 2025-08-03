@@ -19,3 +19,4 @@ export { WorkoutLoggerTab } from './WorkoutLoggerTab';
 export { AnalyticsDashboard } from './AnalyticsDashboard';
 export { VoiceAssistant } from './VoiceAssistant';
 export { WorkoutExerciseConnector } from './WorkoutExerciseConnector';
+export { ExerciseCardFlow } from './ExerciseCardFlow';

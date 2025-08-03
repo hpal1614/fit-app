@@ -13,6 +13,7 @@ import { MuscleGroup } from '../types/workout';
 import { DatabaseService } from '../services/databaseService';
 import RestTimer from './RestTimer';
 import RestTimerSettings from './RestTimerSettings';
+import { ExerciseCardFlow } from './ExerciseCardFlow';
 
 interface Set {
   id: string;
@@ -98,6 +99,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [weightSuggestion, setWeightSuggestion] = useState<string>('');
   const [suggestionReason, setSuggestionReason] = useState<string>('');
   const [exerciseHistory, setExerciseHistory] = useState<Set[]>([]);
+  const [showCardFlow, setShowCardFlow] = useState(false);
   
   // New Rest Timer Modal State
   const [showRestTimerModal, setShowRestTimerModal] = useState(false);
@@ -1102,6 +1104,34 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
   return (
     <div className="space-y-modern animate-fade-in-up">
+      {/* Card Flow View */}
+      {showCardFlow && (
+        <div className="card card-elevated">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white">Exercise Flow</h2>
+            <span className="text-sm text-gray-400">
+              {workoutExercises.findIndex(e => e.id === currentExerciseIndex) + 1} of {workoutExercises.length}
+            </span>
+          </div>
+          <ExerciseCardFlow
+            workoutExercises={workoutExercises}
+            currentExerciseIndex={currentExerciseIndex}
+            completedSets={completedSets}
+            onExerciseChange={(exerciseId) => {
+              setCurrentExerciseIndex(exerciseId);
+              setCompletedSets(0);
+            }}
+            onSetComplete={() => {
+              setCompletedSets(prev => prev + 1);
+            }}
+            onExerciseComplete={(exerciseId) => {
+              console.log(`Exercise ${exerciseId} completed!`);
+              // Handle exercise completion
+            }}
+          />
+        </div>
+      )}
+
       {/* Exercise Header */}
       <div className="card card-elevated">
         <div className="flex items-center justify-between mb-4">
@@ -1154,6 +1184,18 @@ export const EnhancedWorkoutLogger: React.FC = () => {
               }`}
             >
               {autoAdvanceEnabled ? 'Auto ✓' : 'Auto ✗'}
+            </button>
+            
+            {/* Card Flow Toggle */}
+            <button
+              onClick={() => setShowCardFlow(!showCardFlow)}
+              className={`px-3 py-2 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                showCardFlow 
+                  ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
+                  : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+              }`}
+            >
+              {showCardFlow ? '📱 Card View' : '📋 List View'}
             </button>
             
             {/* Change Exercise Button */}
