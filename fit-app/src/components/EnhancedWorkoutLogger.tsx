@@ -1334,7 +1334,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
         
         {/* Carousel Container */}
-        <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4 px-4" style={{ scrollSnapType: 'x mandatory' }}>
+        <div className="flex overflow-x-auto pb-6 scrollbar-hide gap-4 px-2" style={{ scrollSnapType: 'x mandatory' }}>
           {(workoutExercises || []).map((exercise, index) => {
             const isCurrent = index === currentExerciseIndex;
             
@@ -1348,16 +1348,16 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                 `}
                 style={{ 
                   scrollSnapAlign: 'center', 
-                  minWidth: 'calc(100vw - 2rem)',
-                  maxWidth: 'calc(100vw - 2rem)',
-                  width: 'calc(100vw - 2rem)'
+                  minWidth: 'calc(100vw - 4rem)',
+                  maxWidth: 'calc(100vw - 4rem)',
+                  width: 'calc(100vw - 4rem)'
                 }}
               >
                 {/* Weight Card Content */}
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   {/* Exercise Name Header */}
-                  <div className="text-center mb-6">
-                    <h3 className="text-lg font-semibold text-white mb-1">
+                  <div className="text-center mb-4 sm:mb-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
                       {exercise?.exercise?.name || 'Exercise'}
                     </h3>
                     <div className="text-xs text-gray-400">
@@ -1387,7 +1387,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
                   {/* Workout History Section */}
                   {exerciseHistory.length > 0 && (
-                    <div className="mb-4">
+                    <div className="mb-3 sm:mb-4">
                       {/* History Table */}
                       <div className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg mb-3">
                         <div className="flex items-center justify-between mb-2">
