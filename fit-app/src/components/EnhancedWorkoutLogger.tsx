@@ -186,11 +186,11 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   };
 
   // Per-exercise state helpers
-  const getExerciseState = (exerciseId: string) => {
+  const getExerciseState = (exerciseId: string, exerciseIndex: number) => {
     return exerciseStates[exerciseId] || {
-      weight: 190,
-      reps: 8,
-      rpe: 3,
+      weight: 180 + (exerciseIndex * 10), // Different weight for each exercise
+      reps: 8 + (exerciseIndex % 3), // Vary reps slightly
+      rpe: 3 + (exerciseIndex % 4), // Vary RPE slightly
       completedSets: 0
     };
   };
@@ -1417,7 +1417,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Set Progress</div>
-                      <div className="text-sm font-medium text-green-400">Set {getExerciseState(exercise?.id || '').completedSets + 1} of {exercise?.sets || 4}</div>
+                      <div className="text-sm font-medium text-green-400">Set {getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets + 1} of {exercise?.sets || 4}</div>
                     </div>
                   </div>
 
@@ -1477,7 +1477,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                             <div key={index} className="space-y-1">
                               {/* Main Set Row */}
                               <div className={`grid gap-1 items-center p-1 rounded-lg transition-colors ${
-                                index < getExerciseState(exercise?.id || '').completedSets 
+                                index < getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets 
                                   ? 'bg-green-500/20 border border-green-500/30' 
                                   : expandedSetIndex === index 
                                     ? 'bg-gray-800/50' 
@@ -1497,8 +1497,8 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                 {tableSettings.showWeight && (
                                   <div className="flex items-center gap-1">
                                     <button
-                                      onClick={() => updateExerciseState(exercise?.id || '', { 
-                                        weight: Math.max(0, getExerciseState(exercise?.id || '').weight - 5) 
+                                      onClick={() => updateExerciseState(exercise?.id || `exercise-${index}`, { 
+                                        weight: Math.max(0, getExerciseState(exercise?.id || `exercise-${index}`, index).weight - 5) 
                                       })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
@@ -1508,11 +1508,11 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                       onClick={() => openPlateCalculator(set.weight, 'weight')}
                                       className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
                                     >
-                                      {index < getExerciseState(exercise?.id || '').completedSets ? getExerciseState(exercise?.id || '').weight : set.weight}
+                                      {index < getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets ? getExerciseState(exercise?.id || `exercise-${index}`, index).weight : set.weight}
                                     </div>
                                     <button
-                                      onClick={() => updateExerciseState(exercise?.id || '', { 
-                                        weight: getExerciseState(exercise?.id || '').weight + 5 
+                                      onClick={() => updateExerciseState(exercise?.id || `exercise-${index}`, { 
+                                        weight: getExerciseState(exercise?.id || `exercise-${index}`, index).weight + 5 
                                       })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
@@ -1524,8 +1524,8 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                 {tableSettings.showReps && (
                                   <div className="flex items-center gap-1">
                                     <button
-                                      onClick={() => updateExerciseState(exercise?.id || '', { 
-                                        reps: Math.max(1, getExerciseState(exercise?.id || '').reps - 1) 
+                                      onClick={() => updateExerciseState(exercise?.id || `exercise-${index}`, { 
+                                        reps: Math.max(1, getExerciseState(exercise?.id || `exercise-${index}`, index).reps - 1) 
                                       })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
@@ -1535,11 +1535,11 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                       onClick={() => openPlateCalculator(set.reps, 'reps')}
                                       className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
                                     >
-                                      {index < getExerciseState(exercise?.id || '').completedSets ? getExerciseState(exercise?.id || '').reps : set.reps}
+                                      {index < getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets ? getExerciseState(exercise?.id || `exercise-${index}`, index).reps : set.reps}
                                     </div>
                                     <button
-                                      onClick={() => updateExerciseState(exercise?.id || '', { 
-                                        reps: getExerciseState(exercise?.id || '').reps + 1 
+                                      onClick={() => updateExerciseState(exercise?.id || `exercise-${index}`, { 
+                                        reps: getExerciseState(exercise?.id || `exercise-${index}`, index).reps + 1 
                                       })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
@@ -1551,19 +1551,19 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                 {tableSettings.showRPE && (
                                   <div className="flex items-center gap-1">
                                     <button
-                                      onClick={() => updateExerciseState(exercise?.id || '', { 
-                                        rpe: Math.max(1, getExerciseState(exercise?.id || '').rpe - 1) 
+                                      onClick={() => updateExerciseState(exercise?.id || `exercise-${index}`, { 
+                                        rpe: Math.max(1, getExerciseState(exercise?.id || `exercise-${index}`, index).rpe - 1) 
                                       })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
                                       -
                                     </button>
                                     <div className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs">
-                                      {index < getExerciseState(exercise?.id || '').completedSets ? getExerciseState(exercise?.id || '').rpe : set.rpe}
+                                      {index < getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets ? getExerciseState(exercise?.id || `exercise-${index}`, index).rpe : set.rpe}
                                     </div>
                                     <button
-                                      onClick={() => updateExerciseState(exercise?.id || '', { 
-                                        rpe: Math.min(10, getExerciseState(exercise?.id || '').rpe + 1) 
+                                      onClick={() => updateExerciseState(exercise?.id || `exercise-${index}`, { 
+                                        rpe: Math.min(10, getExerciseState(exercise?.id || `exercise-${index}`, index).rpe + 1) 
                                       })}
                                       className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
                                     >
@@ -1575,16 +1575,16 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                 <div className="flex items-center justify-center">
                                   <button
                                     onClick={() => {
-                                      const currentState = getExerciseState(exercise?.id || '');
+                                      const currentState = getExerciseState(exercise?.id || `exercise-${index}`, index);
                                       if (index < currentState.completedSets) {
                                         // Unlog set
-                                        updateExerciseState(exercise?.id || '', { 
+                                        updateExerciseState(exercise?.id || `exercise-${index}`, { 
                                           completedSets: currentState.completedSets - 1 
                                         });
                                         showSmartSuggestion('Set unlogged');
                                       } else {
                                         // Log set
-                                        updateExerciseState(exercise?.id || '', { 
+                                        updateExerciseState(exercise?.id || `exercise-${index}`, { 
                                           completedSets: currentState.completedSets + 1 
                                         });
                                         startRestTimer();
@@ -1592,12 +1592,12 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                       }
                                     }}
                                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
-                                      index < getExerciseState(exercise?.id || '').completedSets 
+                                      index < getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets 
                                         ? 'bg-red-500 text-white hover:bg-red-600' 
                                         : 'bg-green-500 text-white hover:bg-green-600'
                                     }`}
                                   >
-                                    {index < getExerciseState(exercise?.id || '').completedSets ? '↺' : '▶'}
+                                    {index < getExerciseState(exercise?.id || `exercise-${index}`, index).completedSets ? '↺' : '▶'}
                                   </button>
                                 </div>
                               </div>
@@ -1606,9 +1606,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => {
-                                    const currentState = getExerciseState(exercise?.id || '');
+                                    const currentState = getExerciseState(exercise?.id || `exercise-${index}`, index);
                                     showSmartSuggestion('Set marked as failed');
-                                    updateExerciseState(exercise?.id || '', { 
+                                    updateExerciseState(exercise?.id || `exercise-${index}`, { 
                                       completedSets: currentState.completedSets + 1 
                                     });
                                   }}
@@ -1631,20 +1631,20 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                   <div className="space-y-2 mb-3">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-400">Started at:</span>
-                                      <span className="text-sm text-white">{getExerciseState(exercise?.id || '').weight} lbs × {getExerciseState(exercise?.id || '').reps} reps</span>
+                                      <span className="text-sm text-white">{getExerciseState(exercise?.id || `exercise-${index}`, index).weight} lbs × {getExerciseState(exercise?.id || `exercise-${index}`, index).reps} reps</span>
                                     </div>
                                     <div className="text-center text-purple-400 text-sm">↓</div>
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-400">Dropped to:</span>
                                       <input 
                                         type="number" 
-                                        defaultValue={Math.round(getExerciseState(exercise?.id || '').weight * 0.8)}
+                                        defaultValue={Math.round(getExerciseState(exercise?.id || `exercise-${index}`, index).weight * 0.8)}
                                         className="w-16 p-1 bg-gray-700 rounded text-center text-sm"
                                       />
                                       <span className="text-sm text-white">lbs ×</span>
                                       <input 
                                         type="number" 
-                                        defaultValue={Math.floor(getExerciseState(exercise?.id || '').reps * 0.4)}
+                                        defaultValue={Math.floor(getExerciseState(exercise?.id || `exercise-${index}`, index).reps * 0.4)}
                                         className="w-12 p-1 bg-gray-700 rounded text-center text-sm"
                                       />
                                       <span className="text-sm text-white">reps</span>
@@ -1680,28 +1680,28 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                           <div className="flex items-center gap-3">
                             <span className="text-gray-400 text-xs">Smart Default:</span>
                             <span className="text-white text-sm">
-                              {exerciseHistory[exerciseHistory.length - 1]?.weight || getExerciseState(exercise?.id || '').weight} lbs × {exerciseHistory[exerciseHistory.length - 1]?.reps || getExerciseState(exercise?.id || '').reps} reps
+                              {exerciseHistory[exerciseHistory.length - 1]?.weight || getExerciseState(exercise?.id || `exercise-${index}`, index).weight} lbs × {exerciseHistory[exerciseHistory.length - 1]?.reps || getExerciseState(exercise?.id || `exercise-${index}`, index).reps} reps
                             </span>
                             <span className="text-gray-500 text-xs">
-                              RPE {exerciseHistory[exerciseHistory.length - 1]?.rpe || getExerciseState(exercise?.id || '').rpe}
+                              RPE {exerciseHistory[exerciseHistory.length - 1]?.rpe || getExerciseState(exercise?.id || `exercise-${index}`, index).rpe}
                             </span>
                           </div>
-                          <button
-                            onClick={() => {
-                              const lastSet = exerciseHistory[exerciseHistory.length - 1];
-                              if (lastSet) {
-                                updateExerciseState(exercise?.id || '', {
-                                  weight: lastSet.weight,
-                                  reps: lastSet.reps,
-                                  rpe: lastSet.rpe
-                                });
-                                showSmartSuggestion('Loaded last set from previous workout');
-                              }
-                            }}
-                            className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded hover:bg-green-500/30 transition-colors"
-                          >
-                            Apply
-                          </button>
+                                                      <button
+                              onClick={() => {
+                                const lastSet = exerciseHistory[exerciseHistory.length - 1];
+                                if (lastSet) {
+                                  updateExerciseState(exercise?.id || `exercise-${index}`, {
+                                    weight: lastSet.weight,
+                                    reps: lastSet.reps,
+                                    rpe: lastSet.rpe
+                                  });
+                                  showSmartSuggestion('Loaded last set from previous workout');
+                                }
+                              }}
+                              className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded hover:bg-green-500/30 transition-colors"
+                            >
+                              Apply
+                            </button>
                         </div>
                       </div>
                     </div>
