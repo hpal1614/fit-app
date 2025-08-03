@@ -184,7 +184,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     updatePreviousSet();
     playSound('button');
   };
-  
+
   // Per-exercise state helpers
   const getExerciseState = (exerciseId: string) => {
     return exerciseStates[exerciseId] || {
@@ -194,7 +194,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       completedSets: 0
     };
   };
-  
+
   const updateExerciseState = (exerciseId: string, updates: Partial<{
     weight: number;
     reps: number;
@@ -1603,18 +1603,18 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                               
                               {/* Expanded Set Actions */}
                               <div className="flex gap-2">
-                                                              <button
-                                onClick={() => {
-                                  const currentState = getExerciseState(exercise?.id || '');
-                                  showSmartSuggestion('Set marked as failed');
-                                  updateExerciseState(exercise?.id || '', { 
-                                    completedSets: currentState.completedSets + 1 
-                                  });
-                                }}
-                                className="flex-1 py-2 bg-red-500/20 text-red-300 rounded text-xs font-medium hover:bg-red-500/30 transition-colors"
-                              >
-                                ❌ Mark Failed
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    const currentState = getExerciseState(exercise?.id || '');
+                                    showSmartSuggestion('Set marked as failed');
+                                    updateExerciseState(exercise?.id || '', { 
+                                      completedSets: currentState.completedSets + 1 
+                                    });
+                                  }}
+                                  className="flex-1 py-2 bg-red-500/20 text-red-300 rounded text-xs font-medium hover:bg-red-500/30 transition-colors"
+                                >
+                                  ❌ Mark Failed
+                                </button>
                                 <button
                                   onClick={() => setShowDropSetForIndex(index)}
                                   className="flex-1 py-2 bg-purple-500/20 text-purple-300 rounded text-xs font-medium hover:bg-purple-500/30 transition-colors"
@@ -1630,20 +1630,20 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                                   <div className="space-y-2 mb-3">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-400">Started at:</span>
-                                      <span className="text-sm text-white">{currentWeight} lbs × {currentReps} reps</span>
+                                      <span className="text-sm text-white">{getExerciseState(exercise?.id || '').weight} lbs × {getExerciseState(exercise?.id || '').reps} reps</span>
                                     </div>
                                     <div className="text-center text-purple-400 text-sm">↓</div>
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-400">Dropped to:</span>
                                       <input 
                                         type="number" 
-                                        defaultValue={Math.round(currentWeight * 0.8)}
+                                        defaultValue={Math.round(getExerciseState(exercise?.id || '').weight * 0.8)}
                                         className="w-16 p-1 bg-gray-700 rounded text-center text-sm"
                                       />
                                       <span className="text-sm text-white">lbs ×</span>
                                       <input 
                                         type="number" 
-                                        defaultValue={Math.floor(currentReps * 0.4)}
+                                        defaultValue={Math.floor(getExerciseState(exercise?.id || '').reps * 0.4)}
                                         className="w-12 p-1 bg-gray-700 rounded text-center text-sm"
                                       />
                                       <span className="text-sm text-white">reps</span>
@@ -1679,19 +1679,21 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                           <div className="flex items-center gap-3">
                             <span className="text-gray-400 text-xs">Smart Default:</span>
                             <span className="text-white text-sm">
-                              {exerciseHistory[exerciseHistory.length - 1]?.weight || currentWeight} lbs × {exerciseHistory[exerciseHistory.length - 1]?.reps || currentReps} reps
+                              {exerciseHistory[exerciseHistory.length - 1]?.weight || getExerciseState(exercise?.id || '').weight} lbs × {exerciseHistory[exerciseHistory.length - 1]?.reps || getExerciseState(exercise?.id || '').reps} reps
                             </span>
                             <span className="text-gray-500 text-xs">
-                              RPE {exerciseHistory[exerciseHistory.length - 1]?.rpe || currentRPE}
+                              RPE {exerciseHistory[exerciseHistory.length - 1]?.rpe || getExerciseState(exercise?.id || '').rpe}
                             </span>
                           </div>
                           <button
                             onClick={() => {
                               const lastSet = exerciseHistory[exerciseHistory.length - 1];
                               if (lastSet) {
-                                setCurrentWeight(lastSet.weight);
-                                setCurrentReps(lastSet.reps);
-                                setRPE(lastSet.rpe);
+                                updateExerciseState(exercise?.id || '', {
+                                  weight: lastSet.weight,
+                                  reps: lastSet.reps,
+                                  rpe: lastSet.rpe
+                                });
                                 showSmartSuggestion('Loaded last set from previous workout');
                               }
                             }}
