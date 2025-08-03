@@ -1389,7 +1389,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                 }}
               >
                 {/* Weight Card Content */}
-                <div className="p-4 sm:p-6 mx-4">
+                <div className="p-4 sm:p-6">
                   {/* Exercise Name Header */}
                   <div className="text-center mb-4 sm:mb-6">
                     <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
