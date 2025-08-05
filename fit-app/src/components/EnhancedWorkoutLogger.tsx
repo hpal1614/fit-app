@@ -2076,6 +2076,30 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
               )}
             </button>
             
+            {/* Alternative Exercise Button */}
+            <button
+              onClick={() => {
+                setShowAlternativeExercises(!showAlternativeExercises);
+                if (!showAlternativeExercises) {
+                  generateAlternativeExercises();
+                }
+              }}
+              disabled={isGeneratingAlternatives}
+              className="w-16 h-16 rounded-lg bg-lime-500/20 text-lime-400 border border-lime-500/30 hover:bg-lime-500/30 hover:scale-105 transition-all duration-200 disabled:opacity-50 flex flex-col items-center justify-center gap-1"
+            >
+              {isGeneratingAlternatives ? (
+                <>
+                  <div className="w-4 h-4 border border-lime-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs font-medium">Loading</span>
+                </>
+              ) : (
+                <>
+                  <div className="text-lg font-bold">💡</div>
+                  <span className="text-xs font-medium">Alt</span>
+                </>
+              )}
+            </button>
+            
             {/* How Do You Feel Button */}
             <button
               onClick={() => setShowDifficultyModal(true)}
