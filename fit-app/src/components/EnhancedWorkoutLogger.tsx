@@ -105,6 +105,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [isWakeWordMode, setIsWakeWordMode] = useState(false);
   const [couchResponse, setCouchResponse] = useState('');
   const [isCouchSpeaking, setIsCouchSpeaking] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [tableSettings, setTableSettings] = useState({
     showWeight: true,
     showReps: true,
@@ -333,6 +334,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       setIsListening(false);
       setIsWakeWordMode(false);
       setCouchResponse('');
+      stopAllAudio();
       setVoiceText(`🎤 "${currentExerciseState.weight} for ${currentExerciseState.reps}, felt perfect"`);
     } else {
       const success = await voiceServiceRef.current.startListening();
@@ -354,6 +356,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const exitWakeWordMode = () => {
     setIsWakeWordMode(false);
     setCouchResponse('');
+    stopAllAudio();
     speakCouchResponse('Goodbye! I\'m here when you need me.');
   };
 
@@ -369,6 +372,13 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       if (timeout) clearTimeout(timeout);
     };
   }, [isWakeWordMode, couchResponse]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      stopAllAudio();
+    };
+  }, []);
 
   // Timer System
   const toggleTimer = () => {
@@ -932,8 +942,26 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     return 'I heard you! How can I help with your workout?';
   };
 
+  // Stop all audio playback
+  const stopAllAudio = () => {
+    // Stop browser TTS
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+    }
+    
+    // Stop current audio
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      setCurrentAudio(null);
+    }
+  };
+
   // Speak response using ElevenLabs or browser TTS
   const speakCouchResponse = async (text: string) => {
+    // Stop any existing audio first
+    stopAllAudio();
+    
     setIsCouchSpeaking(true);
     
     try {
@@ -962,10 +990,21 @@ export const EnhancedWorkoutLogger: React.FC = () => {
             const audioBlob = await response.blob();
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
+            
+            // Set as current audio
+            setCurrentAudio(audio);
+            
             audio.onended = () => {
               setIsCouchSpeaking(false);
+              setCurrentAudio(null);
               URL.revokeObjectURL(audioUrl);
             };
+            audio.onerror = () => {
+              setIsCouchSpeaking(false);
+              setCurrentAudio(null);
+              URL.revokeObjectURL(audioUrl);
+            };
+            
             await audio.play();
             return;
           }
