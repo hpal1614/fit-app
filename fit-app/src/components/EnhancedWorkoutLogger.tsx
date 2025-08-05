@@ -106,6 +106,11 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [couchResponse, setCouchResponse] = useState('');
   const [isCouchSpeaking, setIsCouchSpeaking] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
+  const [conversationMemory, setConversationMemory] = useState<{
+    lastSuggestion?: any;
+    lastContext?: any;
+    conversationHistory: string[];
+  }>({ conversationHistory: [] });
   const [tableSettings, setTableSettings] = useState({
     showWeight: true,
     showReps: true,
@@ -809,11 +814,13 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   };
 
   // Generate AI response using available services
-  const generateCouchResponse = async (userInput: string): Promise<string> => {
+  const generateCouchResponse = async (userInput: string): Promise<{ response: string; actions?: any[] }> => {
     try {
-      // Get current workout context
+      // Get comprehensive workout context
       const currentState = getExerciseState(currentExerciseIndex);
       const currentExercise = workoutExercises[currentExerciseIndex];
+      const exerciseHistory = currentState.history || [];
+      const previousSets = exerciseHistory.slice(-3); // Last 3 sets for context
       
       const context = {
         currentExercise: currentExercise?.name || 'Unknown',
@@ -824,7 +831,16 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         totalSets: getTotalSets(currentExerciseIndex),
         workoutProgress: calculateOverallProgress(),
         isTimerRunning: timerRunning,
-        restTime: restTime
+        restTime: restTime,
+        previousSets: previousSets,
+        nextSetNumber: currentState.completedSets + 1,
+        exerciseType: currentExercise?.type || 'strength',
+        muscleGroup: currentExercise?.muscleGroup || 'general',
+        workoutPhase: currentState.completedSets === 0 ? 'warmup' : 
+                     currentState.completedSets >= getTotalSets(currentExerciseIndex) - 1 ? 'finishing' : 'working',
+        lastSetWeight: previousSets.length > 0 ? previousSets[previousSets.length - 1].weight : currentState.weight,
+        lastSetReps: previousSets.length > 0 ? previousSets[previousSets.length - 1].reps : currentState.reps,
+        lastSetRPE: previousSets.length > 0 ? previousSets[previousSets.length - 1].rpe : currentState.rpe
       };
 
       // Try OpenRouter first (most capable for conversational AI)
@@ -844,21 +860,68 @@ export const EnhancedWorkoutLogger: React.FC = () => {
               messages: [
                 {
                   role: 'system',
-                  content: `You are Couch, an AI fitness coach with a warm, encouraging personality. You're helping a user during their workout. Be conversational, motivational, and helpful. Keep responses under 50 words. Current workout context: ${JSON.stringify(context)}`
+                  content: `You are Couch, an AI fitness coach with a warm, encouraging personality. You're helping a user during their workout in real-time.
+
+WORKOUT CONTEXT:
+- Exercise: ${context.currentExercise}
+- Current Set: ${context.nextSetNumber}/${context.totalSets}
+- Current Weight: ${context.currentWeight} lbs
+- Current Reps: ${context.currentReps}
+- Current RPE: ${context.currentRPE}
+- Workout Progress: ${Math.round(context.workoutProgress)}%
+- Phase: ${context.workoutPhase}
+- Previous Set: ${context.lastSetWeight} lbs × ${context.lastSetReps} reps (RPE ${context.lastSetRPE})
+
+AVAILABLE ACTIONS:
+- adjust_weight(amount): Change weight by amount
+- set_weight(weight): Set specific weight
+- set_reps(reps): Set specific reps
+- set_rpe(rpe): Set RPE (1-5)
+- log_set(): Log current set
+- start_timer(): Start rest timer
+- next_exercise(): Move to next exercise
+- add_set(): Add another set
+- suggest_weight(): Suggest weight for next set
+
+BEHAVIOR:
+- Be conversational and motivational
+- Understand workout context and progression
+- Make smart suggestions based on previous sets
+- If user agrees to a suggestion, automatically execute it
+- Keep responses under 60 words
+- Use natural language like a real coach
+
+EXAMPLE CONVERSATIONS:
+User: "How should I squat?"
+Coach: "For squats, focus on form first! Feet shoulder-width, chest up, push through heels. Start with ${context.currentWeight} lbs for ${context.currentReps} reps. Ready to try?"
+
+User: "Yes"
+Coach: "Perfect! I've set it to ${context.currentWeight} lbs. Remember to breathe and keep your core tight. Let's do this!"
+
+User: "Suggest weight for next set"
+Coach: "Based on your last set of ${context.lastSetWeight} lbs, I suggest ${context.lastSetWeight + 5} lbs for the next set. You're building strength nicely! Want to try it?"
+
+User: "Yes"
+Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got this! Focus on form and push through.`
                 },
                 {
                   role: 'user',
                   content: userInput
                 }
               ],
-              max_tokens: 150,
+              max_tokens: 200,
               temperature: 0.8
             })
           });
 
           if (response.ok) {
             const data = await response.json();
-            return data.choices[0]?.message?.content || 'I heard you! How can I help with your workout?';
+            const aiResponse = data.choices[0]?.message?.content || 'I heard you! How can I help with your workout?';
+            
+            // Parse response for actions
+            const actions = parseActionsFromResponse(aiResponse, context);
+            
+            return { response: aiResponse, actions };
           }
         } catch (error) {
           console.warn('OpenRouter failed:', error);
@@ -887,14 +950,16 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                   content: userInput
                 }
               ],
-              max_tokens: 100,
+              max_tokens: 150,
               temperature: 0.7
             })
           });
 
           if (response.ok) {
             const data = await response.json();
-            return data.choices[0]?.message?.content || 'Hey there! How can I help with your workout?';
+            const aiResponse = data.choices[0]?.message?.content || 'Hey there! How can I help with your workout?';
+            const actions = parseActionsFromResponse(aiResponse, context);
+            return { response: aiResponse, actions };
           }
         } catch (error) {
           console.warn('Groq failed:', error);
@@ -902,11 +967,104 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       }
 
       // Final fallback - smart contextual responses
-      return generateFallbackResponse(userInput, context);
+      const fallbackResponse = generateFallbackResponse(userInput, context);
+      const actions = parseActionsFromResponse(fallbackResponse, context);
+      return { response: fallbackResponse, actions };
     } catch (error) {
       console.error('Failed to generate Couch response:', error);
-      return 'I heard you! How can I help with your workout?';
+      return { response: 'I heard you! How can I help with your workout?' };
     }
+  };
+
+  // Parse actions from AI response
+  const parseActionsFromResponse = (response: string, context: any): any[] => {
+    const actions: any[] = [];
+    const lowerResponse = response.toLowerCase();
+    
+    // Weight suggestions
+    if (lowerResponse.includes('suggest') && lowerResponse.includes('weight')) {
+      const suggestedWeight = context.lastSetWeight + 5; // Simple progression
+      actions.push({ type: 'suggest_weight', weight: suggestedWeight });
+    }
+    
+    // User agreement patterns
+    if (lowerResponse.includes('yes') || lowerResponse.includes('perfect') || lowerResponse.includes('sounds good')) {
+      // Check if we just suggested something
+      if (conversationMemory.lastSuggestion) {
+        actions.push(conversationMemory.lastSuggestion);
+      }
+    }
+    
+    // Direct weight mentions
+    const weightMatch = response.match(/(\d+)\s*lbs?/i);
+    if (weightMatch) {
+      const weight = parseInt(weightMatch[1]);
+      actions.push({ type: 'set_weight', weight });
+    }
+    
+    // Rep mentions
+    const repMatch = response.match(/(\d+)\s*reps?/i);
+    if (repMatch) {
+      const reps = parseInt(repMatch[1]);
+      actions.push({ type: 'set_reps', reps });
+    }
+    
+    // Form advice and exercise guidance
+    if (lowerResponse.includes('form') || lowerResponse.includes('technique')) {
+      actions.push({ type: 'form_advice', exercise: context.currentExercise });
+    }
+    
+    // Motivation and encouragement
+    if (lowerResponse.includes('motivation') || lowerResponse.includes('encourage')) {
+      actions.push({ type: 'motivation', phase: context.workoutPhase });
+    }
+    
+    return actions;
+  };
+
+  // Execute actions from AI response
+  const executeActions = (actions: any[], context: any) => {
+    actions.forEach(action => {
+      switch (action.type) {
+        case 'set_weight':
+          updateExerciseState(currentExerciseIndex, { weight: action.weight });
+          showSmartSuggestion(`✅ Weight set to ${action.weight} lbs`);
+          break;
+        case 'adjust_weight':
+          adjustWeight(action.amount);
+          showSmartSuggestion(`✅ Weight adjusted by ${action.amount} lbs`);
+          break;
+        case 'set_reps':
+          updateExerciseState(currentExerciseIndex, { reps: action.reps });
+          showSmartSuggestion(`✅ Reps set to ${action.reps}`);
+          break;
+        case 'set_rpe':
+          updateExerciseState(currentExerciseIndex, { rpe: action.rpe });
+          showSmartSuggestion(`✅ RPE set to ${action.rpe}`);
+          break;
+        case 'log_set':
+          logSet();
+          showSmartSuggestion(`✅ Set logged!`);
+          break;
+        case 'start_timer':
+          startRestTimer();
+          showSmartSuggestion(`⏰ Rest timer started!`);
+          break;
+        case 'next_exercise':
+          advanceToNextExercise();
+          showSmartSuggestion(`➡️ Moving to next exercise!`);
+          break;
+        case 'add_set':
+          addSetToExercise(currentExerciseIndex);
+          showSmartSuggestion(`➕ Added another set!`);
+          break;
+        case 'suggest_weight':
+          const suggestedWeight = context.lastSetWeight + 5;
+          updateExerciseState(currentExerciseIndex, { weight: suggestedWeight });
+          showSmartSuggestion(`💡 Suggested weight: ${suggestedWeight} lbs`);
+          break;
+      }
+    });
   };
 
   // Fallback response generator
@@ -937,6 +1095,15 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     
     if (input.includes('progress') || input.includes('how am i doing')) {
       return `Great progress! You've completed ${Math.round(context.workoutProgress)}% of your workout.`;
+    }
+    
+    if (input.includes('suggest') && input.includes('weight')) {
+      const suggestedWeight = context.lastSetWeight + 5;
+      return `Based on your last set, I suggest ${suggestedWeight} lbs for the next set. Want to try it?`;
+    }
+    
+    if (input.includes('yes') || input.includes('perfect') || input.includes('sounds good')) {
+      return 'Great! I\'ve updated your settings. You\'ve got this!';
     }
     
     return 'I heard you! How can I help with your workout?';
@@ -1082,10 +1249,28 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         return;
       }
       
-      // Generate conversational response
-      generateCouchResponse(command).then(response => {
+      // Generate conversational response with actions
+      generateCouchResponse(command).then(({ response, actions }) => {
         setCouchResponse(response);
         speakCouchResponse(response);
+        
+        // Update conversation memory
+        setConversationMemory(prev => ({
+          ...prev,
+          conversationHistory: [...prev.conversationHistory.slice(-4), command, response], // Keep last 5 exchanges
+          lastSuggestion: actions?.find(a => a.type === 'suggest_weight') || prev.lastSuggestion
+        }));
+        
+        // Execute any actions from the response
+        if (actions && actions.length > 0) {
+          setTimeout(() => {
+            executeActions(actions, {
+              currentWeight: getExerciseState(currentExerciseIndex).weight,
+              lastSetWeight: getExerciseState(currentExerciseIndex).history?.slice(-1)[0]?.weight || getExerciseState(currentExerciseIndex).weight,
+              lastSuggestion: conversationMemory.lastSuggestion
+            });
+          }, 1000); // Small delay to let user hear the response first
+        }
       });
       return;
     }
