@@ -1611,14 +1611,14 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
   };
 
   // Workout exercises data
-  const workoutExercises = [
+  const [workoutExercises, setWorkoutExercises] = useState([
     { id: 0, name: 'Bench Press', sets: 4, reps: '8-10', equipment: 'Barbell + Bench', status: 'current' },
     { id: 1, name: 'Incline Dumbbell Press', sets: 3, reps: '8-10', equipment: 'Dumbbells + Incline Bench', status: 'next' },
     { id: 2, name: 'Cable Chest Fly', sets: 3, reps: '12-15', equipment: 'Cable Machine', status: 'upcoming' },
     { id: 3, name: 'Dips', sets: 3, reps: '8-12', equipment: 'Dip Bars', status: 'upcoming' },
     { id: 4, name: 'Push-ups', sets: 3, reps: '15-20', equipment: 'Bodyweight', status: 'upcoming' },
     { id: 5, name: 'Chest Stretch', sets: 1, reps: '30s hold', equipment: 'None', status: 'upcoming' }
-  ];
+  ]);
 
   // Scroll to current exercise when index changes
   useEffect(() => {
@@ -1787,7 +1787,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
     
     setIsGeneratingAlternatives(true);
     try {
-      const currentExercise = workoutExercises.find(e => e.id === currentExerciseIndex);
+      const currentExercise = workoutExercises[currentExerciseIndex];
       
       // First, try to find alternatives from our database
       let alternatives = [];
@@ -1911,6 +1911,9 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
         ? { ...exercise, name: newExercise.name, equipment: newExercise.equipment }
         : exercise
     );
+    
+    // Update the workout exercises state
+    setWorkoutExercises(updatedWorkoutExercises);
     
     // Reset progress for the new exercise
     updateExerciseState(currentExerciseIndex, { completedSets: 0 });
@@ -2800,6 +2803,17 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
                 <button
                   key={exercise.id}
                   onClick={() => {
+                    // Update the current exercise with the alternative
+                    const updatedWorkoutExercises = workoutExercises.map((ex, index) => 
+                      index === currentExerciseIndex 
+                        ? { ...ex, name: exercise.name, equipment: exercise.equipment }
+                        : ex
+                    );
+                    setWorkoutExercises(updatedWorkoutExercises);
+                    
+                    // Reset progress for the new exercise
+                    updateExerciseState(currentExerciseIndex, { completedSets: 0 });
+                    
                     showSmartSuggestion(`Switched to ${exercise.name}`);
                     setShowAlternativeExercises(false);
                     playSound('button');
