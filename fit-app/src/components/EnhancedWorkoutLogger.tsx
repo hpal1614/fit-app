@@ -102,6 +102,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [showTimerExpanded, setShowTimerExpanded] = useState(false);
   const [showVoiceNotesPopup, setShowVoiceNotesPopup] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [isWakeWordMode, setIsWakeWordMode] = useState(false);
+  const [couchResponse, setCouchResponse] = useState('');
+  const [isCouchSpeaking, setIsCouchSpeaking] = useState(false);
   const [tableSettings, setTableSettings] = useState({
     showWeight: true,
     showReps: true,
@@ -327,12 +330,18 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     
     if (isListening) {
       voiceServiceRef.current.stopListening();
+      setIsListening(false);
+      setIsWakeWordMode(false);
+      setCouchResponse('');
       setVoiceText(`🎤 "${currentExerciseState.weight} for ${currentExerciseState.reps}, felt perfect"`);
     } else {
       const success = await voiceServiceRef.current.startListening();
       if (success) {
-        setVoiceText('🎤 Listening...');
-        showSmartSuggestion('Voice recognition active. Try saying: "add 5 pounds" or "set reps to 10"');
+        setIsListening(true);
+        setIsWakeWordMode(false);
+        setCouchResponse('');
+        setVoiceText('🎤 Listening... Say "Hey Couch" to activate AI assistant');
+        showSmartSuggestion('Voice recognition active. Say "Hey Couch" to start chatting with your AI coach!');
       } else {
         showSmartSuggestion('Failed to start voice recognition. Please check microphone permissions.');
       }
@@ -340,6 +349,26 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     
     playSound('button');
   };
+
+  // Exit wake word mode
+  const exitWakeWordMode = () => {
+    setIsWakeWordMode(false);
+    setCouchResponse('');
+    speakCouchResponse('Goodbye! I\'m here when you need me.');
+  };
+
+  // Auto-exit wake word mode after inactivity
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (isWakeWordMode) {
+      timeout = setTimeout(() => {
+        exitWakeWordMode();
+      }, 30000); // 30 seconds of inactivity
+    }
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [isWakeWordMode, couchResponse]);
 
   // Timer System
   const toggleTimer = () => {
@@ -762,9 +791,265 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   }, [currentRPE, currentReps, currentIncrement]);
 
   // Process Voice Commands
+  // Wake word detection
+  const detectWakeWord = (transcript: string): boolean => {
+    const text = transcript.toLowerCase();
+    const wakeWords = ['hey couch', 'hi couch', 'hello couch', 'couch', 'hey coach', 'hi coach'];
+    return wakeWords.some(word => text.includes(word));
+  };
+
+  // Generate AI response using available services
+  const generateCouchResponse = async (userInput: string): Promise<string> => {
+    try {
+      // Get current workout context
+      const currentState = getExerciseState(currentExerciseIndex);
+      const currentExercise = workoutExercises[currentExerciseIndex];
+      
+      const context = {
+        currentExercise: currentExercise?.name || 'Unknown',
+        currentWeight: currentState.weight,
+        currentReps: currentState.reps,
+        currentRPE: currentState.rpe,
+        completedSets: currentState.completedSets,
+        totalSets: getTotalSets(currentExerciseIndex),
+        workoutProgress: calculateOverallProgress(),
+        isTimerRunning: timerRunning,
+        restTime: restTime
+      };
+
+      // Try OpenRouter first (most capable for conversational AI)
+      const openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      if (openRouterKey) {
+        try {
+          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openRouterKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': window.location.origin,
+              'X-Title': 'Couch AI Fitness Coach'
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-4',
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are Couch, an AI fitness coach with a warm, encouraging personality. You're helping a user during their workout. Be conversational, motivational, and helpful. Keep responses under 50 words. Current workout context: ${JSON.stringify(context)}`
+                },
+                {
+                  role: 'user',
+                  content: userInput
+                }
+              ],
+              max_tokens: 150,
+              temperature: 0.8
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            return data.choices[0]?.message?.content || 'I heard you! How can I help with your workout?';
+          }
+        } catch (error) {
+          console.warn('OpenRouter failed:', error);
+        }
+      }
+
+      // Fallback to Groq
+      const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+      if (groqKey) {
+        try {
+          const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${groqKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'mixtral-8x7b-32768',
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are Couch, an AI fitness coach. Be warm and helpful. Context: ${JSON.stringify(context)}`
+                },
+                {
+                  role: 'user',
+                  content: userInput
+                }
+              ],
+              max_tokens: 100,
+              temperature: 0.7
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            return data.choices[0]?.message?.content || 'Hey there! How can I help with your workout?';
+          }
+        } catch (error) {
+          console.warn('Groq failed:', error);
+        }
+      }
+
+      // Final fallback - smart contextual responses
+      return generateFallbackResponse(userInput, context);
+    } catch (error) {
+      console.error('Failed to generate Couch response:', error);
+      return 'I heard you! How can I help with your workout?';
+    }
+  };
+
+  // Fallback response generator
+  const generateFallbackResponse = (userInput: string, context: any): string => {
+    const input = userInput.toLowerCase();
+    
+    if (input.includes('help') || input.includes('what can you do')) {
+      return 'I can help you log sets, adjust weights, start timers, navigate exercises, and more! Just tell me what you need.';
+    }
+    
+    if (input.includes('weight') || input.includes('heavy') || input.includes('light')) {
+      return `Your current weight is ${context.currentWeight} lbs. Want me to adjust it?`;
+    }
+    
+    if (input.includes('reps') || input.includes('repetitions')) {
+      return `You're doing ${context.currentReps} reps. Need to change that?`;
+    }
+    
+    if (input.includes('timer') || input.includes('rest')) {
+      return context.isTimerRunning ? 
+        `Rest timer is running with ${Math.floor(context.restTime)} seconds left.` :
+        'Want me to start a rest timer?';
+    }
+    
+    if (input.includes('next') || input.includes('exercise')) {
+      return `You're on ${context.currentExercise}. Ready for the next exercise?`;
+    }
+    
+    if (input.includes('progress') || input.includes('how am i doing')) {
+      return `Great progress! You've completed ${Math.round(context.workoutProgress)}% of your workout.`;
+    }
+    
+    return 'I heard you! How can I help with your workout?';
+  };
+
+  // Speak response using ElevenLabs or browser TTS
+  const speakCouchResponse = async (text: string) => {
+    setIsCouchSpeaking(true);
+    
+    try {
+      // Try ElevenLabs first
+      const elevenLabsKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+      if (elevenLabsKey) {
+        try {
+          const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM/stream`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'audio/mpeg',
+              'Content-Type': 'application/json',
+              'xi-api-key': elevenLabsKey
+            },
+            body: JSON.stringify({
+              text: text,
+              model_id: 'eleven_flash_v2_5',
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75
+              }
+            })
+          });
+
+          if (response.ok) {
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.onended = () => {
+              setIsCouchSpeaking(false);
+              URL.revokeObjectURL(audioUrl);
+            };
+            await audio.play();
+            return;
+          }
+        } catch (error) {
+          console.warn('ElevenLabs failed:', error);
+        }
+      }
+
+      // Fallback to browser TTS
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+        utterance.volume = 0.9;
+        
+        // Try to use a good voice
+        const voices = speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => 
+          v.name.includes('Alex') || v.name.includes('Samantha') || v.name.includes('Google')
+        );
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+        
+        utterance.onend = () => setIsCouchSpeaking(false);
+        utterance.onerror = () => setIsCouchSpeaking(false);
+        
+        speechSynthesis.speak(utterance);
+      }
+    } catch (error) {
+      console.error('Speech failed:', error);
+      setIsCouchSpeaking(false);
+    }
+  };
+
   const processVoiceCommand = (transcript: string) => {
     const command = transcript.toLowerCase();
     console.log('🎤 Processing voice command:', command);
+    
+    // Check for wake word first
+    if (detectWakeWord(command)) {
+      setIsWakeWordMode(true);
+      setCouchResponse('Hey there! How can I help with your workout?');
+      speakCouchResponse('Hey there! How can I help with your workout?');
+      return;
+    }
+    
+    // If in wake word mode, process as conversation
+    if (isWakeWordMode) {
+      // Check for exit commands
+      if (command.includes('goodbye') || command.includes('bye') || command.includes('stop') || command.includes('exit')) {
+        exitWakeWordMode();
+        return;
+      }
+      
+      // Check for direct action commands
+      if (command.includes('log set') || command.includes('complete set')) {
+        logSet();
+        setCouchResponse('Set logged! Great work!');
+        speakCouchResponse('Set logged! Great work!');
+        return;
+      }
+      
+      if (command.includes('start timer') || command.includes('rest timer')) {
+        startRestTimer();
+        setCouchResponse('Rest timer started! Take a breather.');
+        speakCouchResponse('Rest timer started! Take a breather.');
+        return;
+      }
+      
+      if (command.includes('next exercise')) {
+        advanceToNextExercise();
+        setCouchResponse('Moving to the next exercise!');
+        speakCouchResponse('Moving to the next exercise!');
+        return;
+      }
+      
+      // Generate conversational response
+      generateCouchResponse(command).then(response => {
+        setCouchResponse(response);
+        speakCouchResponse(response);
+      });
+      return;
+    }
     
     // === WEIGHT CONTROL ===
     if (command.includes('add') || command.includes('increase') || command.includes('up')) {
@@ -2970,15 +3255,19 @@ export const EnhancedWorkoutLogger: React.FC = () => {
           onClick={toggleVoice}
           className={`w-16 h-16 rounded-full shadow-2xl transition-all duration-500 transform hover:scale-110 flex items-center justify-center ${
             isListening 
-              ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 animate-pulse shadow-purple-500/50' 
+              ? isWakeWordMode
+                ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 animate-pulse shadow-green-500/50'
+                : 'bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 animate-pulse shadow-purple-500/50' 
               : 'bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-500 shadow-blue-500/30'
           }`}
-          title="AI Voice Control - Control everything with your voice!"
+          title="AI Voice Control - Say 'Hey Couch' to activate!"
         >
           {isListening ? (
             <div className="relative">
               <Mic className="w-7 h-7 text-white animate-pulse" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+              <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full animate-ping ${
+                isWakeWordMode ? 'bg-green-400' : 'bg-red-500'
+              }`}></div>
             </div>
           ) : (
             <div className="relative">
@@ -2991,7 +3280,18 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         {/* Voice Status Indicator */}
         {isListening && (
           <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full border border-purple-500/50 animate-fade-in">
-            🎤 Listening... Say your command
+            {isWakeWordMode ? '🎤 Couch is listening...' : '🎤 Listening... Say "Hey Couch"'}
+          </div>
+        )}
+        
+        {/* Couch Response Indicator */}
+        {isCouchSpeaking && (
+          <div className="absolute -top-24 left-1/2 transform -translate-x-1/2 bg-green-600/90 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg border border-green-400/50 animate-fade-in max-w-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="font-medium">Couch:</span>
+            </div>
+            <div className="mt-1 text-xs">{couchResponse}</div>
           </div>
         )}
       </div>
