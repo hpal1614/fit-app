@@ -105,6 +105,7 @@ export interface AppSettings {
   cacheSize: number; // MB
   autoBackup: boolean;
   backupFrequency: 'daily' | 'weekly' | 'monthly';
+  autoAdvanceEnabled: boolean;
 }
 
 export interface ConnectivityState {
