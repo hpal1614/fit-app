@@ -2067,17 +2067,13 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
               )}
             </button>
             
-            {/* Heart/Favorite Button */}
+            {/* Something Hurts Button */}
             <button
-              onClick={() => {
-                // Toggle favorite status for current exercise
-                const currentExercise = workoutExercises[currentExerciseIndex];
-                showSmartSuggestion(`❤️ ${currentExercise?.name} added to favorites!`);
-              }}
-              className="w-16 h-16 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-1"
+              onClick={() => setShowPainModal(true)}
+              className="w-16 h-16 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30 hover:bg-orange-500/30 hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-1"
             >
-              <div className="text-lg font-bold">❤️</div>
-              <span className="text-xs font-medium">Favorite</span>
+              <div className="text-lg font-bold">🩹</div>
+              <span className="text-xs font-medium">Pain</span>
             </button>
           </div>
         </div>
