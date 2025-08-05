@@ -361,32 +361,45 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   };
 
   const startRestTimer = () => {
-    console.log('Starting rest timer with time:', restTime);
-    setTimerRunning(true);
+    console.log('Starting/restarting rest timer');
     
+    // Always stop any existing timer first
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
     }
+    
+    // Reset timer to default time and start fresh
+    const defaultTime = restTimerSettings.defaultRestTime || 60;
+    setRestTime(defaultTime);
+    setTimerRunning(true);
+    
+    console.log('Timer reset to default time:', defaultTime);
     
     timerIntervalRef.current = setInterval(() => {
       setRestTime(prev => {
-        const newTime = prev - 1;
-        console.log('Timer tick:', prev, '→', newTime);
+        console.log('Timer tick - Current:', prev, 'Next will be:', prev - 1);
         
         // Play warning sound at 10 seconds remaining
         if (prev === 10) {
           playSound('timer_warning');
         }
         
-        if (newTime <= 0) {
+        // If timer is at 0 or less, complete it
+        if (prev <= 0) {
+          console.log('Timer completed, resetting to default');
           clearInterval(timerIntervalRef.current!);
           timerIntervalRef.current = null;
           setTimerRunning(false);
           playSound('complete');
           showSmartSuggestion('Rest time complete! Ready for next set.');
-          return restTimerSettings.defaultTime || 60;
+          return restTimerSettings.defaultRestTime || 60;
         }
-        return newTime;
+        
+        // Count down normally
+        const nextTime = prev - 1;
+        console.log('Timer counting down:', prev, '→', nextTime);
+        return nextTime;
       });
     }, 1000);
   };
@@ -442,6 +455,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     
     startRestTimer();
     playSound('button');
+    showSmartSuggestion('Set logged! Rest timer restarted.');
   };
 
   const logFailure = () => {
@@ -480,6 +494,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     setShowDropSet(false);
     startRestTimer();
     playSound('button');
+    showSmartSuggestion('Drop set logged! Rest timer restarted.');
   };
 
   const cancelDropLog = () => {
@@ -2754,16 +2769,21 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                        strokeWidth="3"
                        fill="none"
                        strokeDasharray={`${2 * Math.PI * 20}`}
-                       strokeDashoffset={`${2 * Math.PI * 20 * (1 - restTime / (restTimerSettings.defaultTime || 60))}`}
+                       strokeDashoffset={`${2 * Math.PI * 20 * (1 - restTime / (restTimerSettings.defaultRestTime || 60))}`}
                        strokeLinecap="round"
                        className="transition-all duration-1000 ease-linear drop-shadow-lg"
                      />
                    </svg>
                    <div className="absolute inset-0 flex items-center justify-center">
-                     <div className={`font-bold text-sm drop-shadow-lg ${
+                     <div className={`font-bold text-xs drop-shadow-lg text-center ${
                        restTime > 30 ? 'text-white' : restTime > 10 ? 'text-yellow-300' : 'text-red-300'
                      }`}>
-                       {Math.ceil(restTime / 60)}
+                       {restTime >= 60 
+                         ? `${Math.floor(restTime / 60)}:${(restTime % 60).toString().padStart(2, '0')}`
+                         : restTime >= 10 
+                           ? restTime.toString()
+                           : `${restTime}s`
+                       }
                      </div>
                    </div>
                  </div>
@@ -2785,7 +2805,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                    className={`h-3 rounded-full transition-all duration-1000 ease-linear drop-shadow-lg ${
                      restTime > 30 ? 'bg-white/60' : restTime > 10 ? 'bg-yellow-400' : 'bg-red-400'
                    }`}
-                   style={{ width: `${Math.min((restTime / (restTimerSettings.defaultTime || 60)) * 100, 100)}%` }}
+                   style={{ width: `${Math.min((restTime / (restTimerSettings.defaultRestTime || 60)) * 100, 100)}%` }}
                  ></div>
                </div>
              </div>
@@ -2796,7 +2816,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
                      onClick={(e) => {
                        e.stopPropagation();
                        setTimerRunning(false);
-                       setRestTime(restTimerSettings.defaultTime || 60);
+                       setRestTime(restTimerSettings.defaultRestTime || 60);
                        playSound('button');
                      }}
                      className="w-12 h-12 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors backdrop-blur-sm"
@@ -2882,7 +2902,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
           <button
             onClick={() => {
               console.log('Manual timer start clicked');
-              setRestTime(30); // Set to 30 seconds for testing
+              setRestTime(restTimerSettings.defaultRestTime || 60); // Use settings default time
               startRestTimer();
             }}
             className="p-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-full shadow-lg text-white transition-all duration-300 transform hover:scale-105"
@@ -2897,6 +2917,44 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       <div className="fixed bottom-4 left-4 z-40">
         <div className="p-2 bg-black/50 rounded text-white text-xs">
           Timer: {restTime}s | Running: {timerRunning ? 'Yes' : 'No'}
+        </div>
+        <div className="mt-1 flex gap-1">
+          <button
+            onClick={() => {
+              console.log('Setting timer to 5 seconds');
+              setRestTime(5);
+              if (!timerRunning) {
+                startRestTimer();
+              }
+            }}
+            className="px-2 py-1 bg-red-500 text-white text-xs rounded"
+          >
+            5s
+          </button>
+          <button
+            onClick={() => {
+              console.log('Setting timer to 3 seconds');
+              setRestTime(3);
+              if (!timerRunning) {
+                startRestTimer();
+              }
+            }}
+            className="px-2 py-1 bg-orange-500 text-white text-xs rounded"
+          >
+            3s
+          </button>
+          <button
+            onClick={() => {
+              console.log('Setting timer to 1 second');
+              setRestTime(1);
+              if (!timerRunning) {
+                startRestTimer();
+              }
+            }}
+            className="px-2 py-1 bg-yellow-500 text-white text-xs rounded"
+          >
+            1s
+          </button>
         </div>
       </div>
 
