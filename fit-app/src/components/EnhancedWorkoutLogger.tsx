@@ -94,7 +94,12 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [plateCalculatorValue, setPlateCalculatorValue] = useState(0);
   const [expandedSetIndex, setExpandedSetIndex] = useState<number | null>(null);
   const [showDropSetForIndex, setShowDropSetForIndex] = useState<number | null>(null);
+  const [dropSetWeight, setDropSetWeight] = useState(0);
+  const [dropSetReps, setDropSetReps] = useState(0);
   const [showTableSettings, setShowTableSettings] = useState(false);
+  const [dynamicSets, setDynamicSets] = useState<{ [exerciseId: number]: number }>({});
+  const [showExerciseCompletionOverlay, setShowExerciseCompletionOverlay] = useState<number | null>(null);
+  const [showTimerExpanded, setShowTimerExpanded] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [tableSettings, setTableSettings] = useState({
     showWeight: true,
@@ -144,55 +149,38 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
   // Keyboard navigation handler
   const handleKeyNavigation = (e: React.KeyboardEvent) => {
-    if (!carouselRef.current) return;
-    
-    const container = carouselRef.current;
-    const cardWidth = container.scrollWidth / workoutExercises.length;
-    
     switch (e.key) {
       case 'ArrowLeft':
         e.preventDefault();
         if (currentExerciseIndex > 0) {
           const newIndex = currentExerciseIndex - 1;
-          container.scrollTo({
-            left: newIndex * cardWidth,
-            behavior: 'smooth'
-          });
           setCurrentExerciseIndex(newIndex);
+          showSmartSuggestion(`Switched to ${workoutExercises[newIndex]?.name}`);
         }
         break;
       case 'ArrowRight':
         e.preventDefault();
         if (currentExerciseIndex < workoutExercises.length - 1) {
           const newIndex = currentExerciseIndex + 1;
-          container.scrollTo({
-            left: newIndex * cardWidth,
-            behavior: 'smooth'
-          });
           setCurrentExerciseIndex(newIndex);
+          showSmartSuggestion(`Switched to ${workoutExercises[newIndex]?.name}`);
         }
         break;
       case 'Home':
         e.preventDefault();
-        container.scrollTo({
-          left: 0,
-          behavior: 'smooth'
-        });
         setCurrentExerciseIndex(0);
+        showSmartSuggestion(`Switched to ${workoutExercises[0]?.name}`);
         break;
       case 'End':
         e.preventDefault();
         const lastIndex = workoutExercises.length - 1;
-        container.scrollTo({
-          left: lastIndex * cardWidth,
-          behavior: 'smooth'
-        });
         setCurrentExerciseIndex(lastIndex);
+        showSmartSuggestion(`Switched to ${workoutExercises[lastIndex]?.name}`);
         break;
     }
   };
 
-  // Touch gesture handlers for mobile
+  // Enhanced touch gesture handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.touches[0].clientX);
   };
@@ -202,28 +190,19 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     
     const touchEnd = e.changedTouches[0].clientX;
     const diff = touchStart - touchEnd;
-    const threshold = 50; // Minimum swipe distance
+    const threshold = 30; // Reduced threshold for more responsive swipes
     
     if (Math.abs(diff) > threshold) {
-      const container = carouselRef.current;
-      const cardWidth = container.scrollWidth / workoutExercises.length;
-      
       if (diff > 0 && currentExerciseIndex < workoutExercises.length - 1) {
         // Swipe left - next
         const newIndex = currentExerciseIndex + 1;
-        container.scrollTo({
-          left: newIndex * cardWidth,
-          behavior: 'smooth'
-        });
         setCurrentExerciseIndex(newIndex);
+        showSmartSuggestion(`Switched to ${workoutExercises[newIndex]?.name}`);
       } else if (diff < 0 && currentExerciseIndex > 0) {
         // Swipe right - previous
         const newIndex = currentExerciseIndex - 1;
-        container.scrollTo({
-          left: newIndex * cardWidth,
-          behavior: 'smooth'
-        });
         setCurrentExerciseIndex(newIndex);
+        showSmartSuggestion(`Switched to ${workoutExercises[newIndex]?.name}`);
       }
     }
     
@@ -237,7 +216,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     }
   };
 
-  const playSound = (type: 'button' | 'complete' = 'button') => {
+  const playSound = (type: 'button' | 'complete' | 'timer_warning' = 'button') => {
     if (!audioContextRef.current) return;
     
     const oscillator = audioContextRef.current.createOscillator();
@@ -247,14 +226,27 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     gainNode.connect(audioContextRef.current.destination);
     
     if (type === 'complete') {
-      oscillator.frequency.setValueAtTime(800, audioContextRef.current.currentTime);
-      oscillator.frequency.setValueAtTime(1000, audioContextRef.current.currentTime + 0.1);
-      oscillator.frequency.setValueAtTime(1200, audioContextRef.current.currentTime + 0.2);
-      gainNode.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.5);
+      // Timer completion sound - more noticeable
+      oscillator.frequency.setValueAtTime(600, audioContextRef.current.currentTime);
+      oscillator.frequency.setValueAtTime(800, audioContextRef.current.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(1000, audioContextRef.current.currentTime + 0.2);
+      oscillator.frequency.setValueAtTime(1200, audioContextRef.current.currentTime + 0.3);
+      oscillator.frequency.setValueAtTime(1400, audioContextRef.current.currentTime + 0.4);
+      gainNode.gain.setValueAtTime(0.4, audioContextRef.current.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.8);
       oscillator.start();
-      oscillator.stop(audioContextRef.current.currentTime + 0.5);
+      oscillator.stop(audioContextRef.current.currentTime + 0.8);
+    } else if (type === 'timer_warning') {
+      // Warning sound for last 10 seconds
+      oscillator.frequency.setValueAtTime(800, audioContextRef.current.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContextRef.current.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(800, audioContextRef.current.currentTime + 0.2);
+      gainNode.gain.setValueAtTime(0.2, audioContextRef.current.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.3);
+      oscillator.start();
+      oscillator.stop(audioContextRef.current.currentTime + 0.3);
     } else {
+      // Button click sound
       oscillator.frequency.setValueAtTime(400, audioContextRef.current.currentTime);
       gainNode.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.1);
@@ -369,9 +361,8 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   };
 
   const startRestTimer = () => {
+    console.log('Starting rest timer with time:', restTime);
     setTimerRunning(true);
-    setShowRestTimerModal(true);
-    setCurrentCarouselSlide(1);
     
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -379,14 +370,23 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     
     timerIntervalRef.current = setInterval(() => {
       setRestTime(prev => {
-        if (prev <= 1) {
+        const newTime = prev - 1;
+        console.log('Timer tick:', prev, '→', newTime);
+        
+        // Play warning sound at 10 seconds remaining
+        if (prev === 10) {
+          playSound('timer_warning');
+        }
+        
+        if (newTime <= 0) {
           clearInterval(timerIntervalRef.current!);
           timerIntervalRef.current = null;
           setTimerRunning(false);
-          setCurrentCarouselSlide(0);
-          return 135;
+          playSound('complete');
+          showSmartSuggestion('Rest time complete! Ready for next set.');
+          return restTimerSettings.defaultTime || 60;
         }
-        return prev - 1;
+        return newTime;
       });
     }, 1000);
   };
@@ -406,30 +406,41 @@ export const EnhancedWorkoutLogger: React.FC = () => {
 
   const completeNormalSet = () => {
     setShowFailureOptions(false);
-    updatePreviousSet();
-    startRestTimer();
     
-    // Increment completed sets for current exercise
+    // Get current exercise state
+    const currentExerciseState = getExerciseState(currentExerciseIndex);
+    
+    // Add current set to history
+    const newSet: Set = {
+      id: Date.now().toString(),
+      weight: currentExerciseState.weight,
+      reps: currentExerciseState.reps,
+      rpe: currentExerciseState.rpe,
+      completed: true,
+      isDropSet: showDropSetForIndex !== null
+    };
+    
+    // Update exercise state with new set and increment completed sets
     updateExerciseState(currentExerciseIndex, { 
-      completedSets: currentExerciseState.completedSets + 1 
+      completedSets: currentExerciseState.completedSets + 1,
+      history: [...currentExerciseState.history, newSet]
     });
     
-    // Check if exercise is completed for auto-advance
-    setTimeout(() => {
-      checkExerciseCompletion();
-    }, 500);
+    // Check if exercise is completed
+    const newCompletedSets = currentExerciseState.completedSets + 1;
+    if (newCompletedSets >= getTotalSets(currentExerciseIndex)) {
+      // Show completion overlay
+      setTimeout(() => {
+        setShowExerciseCompletionOverlay(currentExerciseIndex);
+      }, 1000);
+    } else {
+      // Check if exercise is completed for auto-advance
+      setTimeout(() => {
+        checkExerciseCompletion();
+      }, 500);
+    }
     
-    // Smart auto-progression
-    setTimeout(() => {
-      if (currentRPE <= 2) {
-        adjustWeight(currentIncrement * 2);
-      } else if (currentRPE >= 4) {
-        adjustWeight(-currentIncrement);
-      } else {
-        adjustWeight(currentIncrement);
-      }
-    }, 1000);
-    
+    startRestTimer();
     playSound('button');
   };
 
@@ -555,6 +566,21 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   useEffect(() => {
     generateWeightSuggestion();
   }, [currentExerciseState.rpe, currentExerciseState.completedSets, currentExerciseState.weight]);
+
+  // Debug timer state
+  useEffect(() => {
+    console.log('Timer state changed:', { timerRunning, restTime, showTimerExpanded });
+  }, [timerRunning, restTime, showTimerExpanded]);
+
+  // Ensure timer interval is cleaned up properly
+  useEffect(() => {
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, []);
 
 
 
@@ -1266,13 +1292,67 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     playSound('button');
   };
 
+  const addSetToExercise = (exerciseIndex: number) => {
+    setDynamicSets(prev => ({
+      ...prev,
+      [exerciseIndex]: (prev[exerciseIndex] || 0) + 1
+    }));
+    showSmartSuggestion('Set added to exercise!');
+  };
+
+  const getTotalSets = (exerciseIndex: number) => {
+    const baseSets = workoutExercises[exerciseIndex]?.sets || 4;
+    const additionalSets = dynamicSets[exerciseIndex] || 0;
+    return baseSets + additionalSets;
+  };
+
+  const handleNextExercise = () => {
+    setShowExerciseCompletionOverlay(null);
+    advanceToNextExercise();
+  };
+
+  const handleAddAnotherSet = () => {
+    setShowExerciseCompletionOverlay(null);
+    addSetToExercise(currentExerciseIndex);
+    // Reset completed sets to allow logging the new set
+    updateExerciseState(currentExerciseIndex, { 
+      completedSets: getTotalSets(currentExerciseIndex) - 1 
+    });
+  };
+
+  const getExerciseAnalytics = (exerciseIndex: number) => {
+    const exercise = workoutExercises[exerciseIndex];
+    const exerciseState = getExerciseState(exerciseIndex);
+    const history = exerciseState.history;
+    
+    if (history.length === 0) return null;
+    
+    const totalWeight = history.reduce((sum, set) => sum + set.weight, 0);
+    const totalReps = history.reduce((sum, set) => sum + set.reps, 0);
+    const avgWeight = Math.round(totalWeight / history.length);
+    const avgReps = Math.round(totalReps / history.length);
+    const maxWeight = Math.max(...history.map(set => set.weight));
+    const minWeight = Math.min(...history.map(set => set.weight));
+    const dropSets = history.filter(set => set.isDropSet).length;
+    
+    return {
+      totalSets: history.length,
+      avgWeight,
+      avgReps,
+      maxWeight,
+      minWeight,
+      dropSets,
+      totalVolume: totalWeight * totalReps
+    };
+  };
+
   return (
     <div className="space-y-modern animate-fade-in-up">
       {/* Exercise Header */}
       <div className="card card-elevated">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center justify-between mb-4">
+              <div>
+              <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-gray-400 font-medium tracking-wider uppercase">
                 Chest Day • Exercise {currentExerciseIndex + 1}/{workoutExercises.length}
               </div>
@@ -1530,7 +1610,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
             Use arrow keys to navigate between exercises. Press Home to go to first exercise, End to go to last exercise.
           </div>
           
-          {/* Carousel Viewport */}
+          {/* Bulletproof Carousel Viewport */}
           <div className="relative overflow-hidden rounded-xl -mx-4">
             {/* Carousel Track */}
             <div 
@@ -1550,452 +1630,257 @@ export const EnhancedWorkoutLogger: React.FC = () => {
             >
               {workoutExercises.map((exercise, index) => {
                 const isCurrent = index === currentExerciseIndex;
-                const exerciseState = getExerciseState(index);
+                const currentExerciseState = getExerciseState(index);
                 
                 return (
                   <div
                     key={exercise.id}
                     className={`
-                      flex-shrink-0 bg-gray-900 rounded-xl shadow-lg border-2 transition-all duration-300 
-                      max-h-[80vh] overflow-y-auto overflow-x-hidden
+                      flex-shrink-0 bg-transparent rounded-xl shadow-lg border-2 transition-all duration-300 
+                      max-h-[85vh] overflow-y-auto overflow-x-hidden
                       ${isCurrent ? 'border-fitness-blue scale-105 shadow-xl' : 'border-gray-700 opacity-80'}
                       hover:scale-102
                     `}
                     style={{ 
                       width: `${100 / workoutExercises.length}%`,
-                      padding: '0 3rem'
+                      padding: '0.5rem 1rem'
                     }}
                     role="article"
                     aria-label={`${exercise.name} - ${exercise.sets} sets of ${exercise.reps} reps`}
                     aria-current={isCurrent ? 'true' : 'false'}
                   >
-                    {/* Exercise Card Content */}
-                    <div className="p-4">
-                      {/* Enhanced Exercise Header */}
+                    {/* Bulletproof Exercise Card Content */}
+                    <div className="p-2 sm:p-3 lg:p-4 xl:p-5">
+                      {/* Mobile Exercise Header */}
                       <div className="text-center mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-xs text-green-400 font-medium">LIVE</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-400">🔥</span>
-                            <span className="text-xs text-orange-400 font-medium">Muscle Focus</span>
-                          </div>
-                        </div>
-                        
-                        <h3 className="text-xl font-bold text-white mb-1">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
                           {exercise.name}
                         </h3>
-                        <div className="text-sm text-gray-400 mb-2">
-                          Card {index + 1} of {workoutExercises.length}
-                        </div>
-                        
-                        {/* Exercise Stats Bar */}
-                        <div className="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 mb-3">
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-white">{exercise.sets}</div>
-                            <div className="text-xs text-gray-400">Sets</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-blue-400">{exercise.reps}</div>
-                            <div className="text-xs text-gray-400">Reps</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-green-400">{exerciseState.weight}</div>
-                            <div className="text-xs text-gray-400">lbs</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-purple-400">{exerciseState.rpe}</div>
-                            <div className="text-xs text-gray-400">RPE</div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-                          <span>🏋️ {exercise.equipment}</span>
-                          <span>•</span>
-                          <span>⚡ {exerciseState.completedSets}/{exercise.sets} completed</span>
-                        </div>
-                      </div>
-                      
-                      {/* Quick Action Bar */}
-                      <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/30 rounded-lg">
-                        <button
-                          onClick={() => {
-                            updateExerciseState(index, { 
-                              weight: Math.max(0, exerciseState.weight - 5) 
-                            });
-                            showSmartSuggestion('Weight decreased by 5 lbs');
-                          }}
-                          className="flex items-center gap-1 px-3 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors"
-                        >
-                          <span className="text-sm">-5</span>
-                          <span className="text-xs">lbs</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => {
-                            updateExerciseState(index, { 
-                              weight: exerciseState.weight + 5 
-                            });
-                            showSmartSuggestion('Weight increased by 5 lbs');
-                          }}
-                          className="flex items-center gap-1 px-3 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors"
-                        >
-                          <span className="text-sm">+5</span>
-                          <span className="text-xs">lbs</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => {
-                            updateExerciseState(index, { 
-                              reps: Math.max(1, exerciseState.reps - 1) 
-                            });
-                            showSmartSuggestion('Reps decreased by 1');
-                          }}
-                          className="flex items-center gap-1 px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors"
-                        >
-                          <span className="text-sm">-1</span>
-                          <span className="text-xs">rep</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => {
-                            updateExerciseState(index, { 
-                              reps: exerciseState.reps + 1 
-                            });
-                            showSmartSuggestion('Reps increased by 1');
-                          }}
-                          className="flex items-center gap-1 px-3 py-2 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors"
-                        >
-                          <span className="text-sm">+1</span>
-                          <span className="text-xs">rep</span>
-                        </button>
-                      </div>
-                      
-                      {/* Progress & Motivation Bar */}
-                      <div className="mb-4 p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-blue-400">Set Progress</span>
-                          <span className="text-xs text-gray-400">{exerciseState.completedSets}/{exercise.sets} sets</span>
-                        </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                          <div 
-                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${(exerciseState.completedSets / exercise.sets) * 100}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-400">💪 Keep pushing!</span>
-                          <span className="text-green-400 font-medium">
-                            {exercise.sets - exerciseState.completedSets} sets remaining
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Smart Header with Context */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Previous Set</div>
-                            <div className="text-sm font-medium text-white">{previousSet}</div>
-                          </div>
-                          {weightSuggestion && (
-                            <div className="flex items-center gap-2 px-2 py-1 bg-green-500/10 rounded-full border border-green-500/20">
-                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                              <span className="text-xs text-green-400 font-medium">{weightSuggestion}</span>
-                            </div>
+                        <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-2">
+                          {getTotalSets(index)} sets × {exercise.reps}
+                          {dynamicSets[index] > 0 && (
+                            <span className="text-blue-600 dark:text-blue-400 ml-1">
+                              (+{dynamicSets[index]})
+                            </span>
                           )}
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-1">Set Progress</div>
-                          <div className="text-sm font-medium text-green-400">Set {exerciseState.completedSets + 1} of {exercise.sets}</div>
+                        <div className="text-xs text-green-700 dark:text-green-400">
+                          {exercise.equipment}
                         </div>
                       </div>
+                      
 
-                      {/* Workout History Section */}
-                      {exerciseHistory.length > 0 && (
-                        <div className="mb-4">
-                          {/* History Table */}
-                          <div className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg mb-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-blue-400 font-medium text-sm">Last Workout</span>
-                              <span className="text-gray-400 text-xs">Monday, 15 Jul</span>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="text-xs text-gray-400 font-medium break-words">Last Workout - {exercise.name}:</div>
-                                <button
-                                  onClick={() => setShowTableSettings(!showTableSettings)}
-                                  className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
-                                >
-                                  ⚙️ Settings
-                                </button>
-                              </div>
-                              
-                              {/* Table Settings */}
-                              {showTableSettings && (
-                                <div className="p-3 bg-gray-800/30 rounded-lg mb-3 animate-fade-in">
-                                  <div className="text-xs text-gray-400 font-medium mb-2">Show/Hide Columns:</div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    {Object.entries(tableSettings).map(([key, value]) => (
-                                      <label key={key} className="flex items-center gap-2 text-xs text-gray-300">
-                                        <input
-                                          type="checkbox"
-                                          checked={value}
-                                          onChange={(e) => setTableSettings(prev => ({ ...prev, [key]: e.target.checked }))}
-                                          className="w-3 h-3 text-blue-500 bg-gray-700 border-gray-600 rounded"
-                                        />
-                                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Table Header */}
-                              <div className="grid grid-cols-6 gap-1 text-xs text-gray-400 font-medium px-1 min-w-0">
-                                <div className="text-center">Set</div>
-                                {tableSettings.showPrevious && <div className="text-center">Previous</div>}
-                                {tableSettings.showWeight && <div className="text-center">Weight</div>}
-                                {tableSettings.showReps && <div className="text-center">Reps</div>}
-                                {tableSettings.showRPE && <div className="text-center">RPE</div>}
-                                <div className="text-center">Action</div>
-                              </div>
-                              
-                              {/* Table Rows */}
-                              {exerciseHistory.slice(-3).map((set, setIndex) => (
-                                <div key={setIndex} className="space-y-1">
-                                  {/* Main Set Row */}
-                                  <div className={`grid gap-1 items-center p-1 rounded-lg transition-colors ${
-                                    setIndex < exerciseState.completedSets 
-                                      ? 'bg-green-500/20 border border-green-500/30' 
-                                      : expandedSetIndex === setIndex 
-                                        ? 'bg-gray-800/50' 
-                                        : 'bg-gray-800/30'
-                                  }`} style={{
-                                    gridTemplateColumns: `auto ${tableSettings.showPrevious ? '1fr' : ''} ${tableSettings.showWeight ? '1fr' : ''} ${tableSettings.showReps ? '1fr' : ''} ${tableSettings.showRPE ? '1fr' : ''} auto`
-                                  }}>
-                                    <div className="text-gray-400 text-xs text-center">Set {setIndex + 1}</div>
-                                    
-                                    {tableSettings.showPrevious && (
-                                      <div className="text-white text-xs text-center">
-                                        {set.weight} × {set.reps}
-                                        <div className="text-gray-500 text-xs">RPE {set.rpe}</div>
-                                      </div>
-                                    )}
-                                    
-                                    {tableSettings.showWeight && (
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={() => updateExerciseState(index, { 
-                                            weight: Math.max(0, exerciseState.weight - 5) 
-                                          })}
-                                          className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                                        >
-                                          -
-                                        </button>
-                                        <div 
-                                          onClick={() => openPlateCalculator(set.weight, 'weight')}
-                                          className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
-                                        >
-                                          {setIndex < exerciseState.completedSets ? exerciseState.weight : set.weight}
-                                        </div>
-                                        <button
-                                          onClick={() => updateExerciseState(index, { 
-                                            weight: exerciseState.weight + 5 
-                                          })}
-                                          className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                                        >
-                                          +
-                                        </button>
-                                      </div>
-                                    )}
-                                    
-                                    {tableSettings.showReps && (
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={() => updateExerciseState(index, { 
-                                            reps: Math.max(1, exerciseState.reps - 1) 
-                                          })}
-                                          className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                                        >
-                                          -
-                                        </button>
-                                        <div 
-                                          onClick={() => openPlateCalculator(set.reps, 'reps')}
-                                          className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs cursor-pointer hover:bg-gray-600 transition-colors"
-                                        >
-                                          {setIndex < exerciseState.completedSets ? exerciseState.reps : set.reps}
-                                        </div>
-                                        <button
-                                          onClick={() => updateExerciseState(index, { 
-                                            reps: exerciseState.reps + 1 
-                                          })}
-                                          className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                                        >
-                                          +
-                                        </button>
-                                      </div>
-                                    )}
-                                    
-                                    {tableSettings.showRPE && (
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={() => updateExerciseState(index, { 
-                                            rpe: Math.max(1, exerciseState.rpe - 1) 
-                                          })}
-                                          className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                                        >
-                                          -
-                                        </button>
-                                        <div className="flex-1 text-center py-1 px-1 bg-gray-700 rounded text-blue-300 text-xs">
-                                          {setIndex < exerciseState.completedSets ? exerciseState.rpe : set.rpe}
-                                        </div>
-                                        <button
-                                          onClick={() => updateExerciseState(index, { 
-                                            rpe: Math.min(10, exerciseState.rpe + 1) 
-                                          })}
-                                          className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300 hover:text-white transition-colors"
-                                        >
-                                          +
-                                        </button>
-                                      </div>
-                                    )}
-                                    
-                                    <div className="flex items-center justify-center">
-                                      <button
-                                        onClick={() => {
-                                          if (setIndex < exerciseState.completedSets) {
-                                            // Unlog set
-                                            updateExerciseState(index, { 
-                                              completedSets: exerciseState.completedSets - 1 
-                                            });
-                                            showSmartSuggestion('Set unlogged');
-                                          } else {
-                                            // Log set
-                                            updateExerciseState(index, { 
-                                              completedSets: exerciseState.completedSets + 1 
-                                            });
-                                            startRestTimer();
-                                            showSmartSuggestion('Set logged successfully!');
-                                          }
-                                        }}
-                                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
-                                          setIndex < exerciseState.completedSets 
-                                            ? 'bg-red-500 text-white hover:bg-red-600' 
-                                            : 'bg-green-500 text-white hover:bg-green-600'
-                                        }`}
-                                      >
-                                        {setIndex < exerciseState.completedSets ? '↺' : '▶'}
-                                      </button>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Expanded Set Actions */}
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => {
-                                        showSmartSuggestion('Set marked as failed');
-                                        updateExerciseState(index, { 
-                                          completedSets: exerciseState.completedSets + 1 
-                                        });
-                                      }}
-                                      className="flex-1 py-2 bg-red-500/20 text-red-300 rounded text-xs font-medium hover:bg-red-500/30 transition-colors"
-                                    >
-                                      ❌ Mark Failed
-                                    </button>
-                                    <button
-                                      onClick={() => setShowDropSetForIndex(setIndex)}
-                                      className="flex-1 py-2 bg-purple-500/20 text-purple-300 rounded text-xs font-medium hover:bg-purple-500/30 transition-colors"
-                                    >
-                                      🔽 Drop Set
-                                    </button>
-                                  </div>
-                                  
-                                  {/* Drop Set Section */}
-                                  {showDropSetForIndex === setIndex && (
-                                    <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20 animate-fade-in">
-                                      <div className="text-xs text-purple-400 font-medium mb-2">Drop Set Configuration:</div>
-                                      <div className="space-y-2 mb-3">
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-xs text-gray-400">Started at:</span>
-                                          <span className="text-sm text-white">{exerciseState.weight} lbs × {exerciseState.reps} reps</span>
-                                        </div>
-                                        <div className="text-center text-purple-400 text-sm">↓</div>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-xs text-gray-400">Dropped to:</span>
-                                          <input 
-                                            type="number" 
-                                            defaultValue={Math.round(exerciseState.weight * 0.8)}
-                                            className="w-16 p-1 bg-gray-700 rounded text-center text-sm"
-                                          />
-                                          <span className="text-sm text-white">lbs ×</span>
-                                          <input 
-                                            type="number" 
-                                            defaultValue={Math.floor(exerciseState.reps * 0.4)}
-                                            className="w-12 p-1 bg-gray-700 rounded text-center text-sm"
-                                          />
-                                          <span className="text-sm text-white">reps</span>
-                                        </div>
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <button
-                                          onClick={() => {
-                                            showSmartSuggestion('Drop set logged successfully');
-                                            setShowDropSetForIndex(null);
-                                          }}
-                                          className="flex-1 py-2 bg-purple-500 text-white rounded text-xs font-medium hover:bg-purple-600 transition-colors"
-                                        >
-                                          Confirm Drop
-                                        </button>
-                                        <button
-                                          onClick={() => setShowDropSetForIndex(null)}
-                                          className="flex-1 py-2 bg-gray-600 text-gray-300 rounded text-xs font-medium hover:bg-gray-500 transition-colors"
-                                        >
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
+                      
+
+                      
+                      {/* Bulletproof Smart Header */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between mb-3 sm:mb-4 p-2 sm:p-3 lg:p-4 bg-gray-100/80 dark:bg-gray-800/30 rounded-lg gap-2 sm:gap-3">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Previous</div>
+                          <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate max-w-[80px] sm:max-w-none">{previousSet}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Current</div>
+                          <div className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-400">Set {currentExerciseState.completedSets + 1}/{exercise.sets}</div>
+                        </div>
+                        {weightSuggestion && (
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600 dark:text-gray-400">Suggestion</div>
+                            <div className="text-xs sm:text-sm font-medium text-blue-700 dark:text-blue-400">{weightSuggestion}</div>
                           </div>
-                          
-                          {/* Quick Load Last Set */}
-                          <div className="mt-3 pt-3 border-t border-gray-700/30">
-                            <div className="flex items-center justify-between p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                              <div className="flex items-center gap-3">
-                                <span className="text-gray-400 text-xs">Smart Default:</span>
-                                <span className="text-white text-sm">
-                                  {exerciseHistory[exerciseHistory.length - 1]?.weight || exerciseState.weight} lbs × {exerciseHistory[exerciseHistory.length - 1]?.reps || exerciseState.reps} reps
-                                </span>
-                                <span className="text-gray-500 text-xs">
-                                  RPE {exerciseHistory[exerciseHistory.length - 1]?.rpe || exerciseState.rpe}
-                                </span>
-                              </div>
-                              <button
+                        )}
+                      </div>
+
+                      {/* Set Bars Interface */}
+                      <div className="mb-4">
+                        {/* Set Progress Bars */}
+                        <div className="flex gap-2 sm:gap-3 mb-4 sm:mb-5 px-1 sm:px-2">
+                          {Array.from({ length: getTotalSets(index) }, (_, setIndex) => {
+                            const isCompleted = setIndex < currentExerciseState.completedSets;
+                            const isActive = setIndex === currentExerciseState.completedSets;
+                            const isUpcoming = setIndex > currentExerciseState.completedSets;
+                            
+                            return (
+                              <div
+                                key={setIndex}
                                 onClick={() => {
-                                  const lastSet = exerciseHistory[exerciseHistory.length - 1];
-                                  if (lastSet) {
-                                    updateExerciseState(index, {
-                                      weight: lastSet.weight,
-                                      reps: lastSet.reps,
-                                      rpe: lastSet.rpe
+                                  // If clicking on a completed set, bring it back to active
+                                  if (isCompleted) {
+                                    updateExerciseState(index, { 
+                                      completedSets: setIndex 
                                     });
-                                    showSmartSuggestion('Loaded last set from previous workout');
                                   }
                                 }}
-                                className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded hover:bg-green-500/30 transition-colors"
+                                className={`flex-1 h-3 sm:h-4 rounded-full cursor-pointer transition-all duration-200 mx-1 ${
+                                  isCompleted 
+                                    ? 'bg-green-500' 
+                                    : isActive 
+                                      ? 'bg-blue-500' 
+                                      : 'bg-gray-600'
+                                } ${isCompleted ? 'hover:bg-green-400' : ''}`}
+                                title={`Set ${setIndex + 1}${isCompleted ? ' (Completed)' : isActive ? ' (Active)' : ' (Upcoming)'}`}
+                              />
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Active Set Controls */}
+                        <div className="p-3 sm:p-4 lg:p-5 xl:p-6 bg-gray-100/80 dark:bg-gray-800/30 rounded-lg mb-3 sm:mb-4">
+                          <div className="text-center mb-5">
+                            <span className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Set {currentExerciseState.completedSets + 1}</span>
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 ml-2">of {getTotalSets(index)}</span>
+                          </div>
+                          
+                          {/* Weight Control */}
+                          <div className="flex items-center justify-between mb-5">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Weight (lbs)</span>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <button
+                                onClick={() => updateExerciseState(index, { weight: Math.max(0, currentExerciseState.weight - 5) })}
+                                className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-white font-bold text-lg sm:text-xl min-w-[40px] sm:min-w-[48px]"
                               >
-                                Apply
+                                -
+                              </button>
+                              <button
+                                onClick={() => openPlateCalculator(currentExerciseState.weight, 'weight')}
+                                className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 hover:bg-blue-100 dark:bg-gray-800 dark:hover:bg-blue-700 rounded text-gray-900 dark:text-white font-bold text-lg sm:text-xl border-2 border-blue-500/40 min-w-[40px] sm:min-w-[48px]"
+                                title="Tap to enter custom weight"
+                              >
+                                {currentExerciseState.weight}
+                              </button>
+                              <button
+                                onClick={() => updateExerciseState(index, { weight: currentExerciseState.weight + 5 })}
+                                className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-white font-bold text-lg sm:text-xl min-w-[40px] sm:min-w-[48px]"
+                              >
+                                +
                               </button>
                             </div>
                           </div>
+                          
+                          {/* Reps Control */}
+                          <div className="flex items-center justify-between mb-5">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Reps</span>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <button
+                                onClick={() => updateExerciseState(index, { 
+                                  reps: Math.max(1, currentExerciseState.reps - 1) 
+                                })}
+                                className="w-10 h-10 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-white font-bold text-lg min-w-[40px]"
+                              >
+                                -
+                              </button>
+                              <span className="w-12 sm:w-16 text-center text-gray-900 dark:text-white font-bold text-lg">{currentExerciseState.reps}</span>
+                              <button
+                                onClick={() => updateExerciseState(index, { 
+                                  reps: currentExerciseState.reps + 1 
+                                })}
+                                className="w-10 h-10 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-white font-bold text-lg min-w-[40px]"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* RPE Control */}
+                          <div className="flex items-center justify-between mb-5">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">RPE</span>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <button
+                                onClick={() => updateExerciseState(index, {
+                                  rpe: Math.max(1, currentExerciseState.rpe - 1)
+                                })}
+                                className="w-10 h-10 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-white font-bold text-lg min-w-[40px]"
+                              >
+                                -
+                              </button>
+                              <span className="w-12 sm:w-16 text-center text-gray-900 dark:text-white font-bold text-lg">{currentExerciseState.rpe}</span>
+                              <button
+                                onClick={() => updateExerciseState(index, {
+                                  rpe: Math.min(10, currentExerciseState.rpe + 1)
+                                })}
+                                className="w-10 h-10 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded text-white font-bold text-lg min-w-[40px]"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="grid grid-cols-3 gap-3 mt-5">
+                            <button
+                              onClick={() => {
+                                showSmartSuggestion('Set marked as failed');
+                                completeNormalSet();
+                              }}
+                              className="w-full py-3 sm:py-4 bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300 rounded-lg font-medium hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors text-xs sm:text-base min-h-[48px]"
+                            >
+                              ❌ Fail Set
+                            </button>
+                            <button
+                              onClick={() => {
+                                completeNormalSet();
+                              }}
+                              className="w-full py-3 sm:py-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors text-xs sm:text-base min-h-[48px]"
+                            >
+                              ✅ Log Set
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDropSetWeight(Math.round(currentExerciseState.weight * 0.8));
+                                setDropSetReps(Math.floor(currentExerciseState.reps * 0.6));
+                                setShowDropSetForIndex(currentExerciseState.completedSets);
+                              }}
+                              className="w-full py-3 sm:py-4 bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300 rounded-lg font-medium hover:bg-purple-200 dark:hover:bg-purple-500/30 transition-colors text-xs sm:text-base min-h-[48px]"
+                            >
+                              🔽 Drop Set
+                            </button>
+                          </div>
                         </div>
-                      )}
+                        
+
+                        
+                        {/* Last Workout Reference */}
+                        {exerciseHistory.length > 0 && (
+                          <div className="p-2 sm:p-3 lg:p-4 xl:p-5 bg-blue-50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/10 rounded-lg">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-blue-700 dark:text-blue-400 font-medium text-xs sm:text-sm">Last Workout</span>
+                              <span className="text-gray-600 dark:text-gray-400 text-xs">Monday, 15 Jul</span>
+                            </div>
+                            
+                            <div className="flex items-center justify-center gap-3 sm:gap-4 lg:gap-6 text-xs sm:text-sm mb-4">
+                              <div className="text-center">
+                                <div className="text-gray-900 dark:text-white font-medium">{exerciseHistory[exerciseHistory.length - 1]?.weight || 0}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">lbs</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-gray-900 dark:text-white font-medium">{exerciseHistory[exerciseHistory.length - 1]?.reps || 0}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">reps</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-gray-900 dark:text-white font-medium">RPE {exerciseHistory[exerciseHistory.length - 1]?.rpe || 0}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">effort</div>
+                              </div>
+                            </div>
+                            
+                            <button
+                              onClick={() => {
+                                const lastSet = exerciseHistory[exerciseHistory.length - 1];
+                                if (lastSet) {
+                                  updateExerciseState(index, {
+                                    weight: lastSet.weight,
+                                    reps: lastSet.reps,
+                                    rpe: lastSet.rpe
+                                  });
+                                  showSmartSuggestion('Loaded last set from previous workout');
+                                }
+                              }}
+                              className="w-full py-3 bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300 rounded-lg font-medium hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors text-xs sm:text-sm min-h-[48px]"
+                            >
+                              📋 Use Last Set
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -2003,51 +1888,30 @@ export const EnhancedWorkoutLogger: React.FC = () => {
             </div>
           </div>
           
-          {/* Navigation Controls */}
-          <div className="flex items-center justify-between mt-4">
-            {/* Previous Button */}
-            <button
-              onClick={() => {
-                if (currentExerciseIndex > 0) {
-                  setCurrentExerciseIndex(currentExerciseIndex - 1);
-                }
-              }}
-              disabled={currentExerciseIndex === 0}
-              className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 text-gray-300 rounded-lg transition-colors"
-              aria-label="Previous exercise"
-            >
-              ← Previous
-            </button>
-            
-            {/* Navigation Indicators */}
-            <div className="flex gap-2">
-              {workoutExercises.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentExerciseIndex(index)}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    index === currentExerciseIndex 
-                      ? 'bg-fitness-blue' 
-                      : 'bg-gray-400 hover:bg-gray-300'
-                  }`}
-                  aria-label={`Go to exercise ${index + 1}`}
-                />
-              ))}
+          {/* Mobile Navigation */}
+          <div className="flex items-center justify-center mt-3">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs text-gray-400">
+              <span className="hidden sm:inline">👈 Swipe to navigate</span>
+              <span className="sm:hidden">👈 Swipe</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline">Tap dots below</span>
             </div>
-            
-            {/* Next Button */}
-            <button
-              onClick={() => {
-                if (currentExerciseIndex < workoutExercises.length - 1) {
-                  setCurrentExerciseIndex(currentExerciseIndex + 1);
-                }
-              }}
-              disabled={currentExerciseIndex === workoutExercises.length - 1}
-              className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 text-gray-300 rounded-lg transition-colors"
-              aria-label="Next exercise"
-            >
-              Next →
-            </button>
+          </div>
+          
+          {/* Bulletproof Navigation Dots */}
+          <div className="flex justify-center gap-3 sm:gap-4 mt-4">
+            {workoutExercises.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentExerciseIndex(index)}
+                className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full transition-colors min-w-[16px] sm:min-w-[20px] ${
+                  index === currentExerciseIndex 
+                    ? 'bg-fitness-blue' 
+                    : 'bg-gray-400 hover:bg-gray-300'
+                }`}
+                aria-label={`Go to exercise ${index + 1}`}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -2563,6 +2427,141 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
       )}
 
+      {/* Exercise Completion Overlay */}
+      {showExerciseCompletionOverlay !== null && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 animate-fade-in">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 w-full max-w-sm sm:max-w-lg lg:max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-700 animate-scale-in">
+            <div className="text-center mb-4 sm:mb-6 lg:mb-8">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 lg:mb-6 shadow-lg animate-bounce">
+                <span className="text-xl sm:text-2xl lg:text-3xl">🎉</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 sm:mb-3 bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+                Exercise Complete!
+              </h2>
+              <p className="text-sm sm:text-base lg:text-xl text-gray-300 font-medium">
+                {workoutExercises[showExerciseCompletionOverlay]?.name}
+              </p>
+              <div className="w-16 sm:w-20 lg:w-24 h-1 bg-gradient-to-r from-green-500 to-blue-500 rounded-full mx-auto mt-2 sm:mt-3 lg:mt-4"></div>
+            </div>
+
+            {/* Action Buttons - Moved to top */}
+            <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6 lg:mb-8">
+              <button
+                onClick={handleNextExercise}
+                className="w-full py-3 sm:py-4 lg:py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl sm:rounded-2xl font-bold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 text-base sm:text-lg lg:text-xl flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <span className="text-lg sm:text-xl lg:text-2xl">➡️</span>
+                <span>Swipe Right for Next Exercise</span>
+              </button>
+              
+              <button
+                onClick={handleAddAnotherSet}
+                className="w-full py-3 sm:py-4 lg:py-5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl sm:rounded-2xl font-bold hover:from-green-700 hover:to-green-800 transition-all duration-300 text-base sm:text-lg lg:text-xl flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <span className="text-lg sm:text-xl lg:text-2xl">➕</span>
+                <span>Add Another Set</span>
+              </button>
+            </div>
+
+            {/* Exercise Analytics */}
+            {(() => {
+              const analytics = getExerciseAnalytics(showExerciseCompletionOverlay);
+              if (!analytics) return null;
+              
+              return (
+                <div className="bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6 border border-gray-600 shadow-lg">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 lg:mb-6 text-center flex items-center justify-center gap-2">
+                    <span className="text-xl sm:text-2xl">📊</span>
+                    <span>Exercise Summary</span>
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4 lg:mb-6">
+                    <div className="text-center bg-gray-800/50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 border border-gray-600">
+                      <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-400 mb-1">{analytics.totalSets}</div>
+                      <div className="text-xs sm:text-sm text-gray-300 font-medium">Sets</div>
+                    </div>
+                    <div className="text-center bg-gray-800/50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 border border-gray-600">
+                      <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-400 mb-1">{analytics.avgWeight}</div>
+                      <div className="text-xs sm:text-sm text-gray-300 font-medium">Avg Weight</div>
+                    </div>
+                    <div className="text-center bg-gray-800/50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 border border-gray-600">
+                      <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-yellow-400 mb-1">{analytics.avgReps}</div>
+                      <div className="text-xs sm:text-sm text-gray-300 font-medium">Avg Reps</div>
+                    </div>
+                    <div className="text-center bg-gray-800/50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 border border-gray-600">
+                      <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-400 mb-1">{analytics.totalVolume}</div>
+                      <div className="text-xs sm:text-sm text-gray-300 font-medium">Total Volume</div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+                    <div className="text-center bg-gray-800/50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 border border-gray-600">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-400 mb-1">{analytics.maxWeight}</div>
+                      <div className="text-xs sm:text-sm text-gray-300 font-medium">Max Weight</div>
+                    </div>
+                    <div className="text-center bg-gray-800/50 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 border border-gray-600">
+                      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-400 mb-1">{analytics.dropSets}</div>
+                      <div className="text-xs sm:text-sm text-gray-300 font-medium">Drop Sets</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Set History */}
+            {(() => {
+              const exerciseState = getExerciseState(showExerciseCompletionOverlay);
+              const history = exerciseState.history;
+              
+              if (history.length === 0) return null;
+              
+              return (
+                <div className="bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6 border border-gray-600 shadow-lg">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 lg:mb-6 text-center flex items-center justify-center gap-2">
+                    <span className="text-xl sm:text-2xl">📋</span>
+                    <span>Set History</span>
+                  </h3>
+                  <div className="space-y-2 sm:space-y-3 max-h-32 sm:max-h-40 lg:max-h-48 overflow-y-auto pr-1 sm:pr-2">
+                    {history.map((set, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-800/70 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 border border-gray-600 hover:bg-gray-800/90 transition-colors">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                            {index + 1}
+                          </div>
+                          <span className="text-white font-semibold text-sm sm:text-base">Set {index + 1}</span>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 text-xs sm:text-sm">
+                          <div className="text-center">
+                            <span className="text-blue-400 font-bold">{set.weight}</span>
+                            <div className="text-xs text-gray-400">lbs</div>
+                          </div>
+                          <div className="text-center">
+                            <span className="text-green-400 font-bold">× {set.reps}</span>
+                            <div className="text-xs text-gray-400">reps</div>
+                          </div>
+                          <div className="text-center">
+                            <span className="text-yellow-400 font-bold">RPE {set.rpe}</span>
+                            <div className="text-xs text-gray-400">effort</div>
+                          </div>
+                          {set.isDropSet && (
+                            <div className="text-center">
+                              <span className="text-purple-400 text-sm sm:text-lg">🔽</span>
+                              <div className="text-xs text-gray-400">drop</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+
+          </div>
+        </div>
+      )}
+
       {/* Plate Calculator Modal */}
       {showPlateCalculator && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -2717,27 +2716,157 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
       )}
 
-      {/* Enhanced Rest Timer Modal */}
-      <RestTimer
-        initialTime={restTime}
-        isVisible={showRestTimerModal}
-        soundEnabled={restTimerSoundEnabled}
-        onComplete={() => {
-          setShowRestTimerModal(false);
-          playSound('complete');
-        }}
-        onSkip={() => {
-          setShowRestTimerModal(false);
-          setTimerRunning(false);
-        }}
-        onClose={() => {
-          setShowRestTimerModal(false);
-          setTimerRunning(false);
-        }}
-        onSoundToggle={setRestTimerSoundEnabled}
-        onOpenSettings={() => setShowRestTimerSettings(true)}
-        onTimeAdjust={adjustTimerTime}
-      />
+      {/* Dynamic Island Rest Timer */}
+      {timerRunning && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-40">
+          <div 
+            onClick={() => setShowTimerExpanded(!showTimerExpanded)}
+            className={`backdrop-blur-2xl border border-white/20 shadow-2xl transition-all duration-500 ease-in-out cursor-pointer ${
+              showTimerExpanded 
+                ? 'rounded-2xl p-4 w-80' 
+                : 'rounded-full p-3 w-20 h-20'
+            } ${
+              restTime > 30 
+                ? 'bg-white/10 shadow-white/20' 
+                : restTime > 10 
+                  ? 'bg-yellow-500/20 shadow-yellow-500/30' 
+                  : 'bg-red-500/20 shadow-red-500/30'
+            }`}
+          >
+                         {/* Collapsed State */}
+             {!showTimerExpanded && (
+               <div className="flex items-center justify-center h-full">
+                 <div className="relative w-12 h-12">
+                   <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 48 48">
+                     <circle
+                       cx="24"
+                       cy="24"
+                       r="20"
+                       stroke="rgba(255,255,255,0.3)"
+                       strokeWidth="3"
+                       fill="none"
+                     />
+                     <circle
+                       cx="24"
+                       cy="24"
+                       r="20"
+                       stroke={restTime > 30 ? "#FFFFFF" : restTime > 10 ? "#FCD34D" : "#EF4444"}
+                       strokeWidth="3"
+                       fill="none"
+                       strokeDasharray={`${2 * Math.PI * 20}`}
+                       strokeDashoffset={`${2 * Math.PI * 20 * (1 - restTime / (restTimerSettings.defaultTime || 60))}`}
+                       strokeLinecap="round"
+                       className="transition-all duration-1000 ease-linear drop-shadow-lg"
+                     />
+                   </svg>
+                   <div className="absolute inset-0 flex items-center justify-center">
+                     <div className={`font-bold text-sm drop-shadow-lg ${
+                       restTime > 30 ? 'text-white' : restTime > 10 ? 'text-yellow-300' : 'text-red-300'
+                     }`}>
+                       {Math.ceil(restTime / 60)}
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             )}
+
+                         {/* Expanded State */}
+             {showTimerExpanded && (
+               <div className="space-y-4">
+                              {/* Timer Display */}
+             <div className="text-center">
+               <div className={`text-4xl font-bold mb-2 drop-shadow-lg ${
+                 restTime > 30 ? 'text-white' : restTime > 10 ? 'text-yellow-300' : 'text-red-300'
+               }`}>
+                 {formatTime(restTime)}
+               </div>
+               <div className="w-full bg-white/10 rounded-full h-3 backdrop-blur-sm overflow-hidden">
+                 <div 
+                   className={`h-3 rounded-full transition-all duration-1000 ease-linear drop-shadow-lg ${
+                     restTime > 30 ? 'bg-white/60' : restTime > 10 ? 'bg-yellow-400' : 'bg-red-400'
+                   }`}
+                   style={{ width: `${Math.min((restTime / (restTimerSettings.defaultTime || 60)) * 100, 100)}%` }}
+                 ></div>
+               </div>
+             </div>
+
+                 {/* Controls */}
+                 <div className="flex items-center justify-center gap-2">
+                   <button
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setTimerRunning(false);
+                       setRestTime(restTimerSettings.defaultTime || 60);
+                       playSound('button');
+                     }}
+                     className="w-12 h-12 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors backdrop-blur-sm"
+                     title="Stop Timer"
+                   >
+                     ⏹️
+                   </button>
+                   <button
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setRestTime(prev => Math.max(0, prev - 10));
+                       playSound('button');
+                     }}
+                     className="w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors backdrop-blur-sm"
+                     title="Skip 10s"
+                   >
+                     ⏭️
+                   </button>
+                   <button
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setTimerRunning(false);
+                       setRestTime(0);
+                       playSound('complete');
+                       showSmartSuggestion('Rest timer skipped! Ready for next set.');
+                     }}
+                     className="w-12 h-12 bg-green-500/80 hover:bg-green-500 rounded-full flex items-center justify-center text-white transition-colors backdrop-blur-sm"
+                     title="Skip Rest Timer"
+                   >
+                     ⏭️⏭️
+                   </button>
+                   <button
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       playSound('complete');
+                     }}
+                     className="w-12 h-12 bg-blue-500/80 hover:bg-blue-500 rounded-full flex items-center justify-center text-white transition-colors backdrop-blur-sm"
+                     title="Test Sound"
+                   >
+                     🔊
+                   </button>
+                   <button
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setShowRestTimerSettings(true);
+                     }}
+                     className="w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors backdrop-blur-sm"
+                     title="Settings"
+                   >
+                     ⚙️
+                   </button>
+                 </div>
+
+                 {/* Close Button */}
+                 <div className="flex justify-center">
+                   <button
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setShowTimerExpanded(false);
+                     }}
+                     className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors backdrop-blur-sm"
+                   >
+                     <X className="w-4 h-4" />
+                   </button>
+                 </div>
+               </div>
+             )}
+          </div>
+        </div>
+      )}
 
       {/* Rest Timer Settings Modal */}
       <RestTimerSettings
@@ -2747,37 +2876,96 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         onSettingsChange={setRestTimerSettings}
       />
 
-      {/* Floating Rest Timer Indicator */}
-      {timerRunning && !showRestTimerModal && (
-        <div className="fixed bottom-5 right-5 z-40">
+      {/* Quick Start Timer Button */}
+      {!timerRunning && (
+        <div className="fixed bottom-4 right-4 z-40">
           <button
-            onClick={() => setShowRestTimerModal(true)}
-            className="p-4 glass-strong backdrop-blur-xl rounded-full shadow-lg hover:bg-white/10 transition-modern animate-pulse"
-            title="Rest Timer Active - Click to view"
+            onClick={() => {
+              console.log('Manual timer start clicked');
+              setRestTime(30); // Set to 30 seconds for testing
+              startRestTimer();
+            }}
+            className="p-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-full shadow-lg text-white transition-all duration-300 transform hover:scale-105"
+            title="Start Rest Timer (30s)"
           >
-            <div className="text-center">
-              <div className="text-xl font-bold text-white">
-                {formatTime(restTime)}
-              </div>
-              <div className="text-xs text-gray-300">Rest</div>
-            </div>
+            <Clock className="w-6 h-6" />
           </button>
         </div>
       )}
 
-      {/* Test Rest Timer Button (for development) */}
-      {!timerRunning && (
-        <div className="fixed bottom-5 left-5 z-40">
-          <button
-            onClick={() => {
-              setRestTime(30); // Set to 30 seconds for testing
-              startRestTimer();
-            }}
-            className="p-3 bg-blue-500 hover:bg-blue-600 rounded-full shadow-lg text-white transition-colors"
-            title="Test Rest Timer"
-          >
-            <Clock className="w-5 h-5" />
-          </button>
+      {/* Debug Timer State */}
+      <div className="fixed bottom-4 left-4 z-40">
+        <div className="p-2 bg-black/50 rounded text-white text-xs">
+          Timer: {restTime}s | Running: {timerRunning ? 'Yes' : 'No'}
+        </div>
+      </div>
+
+      {showDropSetForIndex === currentExerciseState.completedSets && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-gray-900 rounded-2xl p-4 sm:p-6 w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-white">Drop Set</h3>
+              <button
+                onClick={() => setShowDropSetForIndex(null)}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <div className="text-xs sm:text-sm text-gray-400 mb-2">New Weight (lbs)</div>
+              <input
+                type="number"
+                min="0"
+                value={dropSetWeight}
+                onChange={e => setDropSetWeight(Number(e.target.value))}
+                className="w-full p-2 sm:p-3 rounded-lg bg-gray-800 text-white text-base sm:text-lg mb-3 border border-gray-700 focus:border-blue-500 outline-none"
+              />
+              <div className="text-xs sm:text-sm text-gray-400 mb-2">New Reps</div>
+              <input
+                type="number"
+                min="1"
+                value={dropSetReps}
+                onChange={e => setDropSetReps(Number(e.target.value))}
+                className="w-full p-2 sm:p-3 rounded-lg bg-gray-800 text-white text-base sm:text-lg border border-gray-700 focus:border-blue-500 outline-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDropSetForIndex(null)}
+                className="flex-1 py-2 sm:py-3 bg-gray-700 text-gray-300 rounded-lg text-xs sm:text-base font-medium hover:bg-gray-600 transition-colors min-h-[44px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  updateExerciseState(index, {
+                    weight: dropSetWeight,
+                    reps: dropSetReps,
+                    completedSets: currentExerciseState.completedSets + 1,
+                    history: [
+                      ...(currentExerciseState.history || []),
+                      {
+                        id: `${Date.now()}`,
+                        weight: dropSetWeight,
+                        reps: dropSetReps,
+                        rpe: currentExerciseState.rpe,
+                        completed: true,
+                        isDropSet: true,
+                        originalWeight: currentExerciseState.weight,
+                        originalReps: currentExerciseState.reps,
+                      },
+                    ],
+                  });
+                  setShowDropSetForIndex(null);
+                  showSmartSuggestion('Drop set logged!');
+                }}
+                className="flex-1 py-2 sm:py-3 bg-purple-500 text-white rounded-lg text-xs sm:text-base font-medium hover:bg-purple-600 transition-colors min-h-[44px]"
+              >
+                Confirm Drop Set
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
