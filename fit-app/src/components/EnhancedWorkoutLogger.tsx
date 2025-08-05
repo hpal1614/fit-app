@@ -952,13 +952,18 @@ BEHAVIOR:
 - If user agrees to a suggestion, automatically execute it
 - Keep responses under 60 words
 - Use natural language like a real coach
+- ALWAYS include specific actions in your response when appropriate
+- If user mentions a weight or reps, immediately suggest logging it
 
 EXAMPLE CONVERSATIONS:
+User: "I did 185 pounds"
+Coach: "Great work! I've logged 185 pounds for ${context.currentReps} reps. That's solid progress! Ready for your next set?"
+
 User: "How should I squat?"
-Coach: "For squats, focus on form first! Feet shoulder-width, chest up, push through heels. Start with ${context.currentWeight} lbs for ${context.currentReps} reps. Ready to try?"
+Coach: "For squats, focus on form first! Feet shoulder-width, chest up, push through heels. You're set for ${context.currentWeight} lbs. Ready to log this set?"
 
 User: "Yes"
-Coach: "Perfect! I've set it to ${context.currentWeight} lbs. Remember to breathe and keep your core tight. Let's do this!"
+Coach: "Perfect! I've logged ${context.currentWeight} lbs for ${context.currentReps} reps. Remember to breathe and keep your core tight!"
 
 User: "Suggest weight for next set"
 Coach: "Based on your last set of ${context.lastSetWeight} lbs, I suggest ${context.lastSetWeight + 5} lbs for the next set. You're building strength nicely! Want to try it?"
@@ -1276,8 +1281,8 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
     // Check for wake word first
     if (detectWakeWord(command)) {
       setIsWakeWordMode(true);
-      setCouchResponse('Hey there! How can I help with your workout?');
-      speakCouchResponse('Hey there! How can I help with your workout?');
+      setCouchResponse('Hey there! I\'m your AI workout coach. I can help you log sets, adjust weights, start timers, and more. What would you like to do?');
+      speakCouchResponse('Hey there! I\'m your AI workout coach. I can help you log sets, adjust weights, start timers, and more. What would you like to do?');
       return;
     }
     
@@ -1289,29 +1294,164 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
         return;
       }
       
-      // Check for direct action commands
-      if (command.includes('log set') || command.includes('complete set')) {
-        logSet();
-        setCouchResponse('Set logged! Great work!');
-        speakCouchResponse('Set logged! Great work!');
-        return;
+      // === LOGGING COMMANDS ===
+      // "log 185 pound" or "log set 185 pounds" or "complete 185"
+      if (command.includes('log') || command.includes('complete')) {
+        const weightMatch = command.match(/(\d+)\s*(pound|pounds|lbs?|lb)/);
+        const repsMatch = command.match(/(\d+)\s*(rep|reps)/);
+        
+        if (weightMatch) {
+          const weight = parseInt(weightMatch[1]);
+          const reps = repsMatch ? parseInt(repsMatch[1]) : getExerciseState(currentExerciseIndex).reps;
+          
+          // Update the current exercise state
+          updateExerciseState(currentExerciseIndex, { weight, reps });
+          
+          // Log the set
+          completeNormalSet();
+          
+          const response = `Perfect! I've logged ${weight} pounds for ${reps} reps. Great work!`;
+          setCouchResponse(response);
+          speakCouchResponse(response);
+          return;
+        }
       }
       
-      if (command.includes('start timer') || command.includes('rest timer')) {
+      // === WEIGHT ADJUSTMENT COMMANDS ===
+      // "set weight to 185" or "change to 185 pounds"
+      if (command.includes('set weight') || command.includes('weight to') || command.includes('change to') || command.includes('make it')) {
+        const weightMatch = command.match(/(\d+)/);
+        if (weightMatch) {
+          const weight = parseInt(weightMatch[1]);
+          updateExerciseState(currentExerciseIndex, { weight });
+          
+          const response = `Got it! Weight set to ${weight} pounds. Ready to log your set?`;
+          setCouchResponse(response);
+          speakCouchResponse(response);
+          return;
+        }
+      }
+      
+      // "add 5 pounds" or "increase by 10"
+      if (command.includes('add') || command.includes('increase') || command.includes('up')) {
+        const match = command.match(/(\d+)/);
+        if (match) {
+          const amount = parseInt(match[1]);
+          const currentWeight = getExerciseState(currentExerciseIndex).weight;
+          const newWeight = currentWeight + amount;
+          updateExerciseState(currentExerciseIndex, { weight: newWeight });
+          
+          const response = `Added ${amount} pounds. Weight is now ${newWeight} pounds.`;
+          setCouchResponse(response);
+          speakCouchResponse(response);
+          return;
+        }
+      }
+      
+      // "reduce 5 pounds" or "decrease by 10"
+      if (command.includes('reduce') || command.includes('decrease') || command.includes('down') || command.includes('drop')) {
+        const match = command.match(/(\d+)/);
+        if (match) {
+          const amount = parseInt(match[1]);
+          const currentWeight = getExerciseState(currentExerciseIndex).weight;
+          const newWeight = Math.max(0, currentWeight - amount);
+          updateExerciseState(currentExerciseIndex, { weight: newWeight });
+          
+          const response = `Reduced by ${amount} pounds. Weight is now ${newWeight} pounds.`;
+          setCouchResponse(response);
+          speakCouchResponse(response);
+          return;
+        }
+      }
+      
+      // === REP ADJUSTMENT ===
+      // "set reps to 8" or "change reps to 10"
+      if (command.includes('reps') && command.includes('to')) {
+        const repsMatch = command.match(/(\d+)/);
+        if (repsMatch) {
+          const reps = parseInt(repsMatch[1]);
+          updateExerciseState(currentExerciseIndex, { reps });
+          
+          const response = `Reps set to ${reps}. Ready to log your set?`;
+          setCouchResponse(response);
+          speakCouchResponse(response);
+          return;
+        }
+      }
+      
+      // === TIMER COMMANDS ===
+      if (command.includes('start timer') || command.includes('rest timer') || command.includes('timer')) {
         startRestTimer();
-        setCouchResponse('Rest timer started! Take a breather.');
-        speakCouchResponse('Rest timer started! Take a breather.');
+        const response = 'Rest timer started! Take a breather and get ready for your next set.';
+        setCouchResponse(response);
+        speakCouchResponse(response);
         return;
       }
       
-      if (command.includes('next exercise')) {
+      // === EXERCISE NAVIGATION ===
+      if (command.includes('next exercise') || command.includes('next') || command.includes('move on')) {
         advanceToNextExercise();
-        setCouchResponse('Moving to the next exercise!');
-        speakCouchResponse('Moving to the next exercise!');
+        const nextExercise = workoutExercises[currentExerciseIndex + 1] || workoutExercises[0];
+        const response = `Moving to ${nextExercise.name}! Let's crush it!`;
+        setCouchResponse(response);
+        speakCouchResponse(response);
         return;
       }
       
-      // Generate conversational response with actions
+      // === GENERAL LOGGING ===
+      if (command.includes('log set') || command.includes('complete set') || command.includes('done')) {
+        completeNormalSet();
+        const response = 'Set logged! Great work! Ready for your next set?';
+        setCouchResponse(response);
+        speakCouchResponse(response);
+        return;
+      }
+      
+      // === FAILED SET ===
+      if (command.includes('failed') || command.includes('fail') || command.includes('couldn\'t')) {
+        logFailure();
+        const response = 'No worries! Failure is part of growth. Let\'s adjust and try again.';
+        setCouchResponse(response);
+        speakCouchResponse(response);
+        return;
+      }
+      
+      // === DROP SET ===
+      if (command.includes('drop set') || command.includes('drop')) {
+        startDropLog();
+        const response = 'Drop set mode activated. What weight would you like to use for the drop set?';
+        setCouchResponse(response);
+        speakCouchResponse(response);
+        return;
+      }
+      
+      // === STATUS QUERIES ===
+      if (command.includes('how much') || command.includes('what weight') || command.includes('current')) {
+        const currentState = getExerciseState(currentExerciseIndex);
+        const response = `You're currently set for ${currentState.weight} pounds, ${currentState.reps} reps. Ready to log this set?`;
+        setCouchResponse(response);
+        speakCouchResponse(response);
+        return;
+      }
+      
+      // === CONFIRMATION COMMANDS ===
+      if (command.includes('yes') || command.includes('correct') || command.includes('right') || command.includes('do it')) {
+        // Execute the last suggested action
+        const lastSuggestion = conversationMemory.lastSuggestion;
+        if (lastSuggestion) {
+          executeActions([lastSuggestion], {
+            currentWeight: getExerciseState(currentExerciseIndex).weight,
+            lastSetWeight: getExerciseState(currentExerciseIndex).history?.slice(-1)[0]?.weight || getExerciseState(currentExerciseIndex).weight,
+            lastSuggestion: conversationMemory.lastSuggestion
+          });
+          const response = 'Perfect! I\'ve made that change for you.';
+          setCouchResponse(response);
+          speakCouchResponse(response);
+          return;
+        }
+      }
+      
+      // If no direct command matched, use AI for contextual understanding
       generateCouchResponse(command).then(({ response, actions }) => {
         setCouchResponse(response);
         speakCouchResponse(response);
@@ -1335,6 +1475,24 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
         }
       });
       return;
+    }
+    
+    // === DIRECT COMMANDS (without wake word) ===
+    // "log 185 pound" or "set weight 185"
+    if (command.includes('log') || command.includes('complete')) {
+      const weightMatch = command.match(/(\d+)\s*(pound|pounds|lbs?|lb)/);
+      const repsMatch = command.match(/(\d+)\s*(rep|reps)/);
+      
+      if (weightMatch) {
+        const weight = parseInt(weightMatch[1]);
+        const reps = repsMatch ? parseInt(repsMatch[1]) : getExerciseState(currentExerciseIndex).reps;
+        
+        updateExerciseState(currentExerciseIndex, { weight, reps });
+        completeNormalSet();
+        
+        showSmartSuggestion(`✅ Logged ${weight} lbs for ${reps} reps!`);
+        return;
+      }
     }
     
     // === WEIGHT CONTROL ===
