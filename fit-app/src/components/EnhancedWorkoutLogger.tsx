@@ -2052,7 +2052,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
             </div>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
 
             
             {/* Change Exercise Button */}
