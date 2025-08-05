@@ -2067,37 +2067,18 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
               )}
             </button>
             
-            {/* Progress Ring */}
-            <div className="w-16 h-16 rounded-lg bg-blue-500/20 border border-blue-500/30 flex flex-col items-center justify-center gap-1">
-              <div className="w-8 h-8 relative">
-                <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
-                  <circle
-                    cx="16"
-                    cy="16"
-                    r="14"
-                    stroke="rgba(59, 130, 246, 0.3)"
-                    strokeWidth="2"
-                    fill="none"
-                  />
-                  <circle
-                    cx="16"
-                    cy="16"
-                    r="14"
-                    stroke="rgb(59, 130, 246)"
-                    strokeWidth="2"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 14}`}
-                    strokeDashoffset={`${2 * Math.PI * 14 * (1 - calculateProgress() / 100)}`}
-                    className="transition-all duration-500 ease-out"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-semibold text-blue-400">{calculateProgress()}%</span>
-                </div>
-              </div>
-              <span className="text-xs font-medium text-blue-400">Progress</span>
-            </div>
+            {/* Heart/Favorite Button */}
+            <button
+              onClick={() => {
+                // Toggle favorite status for current exercise
+                const currentExercise = workoutExercises[currentExerciseIndex];
+                showSmartSuggestion(`❤️ ${currentExercise?.name} added to favorites!`);
+              }}
+              className="w-16 h-16 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-1"
+            >
+              <div className="text-lg font-bold">❤️</div>
+              <span className="text-xs font-medium">Favorite</span>
+            </button>
           </div>
         </div>
         
