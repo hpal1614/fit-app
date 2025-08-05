@@ -52,6 +52,7 @@ import { IntegratedAICoach } from './components/ai/IntegratedAICoach';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
+import { SettingsModal } from './components/SettingsModal';
 
 // Hooks & Services
 import { useWorkout } from './hooks/useWorkout';
@@ -82,6 +83,17 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [appSettings, setAppSettings] = useState({
+    autoAdvanceEnabled: true,
+    defaultRestTime: 120,
+    soundEnabled: true,
+    notificationsEnabled: true,
+    voiceCommandsEnabled: true,
+    aiCoachingEnabled: true,
+    offlineMode: false,
+    debugMode: false
+  });
 
   // Initialize hooks
   const workout = useWorkout();
@@ -246,7 +258,10 @@ function App() {
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
             )}
           </button>
-          <button className="btn btn-secondary btn-sm">
+          <button 
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowSettingsModal(true)}
+          >
             <Settings className="w-4 h-4" />
           </button>
         </div>
@@ -287,7 +302,7 @@ function App() {
       {/* Main Content */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
         <div className="animate-fade-in">
-          {activeTab === 'workouts' && <EnhancedWorkoutLogger workout={workout} />}
+          {activeTab === 'workouts' && <EnhancedWorkoutLogger workout={workout} appSettings={appSettings} onSettingsChange={setAppSettings} />}
           {activeTab === 'generator' && <WorkoutGenerator />}
           {activeTab === 'ai-coach' && (
             <IntegratedAICoach 
@@ -345,6 +360,14 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isVisible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        settings={appSettings}
+        onSettingsChange={setAppSettings}
+      />
 
       {/* Nimbus Bottom Navigation */}
       <NimbusBottomNavigation

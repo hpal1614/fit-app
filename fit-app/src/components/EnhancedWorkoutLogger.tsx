@@ -13,7 +13,7 @@ import { MuscleGroup } from '../types/workout';
 import { DatabaseService } from '../services/databaseService';
 import RestTimer from './RestTimer';
 import RestTimerSettings from './RestTimerSettings';
-import { SettingsModal } from './SettingsModal';
+
 
 interface Set {
   id: string;
@@ -45,7 +45,26 @@ interface SmartSuggestion {
   priority: 'low' | 'medium' | 'high';
 }
 
-export const EnhancedWorkoutLogger: React.FC = () => {
+interface EnhancedWorkoutLoggerProps {
+  workout?: any;
+  appSettings?: {
+    autoAdvanceEnabled: boolean;
+    defaultRestTime: number;
+    soundEnabled: boolean;
+    notificationsEnabled: boolean;
+    voiceCommandsEnabled: boolean;
+    aiCoachingEnabled: boolean;
+    offlineMode: boolean;
+    debugMode: boolean;
+  };
+  onSettingsChange?: (settings: any) => void;
+}
+
+export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({ 
+  workout, 
+  appSettings: externalAppSettings, 
+  onSettingsChange 
+}) => {
   // Core State
   const [currentWeight, setCurrentWeight] = useState(190);
   const [currentReps, setCurrentReps] = useState(8);
@@ -127,6 +146,10 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     if (newSettings.defaultRestTime !== appSettings.defaultRestTime) {
       setRestTime(newSettings.defaultRestTime);
     }
+    // Call external settings change handler
+    if (onSettingsChange) {
+      onSettingsChange(newSettings);
+    }
   };
   const [tableSettings, setTableSettings] = useState({
     showWeight: true,
@@ -136,9 +159,9 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   });
   const [overallWorkoutProgress, setOverallWorkoutProgress] = useState(0);
   const [completedExercises, setCompletedExercises] = useState<number[]>([]);
-  const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
+  const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(externalAppSettings?.autoAdvanceEnabled ?? true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [appSettings, setAppSettings] = useState({
+  const [appSettings, setAppSettings] = useState(externalAppSettings ?? {
     autoAdvanceEnabled: true,
     defaultRestTime: 120,
     soundEnabled: true,
@@ -2027,14 +2050,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {/* Settings Button */}
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="w-16 h-16 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-1"
-            >
-              <div className="text-lg font-bold">⚙️</div>
-              <span className="text-xs font-medium">Settings</span>
-            </button>
+
             
             {/* Change Exercise Button */}
             <button
@@ -3580,13 +3596,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
         </div>
       )}
 
-      {/* Settings Modal */}
-      <SettingsModal
-        isVisible={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        settings={appSettings}
-        onSettingsChange={handleSettingsChange}
-      />
+
 
     </div>
   );
