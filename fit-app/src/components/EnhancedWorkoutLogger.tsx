@@ -378,14 +378,17 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
 
   // Voice System
   const toggleVoice = async () => {
+    console.log('🎤 toggleVoice called, current state:', { isListening, voiceServiceRef: !!voiceServiceRef.current });
     initAudio();
     
     if (!voiceServiceRef.current) {
+      console.error('❌ Voice service not available');
       showSmartSuggestion('Voice service not available. Please check microphone permissions.');
       return;
     }
     
     if (isListening) {
+      console.log('🛑 Stopping voice listening...');
       voiceServiceRef.current.stopListening();
       setIsListening(false);
       setIsWakeWordMode(false);
@@ -393,7 +396,9 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
       stopAllAudio();
       setVoiceText(`🎤 "${currentExerciseState.weight} for ${currentExerciseState.reps}, felt perfect"`);
     } else {
+      console.log('🎤 Starting voice listening...');
       const success = await voiceServiceRef.current.startListening();
+      console.log('🎤 Voice listening start result:', success);
       if (success) {
         setIsListening(true);
         setIsWakeWordMode(false);
@@ -401,6 +406,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
         setVoiceText('🎤 Listening... Say "Hey Couch" to activate AI assistant');
         showSmartSuggestion('Voice recognition active. Say "Hey Couch" to start chatting with your AI coach!');
       } else {
+        console.error('❌ Failed to start voice recognition');
         showSmartSuggestion('Failed to start voice recognition. Please check microphone permissions.');
       }
     }
@@ -630,9 +636,13 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
   // Initialize Voice Service
   useEffect(() => {
     const initVoiceService = async () => {
+      console.log('🎤 Starting voice service initialization...');
       try {
         const service = getFixedVoiceService();
+        console.log('🎤 Voice service instance created:', service);
+        
         const initialized = await service.initialize();
+        console.log('🎤 Voice service initialization result:', initialized);
         
         if (initialized) {
           voiceServiceRef.current = service;
@@ -640,6 +650,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
           
           // Subscribe to voice state changes
           service.onStateChange((state) => {
+            console.log('🎤 Voice state changed:', state);
             setIsListening(state.isListening);
             setVoiceTranscript(state.transcript);
             setVoiceConfidence(state.confidence);
@@ -3457,6 +3468,33 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full"></div>
             </div>
           )}
+        </button>
+        
+        {/* Voice Test Button */}
+        <button
+          onClick={() => {
+            console.log('🔍 Voice service debug info:');
+            console.log('- Voice service ref:', voiceServiceRef.current);
+            console.log('- Is listening:', isListening);
+            console.log('- Voice transcript:', voiceTranscript);
+            console.log('- Voice confidence:', voiceConfidence);
+            console.log('- Browser SpeechRecognition:', !!(window.SpeechRecognition || window.webkitSpeechRecognition));
+            console.log('- Browser speechSynthesis:', !!window.speechSynthesis);
+            console.log('- Navigator mediaDevices:', !!navigator.mediaDevices);
+            
+            // Test basic speech synthesis
+            if (window.speechSynthesis) {
+              const utterance = new SpeechSynthesisUtterance('Voice test successful');
+              window.speechSynthesis.speak(utterance);
+              console.log('✅ Speech synthesis test completed');
+            } else {
+              console.error('❌ Speech synthesis not available');
+            }
+          }}
+          className="mt-2 w-16 h-16 rounded-full bg-yellow-500 shadow-2xl transition-all duration-500 transform hover:scale-110 flex items-center justify-center"
+          title="Test Voice Service"
+        >
+          <div className="text-white text-xs font-bold">TEST</div>
         </button>
         
         {/* Voice Status Indicator */}
