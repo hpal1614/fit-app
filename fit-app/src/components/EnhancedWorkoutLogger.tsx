@@ -655,8 +655,15 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
             setVoiceTranscript(state.transcript);
             setVoiceConfidence(state.confidence);
             
-            if (state.transcript && state.confidence > 0.7) {
-              processVoiceCommand(state.transcript);
+            // Process transcript if we have one and confidence is reasonable
+            if (state.transcript && state.transcript.trim().length > 0) {
+              console.log('🎤 Processing transcript:', state.transcript, 'Confidence:', state.confidence);
+              // Lower confidence threshold to catch more commands
+              if (state.confidence > 0.3) {
+                processVoiceCommand(state.transcript);
+              } else {
+                console.log('🎤 Low confidence transcript ignored:', state.transcript);
+              }
             }
           });
           
@@ -1280,9 +1287,12 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
     
     // Check for wake word first
     if (detectWakeWord(command)) {
-      setIsWakeWordMode(true);
-      setCouchResponse('Hey there! I\'m your AI workout coach. I can help you log sets, adjust weights, start timers, and more. What would you like to do?');
-      speakCouchResponse('Hey there! I\'m your AI workout coach. I can help you log sets, adjust weights, start timers, and more. What would you like to do?');
+      // Only activate if not already in wake word mode
+      if (!isWakeWordMode) {
+        setIsWakeWordMode(true);
+        setCouchResponse('Hey there! I\'m your AI workout coach. I can help you log sets, adjust weights, start timers, and more. What would you like to do?');
+        speakCouchResponse('Hey there! I\'m your AI workout coach. I can help you log sets, adjust weights, start timers, and more. What would you like to do?');
+      }
       return;
     }
     
@@ -1297,12 +1307,18 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
       // === LOGGING COMMANDS ===
       // "log 185 pound" or "log set 185 pounds" or "complete 185"
       if (command.includes('log') || command.includes('complete')) {
+        console.log('🎤 Processing logging command:', command);
         const weightMatch = command.match(/(\d+)\s*(pound|pounds|lbs?|lb)/);
         const repsMatch = command.match(/(\d+)\s*(rep|reps)/);
+        
+        console.log('🎤 Weight match:', weightMatch);
+        console.log('🎤 Reps match:', repsMatch);
         
         if (weightMatch) {
           const weight = parseInt(weightMatch[1]);
           const reps = repsMatch ? parseInt(repsMatch[1]) : getExerciseState(currentExerciseIndex).reps;
+          
+          console.log('🎤 Logging set:', { weight, reps, exerciseIndex: currentExerciseIndex });
           
           // Update the current exercise state
           updateExerciseState(currentExerciseIndex, { weight, reps });
@@ -3634,11 +3650,16 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
             console.log('🔍 Voice service debug info:');
             console.log('- Voice service ref:', voiceServiceRef.current);
             console.log('- Is listening:', isListening);
+            console.log('- Is wake word mode:', isWakeWordMode);
             console.log('- Voice transcript:', voiceTranscript);
             console.log('- Voice confidence:', voiceConfidence);
             console.log('- Browser SpeechRecognition:', !!(window.SpeechRecognition || window.webkitSpeechRecognition));
             console.log('- Browser speechSynthesis:', !!window.speechSynthesis);
             console.log('- Navigator mediaDevices:', !!navigator.mediaDevices);
+            
+            // Test voice command processing
+            console.log('🧪 Testing voice command processing...');
+            processVoiceCommand('log 185 pound');
             
             // Test basic speech synthesis
             if (window.speechSynthesis) {
