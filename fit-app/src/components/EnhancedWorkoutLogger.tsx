@@ -2005,11 +2005,11 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {/* Auto-Advance Toggle */}
             <button
               onClick={() => setAutoAdvanceEnabled(!autoAdvanceEnabled)}
-              className={`px-3 py-2 text-xs rounded-full transition-colors flex items-center gap-1 ${
+              className={`px-2 sm:px-3 py-2 text-xs rounded-full transition-colors flex items-center gap-1 ${
                 autoAdvanceEnabled 
                   ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
                   : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
@@ -2027,16 +2027,17 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
                 }
               }}
               disabled={isLoadingAllExercises}
-              className="px-3 py-2 text-xs bg-purple-500/20 text-purple-400 rounded-full hover:bg-purple-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+              className="px-2 sm:px-3 py-2 text-xs bg-purple-500/20 text-purple-400 rounded-full hover:bg-purple-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
             >
               {isLoadingAllExercises ? (
                 <>
                   <div className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                  Loading...
+                  <span className="hidden sm:inline">Loading...</span>
                 </>
               ) : (
                 <>
-                  Change Exercise
+                  <span className="hidden sm:inline">Change Exercise</span>
+                  <span className="sm:hidden">Change</span>
                 </>
               )}
             </button>
@@ -2050,24 +2051,25 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
                 }
               }}
               disabled={isGeneratingAlternatives}
-              className="px-3 py-2 text-xs bg-lime-500/20 text-lime-400 rounded-full hover:bg-lime-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+              className="px-2 sm:px-3 py-2 text-xs bg-lime-500/20 text-lime-400 rounded-full hover:bg-lime-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
             >
               {isGeneratingAlternatives ? (
                 <>
                   <div className="w-3 h-3 border border-lime-400 border-t-transparent rounded-full animate-spin"></div>
-                  Loading...
+                  <span className="hidden sm:inline">Loading...</span>
                 </>
               ) : (
                 <>
-                  Alternatives
+                  <span className="hidden sm:inline">Alternatives</span>
+                  <span className="sm:hidden">Alt</span>
                 </>
               )}
             </button>
             
             {/* Progress Ring */}
-            <div className="w-16 h-16 relative overflow-visible">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
-                <span className="text-xs text-gray-400 font-medium">Exercise</span>
+            <div className="w-16 h-16 relative">
+              <div className="absolute -top-2 sm:-top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
+                <span className="text-xs text-gray-400 font-medium hidden sm:inline">Exercise</span>
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               </div>
               <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
