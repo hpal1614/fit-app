@@ -1979,99 +1979,46 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
       {/* Exercise Header */}
       <div className="card card-elevated">
                                 <div className="flex items-center justify-between mb-4">
-              <div>
-              <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-gray-400 font-medium tracking-wider uppercase">
-                Chest Day • Exercise {currentExerciseIndex + 1}/{workoutExercises.length}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowProgressInfo(!showProgressInfo)}
-                  className="relative w-3 h-3 bg-blue-500 rounded-full hover:bg-blue-400 transition-all duration-300 animate-pulse hover:animate-none hover:scale-110 shadow-lg hover:shadow-blue-500/50 cursor-pointer group"
-                  title="Click for progress info"
-                >
-                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-                    Click for info
+              <div className="flex flex-col gap-4">
+            {/* Header Section */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                {/* Workout Info */}
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="text-xs text-gray-400 font-medium tracking-wider uppercase">
+                    Chest Day • Exercise {currentExerciseIndex + 1}/{workoutExercises.length}
                   </div>
-                </button>
-                <span className="text-xs text-blue-400 font-medium">
-                  Workout: {calculateOverallProgress()}%
-                </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowProgressInfo(!showProgressInfo)}
+                      className="relative w-3 h-3 bg-blue-500 rounded-full hover:bg-blue-400 transition-all duration-300 animate-pulse hover:animate-none hover:scale-110 shadow-lg hover:shadow-blue-500/50 cursor-pointer group"
+                      title="Click for progress info"
+                    >
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                        Click for info
+                      </div>
+                    </button>
+                    <span className="text-xs text-blue-400 font-medium">
+                      Workout: {calculateOverallProgress()}%
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Exercise Name */}
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">{workoutExercises[currentExerciseIndex]?.name}</h1>
+                
+                {/* Set Progress */}
+                <div className="text-gray-300 text-sm">
+                  Set {currentExerciseState.completedSets + 1} of {workoutExercises[currentExerciseIndex]?.sets} • Personal record zone
+                </div>
               </div>
-            </div>
-            <h1 className="text-3xl font-bold text-white mb-2">{workoutExercises[currentExerciseIndex]?.name}</h1>
-            <div className="text-gray-300">
-              Set {currentExerciseState.completedSets + 1} of {workoutExercises[currentExerciseIndex]?.sets} • Personal record zone
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {/* Auto-Advance Toggle */}
-            <button
-              onClick={() => setAutoAdvanceEnabled(!autoAdvanceEnabled)}
-              className={`px-2 sm:px-3 py-2 text-xs rounded-full transition-colors flex items-center gap-1 ${
-                autoAdvanceEnabled 
-                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
-                  : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
-              }`}
-            >
-              {autoAdvanceEnabled ? 'Auto ✓' : 'Auto ✗'}
-            </button>
-            
-            {/* Change Exercise Button */}
-            <button
-              onClick={() => {
-                setShowExerciseSwapper(!showExerciseSwapper);
-                if (!showExerciseSwapper) {
-                  loadAllExercises();
-                }
-              }}
-              disabled={isLoadingAllExercises}
-              className="px-2 sm:px-3 py-2 text-xs bg-purple-500/20 text-purple-400 rounded-full hover:bg-purple-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
-            >
-              {isLoadingAllExercises ? (
-                <>
-                  <div className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="hidden sm:inline">Loading...</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">Change Exercise</span>
-                  <span className="sm:hidden">Change</span>
-                </>
-              )}
-            </button>
-            
-            {/* Alternative Exercise Button */}
-            <button
-              onClick={() => {
-                setShowAlternativeExercises(!showAlternativeExercises);
-                if (!showAlternativeExercises) {
-                  generateAlternativeExercises();
-                }
-              }}
-              disabled={isGeneratingAlternatives}
-              className="px-2 sm:px-3 py-2 text-xs bg-lime-500/20 text-lime-400 rounded-full hover:bg-lime-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
-            >
-              {isGeneratingAlternatives ? (
-                <>
-                  <div className="w-3 h-3 border border-lime-400 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="hidden sm:inline">Loading...</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">Alternatives</span>
-                  <span className="sm:hidden">Alt</span>
-                </>
-              )}
-            </button>
-            
-            {/* Progress Ring */}
-            <div className="w-16 h-16 relative">
-              <div className="absolute -top-2 sm:-top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
-                <span className="text-xs text-gray-400 font-medium hidden sm:inline">Exercise</span>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              </div>
+              
+              {/* Exercise Progress Ring */}
+              <div className="w-16 h-16 relative flex-shrink-0">
+                <div className="absolute -top-2 sm:-top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
+                  <span className="text-xs text-gray-400 font-medium hidden sm:inline">Exercise</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
               <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
                 {/* Background circle */}
                 <circle
@@ -2109,6 +2056,111 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
                   <span className="text-sm font-semibold text-green-400">{calculateProgress()}%</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Action Buttons Section */}
+        <div className="mt-4 pt-4 border-t border-gray-800">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs text-gray-400 font-medium tracking-wider uppercase">Quick Actions</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500">Tap to control</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {/* Auto-Advance Toggle */}
+            <button
+              onClick={() => setAutoAdvanceEnabled(!autoAdvanceEnabled)}
+              className={`p-3 rounded-lg transition-all duration-200 flex flex-col items-center gap-1 ${
+                autoAdvanceEnabled 
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30' 
+                  : 'bg-gray-500/20 text-gray-400 border border-gray-500/30 hover:bg-gray-500/30'
+              }`}
+            >
+              <div className="text-lg">{autoAdvanceEnabled ? '✓' : '✗'}</div>
+              <span className="text-xs font-medium">Auto</span>
+            </button>
+            
+            {/* Change Exercise Button */}
+            <button
+              onClick={() => {
+                setShowExerciseSwapper(!showExerciseSwapper);
+                if (!showExerciseSwapper) {
+                  loadAllExercises();
+                }
+              }}
+              disabled={isLoadingAllExercises}
+              className="p-3 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30 transition-all duration-200 disabled:opacity-50 flex flex-col items-center gap-1"
+            >
+              {isLoadingAllExercises ? (
+                <>
+                  <div className="w-4 h-4 border border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs font-medium">Loading</span>
+                </>
+              ) : (
+                <>
+                  <div className="text-lg">🔄</div>
+                  <span className="text-xs font-medium">Change</span>
+                </>
+              )}
+            </button>
+            
+            {/* Alternative Exercise Button */}
+            <button
+              onClick={() => {
+                setShowAlternativeExercises(!showAlternativeExercises);
+                if (!showAlternativeExercises) {
+                  generateAlternativeExercises();
+                }
+              }}
+              disabled={isGeneratingAlternatives}
+              className="p-3 rounded-lg bg-lime-500/20 text-lime-400 border border-lime-500/30 hover:bg-lime-500/30 transition-all duration-200 disabled:opacity-50 flex flex-col items-center gap-1"
+            >
+              {isGeneratingAlternatives ? (
+                <>
+                  <div className="w-4 h-4 border border-lime-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs font-medium">Loading</span>
+                </>
+              ) : (
+                <>
+                  <div className="text-lg">💡</div>
+                  <span className="text-xs font-medium">Alt</span>
+                </>
+              )}
+            </button>
+            
+            {/* Progress Ring */}
+            <div className="p-3 rounded-lg bg-blue-500/20 border border-blue-500/30 flex flex-col items-center gap-1">
+              <div className="w-8 h-8 relative">
+                <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    stroke="rgba(59, 130, 246, 0.3)"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    stroke="rgb(59, 130, 246)"
+                    strokeWidth="2"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 14}`}
+                    strokeDashoffset={`${2 * Math.PI * 14 * (1 - calculateProgress() / 100)}`}
+                    className="transition-all duration-500 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-semibold text-blue-400">{calculateProgress()}%</span>
+                </div>
+              </div>
+              <span className="text-xs font-medium text-blue-400">Progress</span>
             </div>
           </div>
         </div>
@@ -2222,6 +2274,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
           </div>
         )}
       </div>
+    </div>
 
       {/* Modern Exercise Carousel - World-Class Implementation */}
       <div className="card card-elevated">
