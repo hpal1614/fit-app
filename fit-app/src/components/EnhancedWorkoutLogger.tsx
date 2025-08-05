@@ -111,6 +111,13 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     lastContext?: any;
     conversationHistory: string[];
   }>({ conversationHistory: [] });
+  const [idCounter, setIdCounter] = useState(0);
+
+  // Generate unique IDs to prevent React key conflicts
+  const generateUniqueId = () => {
+    setIdCounter(prev => prev + 1);
+    return `${Date.now()}-${idCounter}-${Math.random().toString(36).substr(2, 9)}`;
+  };
   const [tableSettings, setTableSettings] = useState({
     showWeight: true,
     showReps: true,
@@ -470,7 +477,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
     
     // Add current set to history
     const newSet: Set = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       weight: currentExerciseState.weight,
       reps: currentExerciseState.reps,
       rpe: currentExerciseState.rpe,
@@ -1450,7 +1457,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
   // Show Smart Suggestion
   const showSmartSuggestion = (message: string, duration: number = 4000) => {
     const suggestion: SmartSuggestion = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       type: 'motivation',
       message,
       priority: 'medium'
@@ -1779,7 +1786,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
           .map(line => line.replace(/^\d+\.\s*/, '').trim())
           .slice(0, 3)
           .map(suggestion => ({
-            id: `ai-${Date.now()}-${Math.random()}`,
+            id: `ai-${generateUniqueId()}`,
             name: suggestion,
             equipment: 'AI Suggested',
             reason: 'Alternative movement pattern'
@@ -3566,7 +3573,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
                     history: [
                       ...(currentExerciseState.history || []),
                       {
-                        id: `${Date.now()}`,
+                        id: generateUniqueId(),
                         weight: dropSetWeight,
                         reps: dropSetReps,
                         rpe: currentExerciseState.rpe,
