@@ -2558,36 +2558,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
 
 
 
-      {/* Quick Actions */}
-      <div className="card card-elevated">
-        <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-4">Quick Actions</div>
-        <div className="grid grid-cols-2 gap-3">
-          <button 
-            onClick={() => setShowAlternativesModal(true)}
-            className="p-4 glass rounded-lg text-sm font-medium hover:bg-white/5 transition-modern text-center min-h-[48px] flex items-center justify-center"
-          >
-            🔄 Switch Exercise
-          </button>
-          <button 
-            onClick={() => setShowDifficultyModal(true)}
-            className="p-4 glass rounded-lg text-sm font-medium hover:bg-white/5 transition-modern text-center min-h-[48px] flex items-center justify-center"
-          >
-            ⚡ How did that feel?
-          </button>
-          <button 
-            onClick={() => setShowPainModal(true)}
-            className="p-4 glass rounded-lg text-sm font-medium hover:bg-white/5 transition-modern text-center min-h-[48px] flex items-center justify-center"
-          >
-            🩹 Something hurts
-          </button>
-          <button 
-            onClick={startDropLog}
-            className="p-4 glass rounded-lg text-sm font-medium hover:bg-white/5 transition-modern text-center min-h-[48px] flex items-center justify-center"
-          >
-            🔥 Failed + Drop
-          </button>
-        </div>
-      </div>
+
 
 
 
