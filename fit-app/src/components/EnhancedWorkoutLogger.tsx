@@ -2009,13 +2009,14 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
             {/* Auto-Advance Toggle */}
             <button
               onClick={() => setAutoAdvanceEnabled(!autoAdvanceEnabled)}
-              className={`px-2 sm:px-3 py-2 text-xs rounded-full transition-colors flex items-center gap-1 ${
+              className={`w-16 h-16 rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-1 ${
                 autoAdvanceEnabled 
-                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
-                  : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 hover:scale-105' 
+                  : 'bg-gray-500/20 text-gray-400 border border-gray-500/30 hover:bg-gray-500/30 hover:scale-105'
               }`}
             >
-              {autoAdvanceEnabled ? 'Auto ✓' : 'Auto ✗'}
+              <div className="text-lg font-bold">{autoAdvanceEnabled ? '✓' : '✗'}</div>
+              <span className="text-xs font-medium">Auto</span>
             </button>
             
             {/* Change Exercise Button */}
@@ -2027,17 +2028,17 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
                 }
               }}
               disabled={isLoadingAllExercises}
-              className="px-2 sm:px-3 py-2 text-xs bg-purple-500/20 text-purple-400 rounded-full hover:bg-purple-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+              className="w-16 h-16 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30 hover:scale-105 transition-all duration-200 disabled:opacity-50 flex flex-col items-center justify-center gap-1"
             >
               {isLoadingAllExercises ? (
                 <>
-                  <div className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="hidden sm:inline">Loading...</span>
+                  <div className="w-4 h-4 border border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs font-medium">Loading</span>
                 </>
               ) : (
                 <>
-                  <span className="hidden sm:inline">Change Exercise</span>
-                  <span className="sm:hidden">Change</span>
+                  <div className="text-lg font-bold">🔄</div>
+                  <span className="text-xs font-medium">Change</span>
                 </>
               )}
             </button>
@@ -2051,64 +2052,51 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
                 }
               }}
               disabled={isGeneratingAlternatives}
-              className="px-2 sm:px-3 py-2 text-xs bg-lime-500/20 text-lime-400 rounded-full hover:bg-lime-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+              className="w-16 h-16 rounded-lg bg-lime-500/20 text-lime-400 border border-lime-500/30 hover:bg-lime-500/30 hover:scale-105 transition-all duration-200 disabled:opacity-50 flex flex-col items-center justify-center gap-1"
             >
               {isGeneratingAlternatives ? (
                 <>
-                  <div className="w-3 h-3 border border-lime-400 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="hidden sm:inline">Loading...</span>
+                  <div className="w-4 h-4 border border-lime-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs font-medium">Loading</span>
                 </>
               ) : (
                 <>
-                  <span className="hidden sm:inline">Alternatives</span>
-                  <span className="sm:hidden">Alt</span>
+                  <div className="text-lg font-bold">💡</div>
+                  <span className="text-xs font-medium">Alt</span>
                 </>
               )}
             </button>
             
             {/* Progress Ring */}
-            <div className="w-16 h-16 relative">
-              <div className="absolute -top-2 sm:-top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
-                <span className="text-xs text-gray-400 font-medium hidden sm:inline">Exercise</span>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              </div>
-              <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
-                {/* Background circle */}
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="28"
-                  stroke="rgba(34, 197, 94, 0.2)"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                {/* Progress circle */}
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="28"
-                  stroke="url(#progressGradient)"
-                  strokeWidth="4"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 28}`}
-                  strokeDashoffset={`${2 * Math.PI * 28 * (1 - calculateProgress() / 100)}`}
-                  className="transition-all duration-500 ease-out drop-shadow-lg"
-                  filter="drop-shadow(0 0 8px rgba(34, 197, 94, 0.3))"
-                />
-                {/* Gradient definition */}
-                <defs>
-                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#22c55e" />
-                    <stop offset="100%" stopColor="#4ade80" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center">
-                  <span className="text-sm font-semibold text-green-400">{calculateProgress()}%</span>
+            <div className="w-16 h-16 rounded-lg bg-blue-500/20 border border-blue-500/30 flex flex-col items-center justify-center gap-1">
+              <div className="w-8 h-8 relative">
+                <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    stroke="rgba(59, 130, 246, 0.3)"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    stroke="rgb(59, 130, 246)"
+                    strokeWidth="2"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 14}`}
+                    strokeDashoffset={`${2 * Math.PI * 14 * (1 - calculateProgress() / 100)}`}
+                    className="transition-all duration-500 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-semibold text-blue-400">{calculateProgress()}%</span>
                 </div>
               </div>
+              <span className="text-xs font-medium text-blue-400">Progress</span>
             </div>
           </div>
         </div>
