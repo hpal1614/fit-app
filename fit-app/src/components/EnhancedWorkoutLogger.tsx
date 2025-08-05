@@ -3429,50 +3429,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
         </div>
       )}
 
-      {/* Debug Timer State */}
-      <div className="fixed bottom-20 left-4 z-30">
-        <div className="p-2 bg-black/50 rounded text-white text-xs">
-          Timer: {restTime}s | Running: {timerRunning ? 'Yes' : 'No'}
-        </div>
-        <div className="mt-1 flex gap-1">
-          <button
-            onClick={() => {
-              console.log('Setting timer to 5 seconds');
-              setRestTime(5);
-              if (!timerRunning) {
-                startRestTimer();
-              }
-            }}
-            className="px-2 py-1 bg-red-500 text-white text-xs rounded"
-          >
-            5s
-          </button>
-          <button
-            onClick={() => {
-              console.log('Setting timer to 3 seconds');
-              setRestTime(3);
-              if (!timerRunning) {
-                startRestTimer();
-              }
-            }}
-            className="px-2 py-1 bg-orange-500 text-white text-xs rounded"
-          >
-            3s
-          </button>
-          <button
-            onClick={() => {
-              console.log('Setting timer to 1 second');
-              setRestTime(1);
-              if (!timerRunning) {
-                startRestTimer();
-              }
-            }}
-            className="px-2 py-1 bg-yellow-500 text-white text-xs rounded"
-          >
-            1s
-          </button>
-        </div>
-      </div>
+
 
       {/* AI Voice Control Button */}
       <div className="fixed bottom-20 right-4 z-[60]">
