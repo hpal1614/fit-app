@@ -2065,8 +2065,8 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
             </button>
             
             {/* Progress Ring */}
-            <div className="w-16 h-16 relative">
-              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
+            <div className="w-16 h-16 relative overflow-visible">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-1">
                 <span className="text-xs text-gray-400 font-medium">Exercise</span>
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               </div>
@@ -2967,7 +2967,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
       {/* Exercise Completion Overlay */}
       {showExerciseCompletionOverlay !== null && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 animate-fade-in">
-          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 w-full max-w-sm sm:max-w-lg lg:max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-700 animate-scale-in">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 w-full max-w-sm sm:max-w-lg lg:max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-700 animate-scale-in overflow-hidden">
             <div className="text-center mb-4 sm:mb-6 lg:mb-8">
               <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 lg:mb-6 shadow-lg animate-bounce">
                 <span className="text-xl sm:text-2xl lg:text-3xl">🎉</span>
@@ -2985,7 +2985,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
             <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6 lg:mb-8">
               <button
                 onClick={handleNextExercise}
-                className="w-full py-3 sm:py-4 lg:py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl sm:rounded-2xl font-bold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 text-base sm:text-lg lg:text-xl flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="w-full py-3 sm:py-4 lg:py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl sm:rounded-2xl font-bold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 text-base sm:text-lg lg:text-xl flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl"
               >
                 <span className="text-lg sm:text-xl lg:text-2xl">➡️</span>
                 <span>Swipe Right for Next Exercise</span>
@@ -2993,7 +2993,7 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
               
               <button
                 onClick={handleAddAnotherSet}
-                className="w-full py-3 sm:py-4 lg:py-5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl sm:rounded-2xl font-bold hover:from-green-700 hover:to-green-800 transition-all duration-300 text-base sm:text-lg lg:text-xl flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="w-full py-3 sm:py-4 lg:py-5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl sm:rounded-2xl font-bold hover:from-green-700 hover:to-green-800 transition-all duration-300 text-base sm:text-lg lg:text-xl flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl"
               >
                 <span className="text-lg sm:text-xl lg:text-2xl">➕</span>
                 <span>Add Another Set</span>
@@ -3007,9 +3007,9 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
               
               return (
                 <div className="bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6 border border-gray-600 shadow-lg">
-                  <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 lg:mb-6 text-center flex items-center justify-center gap-2">
-                    <span className="text-xl sm:text-2xl">📊</span>
-                    <span>Exercise Summary</span>
+                  <h3 className="text-base sm:text-lg lg:text-xl font-bold text-white mb-2 sm:mb-3 lg:mb-6 text-center flex items-center justify-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-xl lg:text-2xl">📊</span>
+                    <span className="text-sm sm:text-base lg:text-lg">Exercise Summary</span>
                   </h3>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-3 sm:mb-4 lg:mb-6">
@@ -3054,9 +3054,9 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
               
               return (
                 <div className="bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6 border border-gray-600 shadow-lg">
-                  <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 lg:mb-6 text-center flex items-center justify-center gap-2">
-                    <span className="text-xl sm:text-2xl">📋</span>
-                    <span>Set History</span>
+                  <h3 className="text-base sm:text-lg lg:text-xl font-bold text-white mb-2 sm:mb-3 lg:mb-6 text-center flex items-center justify-center gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-xl lg:text-2xl">📋</span>
+                    <span className="text-sm sm:text-base lg:text-lg">Set History</span>
                   </h3>
                   <div className="space-y-2 sm:space-y-3 max-h-32 sm:max-h-40 lg:max-h-48 overflow-y-auto pr-1 sm:pr-2">
                     {history.map((set, index) => (
