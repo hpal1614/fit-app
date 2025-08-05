@@ -100,6 +100,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   const [dynamicSets, setDynamicSets] = useState<{ [exerciseId: number]: number }>({});
   const [showExerciseCompletionOverlay, setShowExerciseCompletionOverlay] = useState<number | null>(null);
   const [showTimerExpanded, setShowTimerExpanded] = useState(false);
+  const [showVoiceNotesPopup, setShowVoiceNotesPopup] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [tableSettings, setTableSettings] = useState({
     showWeight: true,
@@ -763,82 +764,178 @@ export const EnhancedWorkoutLogger: React.FC = () => {
   // Process Voice Commands
   const processVoiceCommand = (transcript: string) => {
     const command = transcript.toLowerCase();
+    console.log('🎤 Processing voice command:', command);
     
-    // Weight commands
-    if (command.includes('add') || command.includes('increase')) {
+    // === WEIGHT CONTROL ===
+    if (command.includes('add') || command.includes('increase') || command.includes('up')) {
       const match = command.match(/(\d+)/);
       if (match) {
         const amount = parseInt(match[1]);
         adjustWeight(amount);
-        showSmartSuggestion(`Added ${amount} lbs`);
+        showSmartSuggestion(`✅ Added ${amount} lbs`);
       } else {
         adjustWeight(currentIncrement);
-        showSmartSuggestion(`Added ${currentIncrement} lbs`);
+        showSmartSuggestion(`✅ Added ${currentIncrement} lbs`);
       }
+      return;
     }
     
-    if (command.includes('reduce') || command.includes('decrease') || command.includes('drop')) {
+    if (command.includes('reduce') || command.includes('decrease') || command.includes('down') || command.includes('drop')) {
       const match = command.match(/(\d+)/);
       if (match) {
         const amount = parseInt(match[1]);
         adjustWeight(-amount);
-        showSmartSuggestion(`Reduced ${amount} lbs`);
+        showSmartSuggestion(`✅ Reduced ${amount} lbs`);
       } else {
         adjustWeight(-currentIncrement);
-        showSmartSuggestion(`Reduced ${currentIncrement} lbs`);
+        showSmartSuggestion(`✅ Reduced ${currentIncrement} lbs`);
       }
+      return;
     }
     
-    // Rep commands
+    if (command.includes('set weight') || command.includes('weight to')) {
+      const match = command.match(/(\d+)/);
+      if (match) {
+        const weight = parseInt(match[1]);
+        updateExerciseState(currentExerciseIndex, { weight });
+        showSmartSuggestion(`✅ Weight set to ${weight} lbs`);
+      }
+      return;
+    }
+    
+    // === REPS CONTROL ===
     if (command.includes('reps') || command.includes('repetitions')) {
       const match = command.match(/(\d+)/);
       if (match) {
         const reps = parseInt(match[1]);
         updateExerciseState(currentExerciseIndex, { reps });
-        showSmartSuggestion(`Set reps to ${reps}`);
+        showSmartSuggestion(`✅ Reps set to ${reps}`);
       }
+      return;
     }
     
-    // RPE commands
-    if (command.includes('rpe') || command.includes('difficulty')) {
+    // === RPE CONTROL ===
+    if (command.includes('rpe') || command.includes('difficulty') || command.includes('rate')) {
       const match = command.match(/(\d+)/);
       if (match) {
         const rpe = parseInt(match[1]);
         if (rpe >= 1 && rpe <= 5) {
           updateExerciseState(currentExerciseIndex, { rpe });
-          showSmartSuggestion(`Set RPE to ${rpe}`);
+          showSmartSuggestion(`✅ RPE set to ${rpe}`);
         }
       }
+      return;
     }
     
-    // Log commands
-    if (command.includes('log') || command.includes('complete') || command.includes('done')) {
+    // === SET LOGGING ===
+    if (command.includes('log set') || command.includes('complete set') || command.includes('done') || command.includes('finished')) {
       logSet();
+      showSmartSuggestion(`✅ Set logged successfully!`);
+      return;
     }
     
-    // Timer commands
-    if (command.includes('timer') || command.includes('rest')) {
-      if (command.includes('start') || command.includes('begin')) {
-        toggleTimer();
-      } else if (command.includes('stop') || command.includes('pause')) {
-        toggleTimer();
+    if (command.includes('fail set') || command.includes('failed') || command.includes('could not complete')) {
+      logFailure();
+      showSmartSuggestion(`❌ Set marked as failed`);
+      return;
+    }
+    
+    if (command.includes('drop set') || command.includes('drop weight')) {
+      startDropLog();
+      showSmartSuggestion(`🔄 Drop set mode activated`);
+      return;
+    }
+    
+    // === TIMER CONTROL ===
+    if (command.includes('start timer') || command.includes('begin rest') || command.includes('rest time')) {
+      startRestTimer();
+      showSmartSuggestion(`⏰ Rest timer started`);
+      return;
+    }
+    
+    if (command.includes('stop timer') || command.includes('pause timer') || command.includes('end rest')) {
+      setTimerRunning(false);
+      showSmartSuggestion(`⏹️ Timer stopped`);
+      return;
+    }
+    
+    if (command.includes('skip timer') || command.includes('skip rest')) {
+      setRestTime(0);
+      setTimerRunning(false);
+      showSmartSuggestion(`⏭️ Rest timer skipped`);
+      return;
+    }
+    
+    // === EXERCISE NAVIGATION ===
+    if (command.includes('next exercise') || command.includes('switch exercise') || command.includes('move to next')) {
+      advanceToNextExercise();
+      showSmartSuggestion(`➡️ Moved to next exercise`);
+      return;
+    }
+    
+    if (command.includes('previous exercise') || command.includes('go back') || command.includes('last exercise')) {
+      if (currentExerciseIndex > 0) {
+        setCurrentExerciseIndex(currentExerciseIndex - 1);
+        showSmartSuggestion(`⬅️ Moved to previous exercise`);
       }
+      return;
     }
     
-    // Alternative exercise commands
-    if (command.includes('switch') || command.includes('alternative') || command.includes('change exercise')) {
-      setShowAlternativesModal(true);
+    if (command.includes('skip exercise') || command.includes('skip this')) {
+      skipExercise();
+      showSmartSuggestion(`⏭️ Exercise skipped`);
+      return;
     }
     
-    // Difficulty feedback commands
-    if (command.includes('easy') || command.includes('hard') || command.includes('perfect')) {
-      setShowDifficultyModal(true);
+    // === ADD SETS ===
+    if (command.includes('add set') || command.includes('more sets') || command.includes('another set')) {
+      addSetToExercise(currentExerciseIndex);
+      showSmartSuggestion(`➕ Added another set`);
+      return;
     }
     
-    // Pain reporting commands
-    if (command.includes('pain') || command.includes('hurt') || command.includes('discomfort')) {
-      setShowPainModal(true);
+    // === PLATE CALCULATOR ===
+    if (command.includes('plate calculator') || command.includes('calculate plates') || command.includes('show plates')) {
+      openPlateCalculator(currentExerciseState.weight, 'weight');
+      showSmartSuggestion(`🧮 Plate calculator opened`);
+      return;
     }
+    
+    // === VOICE NOTES ===
+    if (command.includes('voice note') || command.includes('record note') || command.includes('take note')) {
+      showSmartSuggestion(`🎤 Voice note: "${transcript}"`);
+      return;
+    }
+    
+    // === SETTINGS ===
+    if (command.includes('timer settings') || command.includes('rest settings')) {
+      setShowRestTimerSettings(true);
+      showSmartSuggestion(`⚙️ Timer settings opened`);
+      return;
+    }
+    
+    // === HELP ===
+    if (command.includes('help') || command.includes('what can i say') || command.includes('commands')) {
+      showSmartSuggestion(`🎤 Voice commands: "add weight", "set reps", "log set", "start timer", "next exercise", "add set", "plate calculator"`);
+      return;
+    }
+    
+    // === SMART SUGGESTIONS ===
+    if (command.includes('suggest') || command.includes('recommend') || command.includes('advice')) {
+      generateWeightSuggestion();
+      showSmartSuggestion(`💡 Generating smart suggestions...`);
+      return;
+    }
+    
+    // === GENERAL COMMANDS ===
+    if (command.includes('status') || command.includes('current') || command.includes('what is')) {
+      const currentState = getExerciseState(currentExerciseIndex);
+      showSmartSuggestion(`📊 Current: ${currentState.weight}lbs × ${currentState.reps} reps, RPE ${currentState.rpe}`);
+      return;
+    }
+    
+    // === FALLBACK ===
+    showSmartSuggestion(`🎤 Heard: "${transcript}" - Try: "add weight", "log set", "start timer"`);
   };
 
   // Show Smart Suggestion
@@ -1931,98 +2028,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
         </div>
       </div>
 
-      {/* Voice Input */}
-      <div className="card card-elevated">
-        <div className="text-xs text-gray-400 font-medium tracking-wider uppercase mb-4">Voice Notes</div>
-        <div className="p-4 glass-strong border border-green-500/20 rounded-lg mb-4 min-h-[56px] flex items-center justify-center">
-          <div className="text-sm text-green-400 font-medium">{voiceText}</div>
-        </div>
-        
-        <button 
-          onClick={toggleVoice}
-          className={`w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl transition-modern ${
-            isListening 
-              ? 'bg-green-500 text-black animate-pulse' 
-              : 'bg-gradient-to-br from-green-500 to-green-400 text-black hover:scale-105'
-          }`}
-        >
-          <Mic className="w-6 h-6" />
-        </button>
 
-        {/* Drop Set Section */}
-        {showDropSet && (
-          <div className="p-4 glass-strong border border-green-500/20 rounded-lg mb-4 animate-fade-in">
-            <div className="text-xs text-green-400 font-medium tracking-wider uppercase mb-3 text-center">
-              Failed & Dropped Weight
-            </div>
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center justify-center gap-2 p-2 glass rounded">
-                <span className="text-xs text-gray-400 uppercase">Started at:</span>
-                <span className="text-lg font-semibold text-white">{currentWeight}lbs</span>
-                <span className="text-sm text-white">×</span>
-                <input 
-                  type="number" 
-                  defaultValue={Math.floor(currentReps * 0.6)}
-                  className="w-12 p-1 glass rounded text-center text-sm"
-                />
-                <span className="text-sm text-white">reps</span>
-              </div>
-              <div className="text-center text-green-400 text-lg">↓</div>
-              <div className="flex items-center justify-center gap-2 p-2 glass rounded">
-                <span className="text-xs text-gray-400 uppercase">Dropped to:</span>
-                <span className="text-lg font-semibold text-white">{Math.round(currentWeight * 0.8)}lbs</span>
-                <span className="text-sm text-white">×</span>
-                <input 
-                  type="number" 
-                  defaultValue={Math.floor(currentReps * 0.4)}
-                  className="w-12 p-1 glass rounded text-center text-sm"
-                />
-                <span className="text-sm text-white">reps</span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={cancelDropLog}
-                className="flex-1 p-3 glass rounded-lg text-sm font-medium hover:bg-white/5 transition-modern"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmDropLog}
-                className="flex-1 p-3 bg-green-500 text-black rounded-lg text-sm font-medium hover:bg-green-400 transition-modern"
-              >
-                Log Failed + Drop Set
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Main Log Button */}
-        <button 
-          onClick={logSet}
-          className="w-full h-14 bg-green-500 text-black font-semibold rounded-lg hover:bg-green-400 transition-modern"
-        >
-          {showFailureOptions ? 'Completed Full Set' : 'Log Set'}
-        </button>
-
-        {/* Failure Options */}
-        {showFailureOptions && (
-          <div className="flex gap-2 mt-3 animate-fade-in">
-            <button 
-              onClick={logFailure}
-              className="flex-1 p-3 glass rounded-lg text-sm font-medium hover:bg-white/5 transition-modern"
-            >
-              ❌ Failed Set
-            </button>
-            <button 
-              onClick={startDropLog}
-              className="flex-1 p-3 glass rounded-lg text-sm font-medium border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 transition-modern"
-            >
-              🔄 Failed → Drop Weight
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* Quick Actions */}
       <div className="card card-elevated">
@@ -2914,7 +2920,7 @@ export const EnhancedWorkoutLogger: React.FC = () => {
       )}
 
       {/* Debug Timer State */}
-      <div className="fixed bottom-4 left-4 z-40">
+      <div className="fixed bottom-20 left-4 z-30">
         <div className="p-2 bg-black/50 rounded text-white text-xs">
           Timer: {restTime}s | Running: {timerRunning ? 'Yes' : 'No'}
         </div>
@@ -2956,6 +2962,38 @@ export const EnhancedWorkoutLogger: React.FC = () => {
             1s
           </button>
         </div>
+      </div>
+
+      {/* AI Voice Control Button */}
+      <div className="fixed bottom-20 right-4 z-[60]">
+        <button
+          onClick={toggleVoice}
+          className={`w-16 h-16 rounded-full shadow-2xl transition-all duration-500 transform hover:scale-110 flex items-center justify-center ${
+            isListening 
+              ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 animate-pulse shadow-purple-500/50' 
+              : 'bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-500 shadow-blue-500/30'
+          }`}
+          title="AI Voice Control - Control everything with your voice!"
+        >
+          {isListening ? (
+            <div className="relative">
+              <Mic className="w-7 h-7 text-white animate-pulse" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+            </div>
+          ) : (
+            <div className="relative">
+              <Mic className="w-7 h-7 text-white" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full"></div>
+            </div>
+          )}
+        </button>
+        
+        {/* Voice Status Indicator */}
+        {isListening && (
+          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full border border-purple-500/50 animate-fade-in">
+            🎤 Listening... Say your command
+          </div>
+        )}
       </div>
 
       {showDropSetForIndex === currentExerciseState.completedSets && (
