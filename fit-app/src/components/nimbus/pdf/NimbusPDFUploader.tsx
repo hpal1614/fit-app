@@ -1,15 +1,33 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, Loader, Brain } from 'lucide-react';
+import { getAIService } from '../../../services/aiService';
 
-// Simple workout interface for fallback mode
-interface SimpleWorkout {
+// Enhanced workout interface with AI parsing
+interface AIWorkout {
   name: string;
   description: string;
-  exercises: Array<{
+  difficulty: string;
+  duration: number;
+  category: string;
+  goals: string[];
+  equipment: string[];
+  daysPerWeek: number;
+  estimatedTime: number;
+  rating: number;
+  downloads: number;
+  isCustom: boolean;
+  createdAt: Date;
+  schedule: Array<{
+    day: string;
     name: string;
-    sets: number;
-    reps: string;
-    notes?: string;
+    exercises: Array<{
+      id: string;
+      name: string;
+      sets: number;
+      reps: string;
+      restTime: number;
+      notes: string;
+    }>;
   }>;
 }
 
@@ -21,8 +39,9 @@ export const NimbusPDFUploader: React.FC<{
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<string>('');
   const [dragActive, setDragActive] = useState(false);
+  const [useAI, setUseAI] = useState(true);
 
-  // Handle file upload with better error handling
+  // Handle file upload with AI-enhanced parsing
   const handleFileUpload = useCallback(async (file: File) => {
     console.log('📄 PDF Upload started:', file.name, file.size);
     
@@ -54,11 +73,14 @@ export const NimbusPDFUploader: React.FC<{
       console.log('✅ Text extracted, length:', pdfText.length);
       console.log('📄 Extracted text preview:', pdfText.substring(0, 500));
       
-      // Step 3: Parse workout from text
-      setCurrentStep('Parsing workout data...');
+      // Step 3: Parse workout using AI or fallback
+      setCurrentStep(useAI ? 'AI is analyzing workout data...' : 'Parsing workout data...');
       setUploadProgress(60);
       
-      const workout = parseWorkoutFromText(pdfText, file.name);
+      const workout = useAI 
+        ? await parseWorkoutWithAI(pdfText, file.name)
+        : parseWorkoutFromText(pdfText, file.name);
+      
       console.log('✅ Workout parsed:', workout);
       
       // Step 4: Complete
@@ -79,7 +101,125 @@ export const NimbusPDFUploader: React.FC<{
       setCurrentStep('');
       setUploadProgress(0);
     }
-  }, [onWorkoutParsed, onError]);
+  }, [onWorkoutParsed, onError, useAI]);
+
+  // AI-powered workout parsing
+  const parseWorkoutWithAI = async (text: string, filename: string): Promise<AIWorkout> => {
+    try {
+      const aiService = getAIService();
+      
+      // Create AI prompt for workout parsing
+      const aiPrompt = `You are a fitness expert AI. Analyze this workout PDF content and extract a structured workout plan.
+
+PDF Content:
+${text.substring(0, 3000)} // Limit to first 3000 chars for API efficiency
+
+IMPORTANT: Return ONLY a valid JSON object with this exact structure. Do not include any other text or explanations:
+
+{
+  "name": "Workout name from PDF or filename",
+  "description": "Brief description of the workout plan",
+  "difficulty": "beginner|intermediate|advanced",
+  "duration": 8,
+  "category": "strength|cardio|flexibility|full-body|sports",
+  "goals": ["strength", "muscle", "endurance", "weight-loss"],
+  "equipment": ["dumbbells", "barbell", "bodyweight", "machines"],
+  "daysPerWeek": 4,
+  "estimatedTime": 60,
+  "rating": 0,
+  "downloads": 0,
+  "isCustom": true,
+  "schedule": [
+    {
+      "day": "Monday",
+      "name": "Workout name for this day",
+      "exercises": [
+        {
+          "id": "1",
+          "name": "Exercise name",
+          "sets": 3,
+          "reps": "8-12",
+          "restTime": 90,
+          "notes": "Form notes or tips"
+        }
+      ]
+    }
+  ]
+}
+
+Extract exercises, sets, reps, and organize them into a weekly schedule. If you can't find specific information, make reasonable estimates based on the workout type. Ensure all exercises have proper names, sets, and reps.`;
+
+      console.log('🤖 Sending to AI for parsing...');
+      
+      const aiResponse = await aiService.getCoachingResponse(
+        aiPrompt,
+        { currentWorkout: null, userProfile: null },
+        'workout-planning'
+      );
+
+      console.log('🤖 AI Response:', aiResponse);
+
+      // Try to parse AI response as JSON
+      let parsedWorkout: AIWorkout;
+      
+      try {
+        // Extract JSON from AI response - look for JSON between curly braces
+        const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const jsonString = jsonMatch[0];
+          console.log('🤖 Extracted JSON:', jsonString);
+          parsedWorkout = JSON.parse(jsonString);
+        } else {
+          throw new Error('No JSON found in AI response');
+        }
+      } catch (parseError) {
+        console.warn('🤖 AI response parsing failed, using fallback:', parseError);
+        console.warn('🤖 Full AI response was:', aiResponse.response);
+        // Fallback to basic parsing
+        parsedWorkout = parseWorkoutFromText(text, filename);
+      }
+
+      // Ensure required fields with better validation
+      parsedWorkout.name = parsedWorkout.name || filename.replace('.pdf', '').replace(/[-_]/g, ' ');
+      parsedWorkout.description = parsedWorkout.description || `AI-analyzed workout from ${filename}`;
+      parsedWorkout.difficulty = parsedWorkout.difficulty || 'intermediate';
+      parsedWorkout.duration = parsedWorkout.duration || 8;
+      parsedWorkout.category = parsedWorkout.category || 'full-body';
+      parsedWorkout.goals = Array.isArray(parsedWorkout.goals) ? parsedWorkout.goals : ['strength', 'muscle'];
+      parsedWorkout.equipment = Array.isArray(parsedWorkout.equipment) ? parsedWorkout.equipment : ['dumbbells', 'barbell'];
+      parsedWorkout.daysPerWeek = parsedWorkout.daysPerWeek || 4;
+      parsedWorkout.estimatedTime = parsedWorkout.estimatedTime || 60;
+      parsedWorkout.rating = parsedWorkout.rating || 0;
+      parsedWorkout.downloads = parsedWorkout.downloads || 0;
+      parsedWorkout.isCustom = parsedWorkout.isCustom !== undefined ? parsedWorkout.isCustom : true;
+      parsedWorkout.createdAt = parsedWorkout.createdAt || new Date();
+      parsedWorkout.schedule = Array.isArray(parsedWorkout.schedule) ? parsedWorkout.schedule : [];
+
+      // Validate and fix schedule structure
+      if (parsedWorkout.schedule.length > 0) {
+        parsedWorkout.schedule = parsedWorkout.schedule.map((day, dayIndex) => ({
+          day: day.day || `Day ${dayIndex + 1}`,
+          name: day.name || `Workout ${dayIndex + 1}`,
+          exercises: Array.isArray(day.exercises) ? day.exercises.map((exercise, exerciseIndex) => ({
+            id: exercise.id || `${dayIndex + 1}-${exerciseIndex + 1}`,
+            name: exercise.name || `Exercise ${exerciseIndex + 1}`,
+            sets: exercise.sets || 3,
+            reps: exercise.reps || '8-12',
+            restTime: exercise.restTime || 90,
+            notes: exercise.notes || ''
+          })) : []
+        }));
+      }
+
+      console.log('✅ AI workout parsing completed');
+      return parsedWorkout;
+
+    } catch (error) {
+      console.error('🤖 AI parsing failed, using fallback:', error);
+      // Fallback to basic parsing
+      return parseWorkoutFromText(text, filename);
+    }
+  };
 
   // Extract text from PDF using a simple approach
   const extractTextFromPDF = async (file: File): Promise<string> => {
@@ -103,7 +243,7 @@ export const NimbusPDFUploader: React.FC<{
             console.log('📄 PDF loaded, pages:', pdf.numPages);
             
             let fullText = '';
-
+            
             // Extract text from each page
             for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
               const page = await pdf.getPage(pageNum);
@@ -112,7 +252,7 @@ export const NimbusPDFUploader: React.FC<{
               fullText += pageText + '\n\n';
               console.log(`📄 Page ${pageNum} extracted, length:`, pageText.length);
             }
-
+            
             resolve(fullText);
           } catch (pdfError) {
             console.warn('📄 PDF.js failed, using fallback:', pdfError);
@@ -124,7 +264,7 @@ export const NimbusPDFUploader: React.FC<{
           reject(new Error(`PDF text extraction failed: ${error.message}`));
         }
       };
-
+      
       reader.onerror = () => {
         console.error('❌ FileReader error');
         reject(new Error('Failed to read PDF file'));
@@ -134,19 +274,19 @@ export const NimbusPDFUploader: React.FC<{
     });
   };
 
-  // Parse workout from extracted text
-  const parseWorkoutFromText = (text: string, filename: string): any => {
+  // Parse workout from extracted text (fallback method)
+  const parseWorkoutFromText = (text: string, filename: string): AIWorkout => {
     console.log('📄 Parsing workout from text, length:', text.length);
-    
+
     // Extract workout name from filename
     const workoutName = filename.replace('.pdf', '').replace(/[-_]/g, ' ');
-    
+
     // Try to extract exercises from the text
     const exercises = extractExercisesFromText(text);
     console.log('📄 Extracted exercises:', exercises);
-    
+
     // Create workout structure based on extracted data
-    const workout = {
+    const workout: AIWorkout = {
       name: workoutName,
       description: `Workout plan extracted from ${filename}. ${exercises.length > 0 ? 'Exercises were parsed from the PDF content.' : 'Using template exercises - AI parsing coming soon!'}`,
       difficulty: 'intermediate',
@@ -162,7 +302,7 @@ export const NimbusPDFUploader: React.FC<{
       createdAt: new Date(),
       schedule: createScheduleFromExercises(exercises, workoutName)
     };
-    
+
     console.log('✅ Workout template created successfully');
     return workout;
   };
@@ -170,14 +310,14 @@ export const NimbusPDFUploader: React.FC<{
   // Extract exercises from text using simple pattern matching
   const extractExercisesFromText = (text: string): Array<{name: string, sets?: number, reps?: string}> => {
     const exercises: Array<{name: string, sets?: number, reps?: string}> = [];
-    
+
     // Common exercise patterns
     const exercisePatterns = [
       /(\d+)\s*(?:sets?|x)\s*(\d+(?:-\d+)?)\s*(?:reps?|repetitions?)?\s*([A-Za-z\s]+)/gi,
       /([A-Za-z\s]+)\s*(\d+)\s*(?:sets?|x)\s*(\d+(?:-\d+)?)/gi,
       /([A-Za-z\s]+)\s*(\d+(?:-\d+)?)\s*(?:reps?|repetitions?)/gi
     ];
-    
+
     // Common exercise names to look for
     const commonExercises = [
       'bench press', 'squat', 'deadlift', 'overhead press', 'barbell row',
@@ -186,7 +326,7 @@ export const NimbusPDFUploader: React.FC<{
       'plank', 'russian twists', 'mountain climbers', 'burpees', 'jump squats',
       'lunges', 'shoulder press', 'chest press', 'lat pulldown', 'face pulls'
     ];
-    
+
     // Look for common exercises in the text
     commonExercises.forEach(exerciseName => {
       const regex = new RegExp(exerciseName, 'gi');
@@ -199,7 +339,7 @@ export const NimbusPDFUploader: React.FC<{
         });
       }
     });
-    
+
     // Look for patterns like "3 sets 10 reps exercise name"
     exercisePatterns.forEach(pattern => {
       const matches = text.matchAll(pattern);
@@ -208,7 +348,7 @@ export const NimbusPDFUploader: React.FC<{
           const exerciseName = match[3] || match[1];
           const sets = parseInt(match[1] || match[2]);
           const reps = match[2] || match[3];
-          
+
           if (exerciseName && exerciseName.trim().length > 2) {
             exercises.push({
               name: exerciseName.trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
@@ -219,12 +359,12 @@ export const NimbusPDFUploader: React.FC<{
         }
       }
     });
-    
+
     // Remove duplicates
-    const uniqueExercises = exercises.filter((exercise, index, self) => 
+    const uniqueExercises = exercises.filter((exercise, index, self) =>
       index === self.findIndex(e => e.name.toLowerCase() === exercise.name.toLowerCase())
     );
-    
+
     console.log('📄 Found exercises in text:', uniqueExercises);
     return uniqueExercises;
   };
@@ -234,9 +374,9 @@ export const NimbusPDFUploader: React.FC<{
     if (exercises.length === 0) {
       // Fallback to template if no exercises found
       return [
-        { 
-          day: 'Monday', 
-          name: 'Upper Body Push', 
+        {
+          day: 'Monday',
+          name: 'Upper Body Push',
           exercises: [
             { id: '1', name: 'Bench Press', sets: 4, reps: '8-12', restTime: 120, notes: 'Barbell or dumbbell' },
             { id: '2', name: 'Overhead Press', sets: 3, reps: '8-12', restTime: 90, notes: 'Military press' },
@@ -246,9 +386,9 @@ export const NimbusPDFUploader: React.FC<{
             { id: '6', name: 'Push-ups', sets: 3, reps: '10-15', restTime: 60, notes: 'Full body push-ups' }
           ]
         },
-        { 
-          day: 'Tuesday', 
-          name: 'Upper Body Pull', 
+        {
+          day: 'Tuesday',
+          name: 'Upper Body Pull',
           exercises: [
             { id: '7', name: 'Pull-ups', sets: 4, reps: '5-10', restTime: 120, notes: 'Assisted if needed' },
             { id: '8', name: 'Barbell Rows', sets: 4, reps: '8-12', restTime: 90, notes: 'Bent over rows' },
@@ -258,9 +398,9 @@ export const NimbusPDFUploader: React.FC<{
             { id: '12', name: 'Face Pulls', sets: 3, reps: '12-15', restTime: 60, notes: 'Rear deltoid focus' }
           ]
         },
-        { 
-          day: 'Thursday', 
-          name: 'Lower Body', 
+        {
+          day: 'Thursday',
+          name: 'Lower Body',
           exercises: [
             { id: '13', name: 'Squats', sets: 4, reps: '8-12', restTime: 120, notes: 'Barbell back squats' },
             { id: '14', name: 'Deadlifts', sets: 4, reps: '6-10', restTime: 180, notes: 'Romanian deadlifts' },
@@ -270,9 +410,9 @@ export const NimbusPDFUploader: React.FC<{
             { id: '18', name: 'Plank', sets: 3, reps: '30-60s', restTime: 60, notes: 'Core stability' }
           ]
         },
-        { 
-          day: 'Friday', 
-          name: 'Full Body', 
+        {
+          day: 'Friday',
+          name: 'Full Body',
           exercises: [
             { id: '19', name: 'Burpees', sets: 4, reps: '8-12', restTime: 120, notes: 'Full burpee with push-up' },
             { id: '20', name: 'Mountain Climbers', sets: 3, reps: '20', restTime: 60, notes: 'Fast pace' },
@@ -307,156 +447,190 @@ export const NimbusPDFUploader: React.FC<{
         });
       }
     }
-
     return schedule;
   };
 
-  // Drag and drop handlers
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDragIn = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(true);
-  }, []);
-
-  const handleDragOut = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      console.log('📄 File dropped:', files[0].name);
-      handleFileUpload(files[0]);
-    }
-  }, [handleFileUpload]);
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      console.log('📄 File selected:', files[0].name);
-      handleFileUpload(files[0]);
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
     }
   };
 
-  // Test function to verify component is working
-  const testComponent = () => {
-    console.log('✅ NimbusPDFUploader component is working correctly');
-    return true;
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
   };
 
-  // Call test function on mount
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  // Test AI integration
+  const testAI = async () => {
+    try {
+      console.log('🧪 Testing AI integration...');
+      const aiService = getAIService();
+      
+      const testResponse = await aiService.getCoachingResponse(
+        'Hello, this is a test message.',
+        { currentWorkout: null, userProfile: null },
+        'general-advice'
+      );
+      
+      console.log('✅ AI test successful:', testResponse);
+      return true;
+    } catch (error) {
+      console.error('❌ AI test failed:', error);
+      return false;
+    }
+  };
+
+  // Test AI on component mount
   React.useEffect(() => {
-    testComponent();
+    testAI();
   }, []);
 
   return (
-    <div className="nimbus-pdf-uploader p-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20 rounded-full flex items-center justify-center mb-4">
-            <FileText className="w-10 h-10 text-purple-600 dark:text-purple-400" />
+    <div className="space-y-6">
+      {/* AI Toggle */}
+      <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+        <div className="flex items-center space-x-3">
+          <Brain className="w-5 h-5 text-blue-400" />
+          <div>
+            <h3 className="font-semibold text-white">AI-Powered Parsing</h3>
+            <p className="text-sm text-white/70">
+              {useAI ? 'AI will intelligently extract workout data' : 'Using basic text extraction'}
+            </p>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            PDF Workout Intelligence
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-            Upload any fitness PDF and we'll extract the actual exercises from it. Now with basic text parsing!
-          </p>
         </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={useAI}
+            onChange={(e) => setUseAI(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+        </label>
+      </div>
 
-        {/* Upload Area */}
-        <div
-          onDrag={handleDrag}
-          onDragEnter={handleDragIn}
-          onDragLeave={handleDragOut}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          className={`
-            relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300
-            ${dragActive 
-              ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-              : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-            }
-            ${isProcessing ? 'pointer-events-none opacity-75' : 'cursor-pointer'}
-          `}
-        >
-          {!isProcessing ? (
-            <>
-              <Upload className="mx-auto w-12 h-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Drop your PDF here or click to browse
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Supports PDFs up to 10MB
-              </p>
-              
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileSelect}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={isProcessing}
-              />
-              
-              <button className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                <Upload className="w-4 h-4 mr-2" />
-                Choose PDF File
-              </button>
-            </>
-          ) : (
-            <div className="space-y-4">
-              <Loader className="mx-auto w-12 h-12 text-blue-600 animate-spin" />
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  {currentStep}
-                </h3>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  {uploadProgress}% complete
-                </p>
+      {/* AI Status Indicator */}
+      {useAI && (
+        <div className="flex items-center space-x-2 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+          <Brain className="w-4 h-4 text-blue-400" />
+          <span className="text-sm text-blue-300">AI integration active - Enhanced parsing enabled</span>
+        </div>
+      )}
+
+      {/* Upload Area */}
+      <div
+        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+          dragActive
+            ? 'border-blue-400 bg-blue-500/10'
+            : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+        }`}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+      >
+        {isProcessing ? (
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <Loader className="w-8 h-8 text-blue-400 animate-spin" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-2">{currentStep}</h3>
+              <div className="w-full bg-white/10 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Popular PDF Formats */}
-        <div className="mt-8">
-          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
-            Supported PDF Formats:
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { name: 'AthleanX', desc: 'Jeff Cavaliere programs' },
-              { name: '5/3/1', desc: 'Jim Wendler templates' },
-              { name: 'StrongLifts', desc: 'Mehdi programs' },
-              { name: 'Custom', desc: 'Personal trainer PDFs' }
-            ].map((format) => (
-              <div key={format.name} className="nimbus-glass rounded-lg p-3 text-center">
-                <p className="font-medium text-gray-900 dark:text-white text-sm">
-                  {format.name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {format.desc}
-                </p>
-              </div>
-            ))}
           </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <Upload className="w-12 h-12 text-white/60" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-2">
+                Upload Workout PDF
+              </h3>
+              <p className="text-white/70 mb-4">
+                {useAI 
+                  ? 'AI will intelligently extract exercises, sets, and reps from your workout PDF'
+                  : 'Basic text extraction will be used to parse your workout PDF'
+                }
+              </p>
+              <div className="flex items-center justify-center space-x-2 text-sm text-white/60">
+                <FileText className="w-4 h-4" />
+                <span>Drag & drop or click to browse</span>
+              </div>
+            </div>
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+              id="pdf-upload"
+            />
+            <label
+              htmlFor="pdf-upload"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 cursor-pointer"
+            >
+              Choose PDF File
+            </label>
+          </div>
+        )}
+      </div>
+
+      {/* Status Messages */}
+      {isProcessing && (
+        <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10">
+          {useAI ? (
+            <Brain className="w-5 h-5 text-blue-400 animate-pulse" />
+          ) : (
+            <FileText className="w-5 h-5 text-white/60" />
+          )}
+          <span className="text-white/80">
+            {useAI ? 'AI is analyzing your workout PDF...' : 'Processing PDF content...'}
+          </span>
+        </div>
+      )}
+
+      {/* Features Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+          <h4 className="font-semibold text-white mb-2">AI-Powered Features</h4>
+          <ul className="text-sm text-white/70 space-y-1">
+            <li>• Intelligent exercise extraction</li>
+            <li>• Automatic sets and reps detection</li>
+            <li>• Smart workout categorization</li>
+            <li>• Weekly schedule organization</li>
+          </ul>
+        </div>
+        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+          <h4 className="font-semibold text-white mb-2">Supported Formats</h4>
+          <ul className="text-sm text-white/70 space-y-1">
+            <li>• Personal trainer PDFs</li>
+            <li>• Gym program templates</li>
+            <li>• Online workout plans</li>
+            <li>• Custom fitness guides</li>
+          </ul>
         </div>
       </div>
     </div>
