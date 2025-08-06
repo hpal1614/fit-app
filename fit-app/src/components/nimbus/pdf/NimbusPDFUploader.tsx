@@ -107,36 +107,56 @@ export const NimbusPDFUploader: React.FC<{
   const parseWorkoutWithAI = async (text: string, filename: string): Promise<AIWorkout> => {
     try {
       const aiService = getAIService();
-      const aiPrompt = `You are a professional fitness trainer and workout plan expert. Your task is to analyze this workout PDF content and extract ONLY the actual exercises, sets, reps, and schedule information that is explicitly mentioned in the PDF.
+      const aiPrompt = `You are a professional fitness trainer and workout plan expert with deep knowledge of fitness terminology and PDF analysis. Your task is to intelligently analyze this workout PDF content and extract the actual workout information, understanding that the same information can be expressed in many different ways.
 
 PDF Content: ${text.substring(0, 3000)}
 
-CRITICAL INSTRUCTIONS:
-1. ONLY extract exercises that are explicitly mentioned in the PDF content
-2. DO NOT make up or add exercises that are not in the PDF
-3. Use the exact exercise names, sets, and reps as written in the PDF
-4. If the PDF mentions specific days (Monday, Tuesday, etc.), use those exact days
-5. If no specific days are mentioned, distribute exercises across a reasonable weekly schedule
-6. If the PDF content is unclear or contains no workout information, return an empty schedule
+CRITICAL INSTRUCTIONS FOR INTELLIGENT ANALYSIS:
+
+1. **SMART TERMINOLOGY RECOGNITION**: Understand that the same concept can be expressed differently:
+   - Difficulty: "Difficulty", "Training Level", "Experience Level", "Skill Level", "Fitness Level", "Beginner/Intermediate/Advanced"
+   - Goals: "Goals", "Objectives", "Target", "Aim", "Purpose", "Focus Areas"
+   - Equipment: "Equipment", "Gear", "Tools", "Machines", "Weights", "Apparatus"
+   - Duration: "Duration", "Length", "Weeks", "Program Length", "Training Period"
+   - Category: "Category", "Type", "Focus", "Training Style", "Workout Type"
+
+2. **EXERCISE EXTRACTION**: Look for exercises in various formats:
+   - "Bench Press 3x10" = "Bench Press: 3 sets, 10 reps"
+   - "3 sets of 12 reps Squats" = "Squats: 3 sets, 12 reps"
+   - "Deadlift: 4 sets, 8-12 reps" = "Deadlift: 4 sets, 8-12 reps"
+   - "Pull-ups (assisted): 3x5-8" = "Pull-ups: 3 sets, 5-8 reps (assisted)"
+
+3. **INTELLIGENT SCHEDULE DETECTION**: Recognize different day formats:
+   - "Day 1", "Monday", "Week 1 Day 1", "Session 1", "Workout 1"
+   - "Upper Body", "Push Day", "Chest/Triceps", "Upper A"
+   - "Lower Body", "Leg Day", "Squat Day", "Lower A"
+
+4. **CONTEXT-AWARE ANALYSIS**: Use the overall context to understand:
+   - If it's a strength program, assume strength goals
+   - If it mentions "beginner", set difficulty to beginner
+   - If it's bodyweight exercises, equipment is "bodyweight"
+   - If it's a 12-week program, duration is 12 weeks
+
+5. **ACCURATE DATA EXTRACTION**: Only extract what's actually mentioned, but be smart about synonyms and variations.
 
 Return ONLY a valid JSON object with this exact structure:
 {
-  "name": "Exact workout name from PDF or filename",
-  "description": "Brief description based on PDF content",
-  "difficulty": "beginner|intermediate|advanced (based on PDF content)",
-  "duration": 8,
-  "category": "strength|cardio|flexibility|full-body|sports",
-  "goals": ["strength", "muscle", "endurance", "weight-loss"],
-  "equipment": ["dumbbells", "barbell", "bodyweight", "machines"],
-  "daysPerWeek": 4,
-  "estimatedTime": 60,
+  "name": "Exact workout name from PDF or intelligent filename analysis",
+  "description": "Brief description based on PDF content analysis",
+  "difficulty": "beginner|intermediate|advanced (based on content analysis)",
+  "duration": number_of_weeks_from_pdf,
+  "category": "strength|cardio|flexibility|full-body|sports (based on content)",
+  "goals": ["strength", "muscle", "endurance", "weight-loss", "flexibility"] (from content),
+  "equipment": ["dumbbells", "barbell", "bodyweight", "machines", "kettlebells"] (from content),
+  "daysPerWeek": number_from_schedule_analysis,
+  "estimatedTime": estimated_minutes_per_session,
   "rating": 0,
   "downloads": 0,
   "isCustom": true,
   "schedule": [
     {
-      "day": "Monday",
-      "name": "Workout name for this day",
+      "day": "Monday (or Day 1, or actual day mentioned)",
+      "name": "Workout name or focus area",
       "exercises": [
         {
           "id": "1",
@@ -151,7 +171,7 @@ Return ONLY a valid JSON object with this exact structure:
   ]
 }
 
-IMPORTANT: Only include exercises that are actually mentioned in the PDF. If you cannot find clear workout information, return an empty schedule array. Accuracy is more important than completeness.`;
+IMPORTANT: Be intelligent about understanding variations in terminology, but only include exercises that are actually mentioned in the PDF. If you cannot find clear workout information, return an empty schedule array. Accuracy is more important than completeness.`;
 
       const aiResponse = await aiService.getCoachingResponse(
         aiPrompt,
@@ -391,11 +411,11 @@ IMPORTANT: Only include exercises that are actually mentioned in the PDF. If you
     return workout;
   };
 
-  // Extract exercises from text using simple pattern matching
+  // Extract exercises from text using intelligent pattern matching
   const extractExercisesFromText = (text: string): Array<{name: string, sets?: number, reps?: string}> => {
     const exercises: Array<{name: string, sets?: number, reps?: string}> = [];
 
-    // More specific exercise patterns to match actual workout format
+    // Intelligent exercise patterns to match various workout formats
     const exercisePatterns = [
       // Pattern: "3 sets 10-12 reps Bench Press"
       /(\d+)\s*(?:sets?|x)\s*(\d+(?:-\d+)?)\s*(?:reps?|repetitions?)?\s*([A-Za-z\s]+)/gi,
@@ -404,7 +424,13 @@ IMPORTANT: Only include exercises that are actually mentioned in the PDF. If you
       // Pattern: "Bench Press 10-12 reps"
       /([A-Za-z\s]+)\s*(\d+(?:-\d+)?)\s*(?:reps?|repetitions?)/gi,
       // Pattern: "Bench Press 3x10"
-      /([A-Za-z\s]+)\s*(\d+)x(\d+)/gi
+      /([A-Za-z\s]+)\s*(\d+)x(\d+)/gi,
+      // Pattern: "3x10 Bench Press"
+      /(\d+)x(\d+)\s*([A-Za-z\s]+)/gi,
+      // Pattern: "Bench Press: 3 sets, 10 reps"
+      /([A-Za-z\s]+):\s*(\d+)\s*(?:sets?|x)\s*,?\s*(\d+(?:-\d+)?)/gi,
+      // Pattern: "Bench Press - 3 sets of 10-12"
+      /([A-Za-z\s]+)\s*[-–]\s*(\d+)\s*(?:sets?|x)\s*(?:of\s*)?(\d+(?:-\d+)?)/gi
     ];
 
     // Look for patterns like "3 sets 10 reps exercise name"
@@ -421,11 +447,15 @@ IMPORTANT: Only include exercises that are actually mentioned in the PDF. If you
               word.charAt(0).toUpperCase() + word.slice(1)
             ).join(' ');
             
-            exercises.push({
-              name: cleanName,
-              sets: sets || 3,
-              reps: reps || '8-12'
-            });
+            // Filter out common non-exercise words
+            const nonExerciseWords = ['sets', 'reps', 'repetitions', 'rest', 'time', 'minutes', 'seconds', 'kg', 'lbs', 'weight'];
+            if (!nonExerciseWords.some(word => cleanName.toLowerCase().includes(word))) {
+              exercises.push({
+                name: cleanName,
+                sets: sets || 3,
+                reps: reps || '8-12'
+              });
+            }
           }
         }
       }
