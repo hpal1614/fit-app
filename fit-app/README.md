@@ -1,262 +1,251 @@
-# AI Fitness Coach 🏋️‍♂️🤖
+# 🏋️‍♂️ FIT APP - AI-Powered Fitness Companion
 
-A revolutionary AI-powered fitness application that combines cutting-edge technologies to deliver personalized coaching, real-time form analysis, and biometric-driven workout optimization.
+A modern, full-stack fitness application with AI coaching, workout planning, and cloud storage. Built with React, TypeScript, Supabase, and cutting-edge AI technologies.
 
-![AI Fitness Coach](./docs/hero-image.png)
+![FIT APP](./public/vite.svg)
 
-## 🌟 Features
+## ✨ Features
 
-### Core Capabilities
+### 🧠 AI-Powered Coaching
+- **Intelligent AI Chat** - Multi-provider AI system (OpenRouter, Groq, Google AI)
+- **Voice Recognition** - Natural language workout logging
+- **Smart Workout Generation** - AI creates personalized workout plans
+- **PDF Workout Parser** - Upload and extract workout plans from PDFs
 
-- **🧠 AI Personal Trainer**: Advanced conversational AI using OpenAI GPT-4 with RAG architecture
-- **🎙️ Voice Coaching**: Real-time voice synthesis with ElevenLabs and speech recognition
-- **📹 Form Analysis**: Computer vision-based exercise form tracking using MediaPipe
-- **⌚ Wearable Integration**: Biometric data from Apple Watch, Garmin, Fitbit via Terra API
-- **📱 Progressive Web App**: Offline support, installable, mobile-optimized
-- **📊 Performance Monitoring**: LangSmith integration, circuit breakers, health checks
+### 💪 Workout Management
+- **Workout Planner** - Create, save, and manage workout templates
+- **Day-wise Scheduling** - Organize workouts by day of the week
+- **Exercise Library** - Comprehensive exercise database
+- **Progress Tracking** - Log sets, reps, and track personal records
 
-### Technical Stack
+### 🔐 User System
+- **Authentication** - Secure sign-up/sign-in with Supabase
+- **Cloud Storage** - Workout data synced across devices
+- **User Profiles** - Personalized fitness journey tracking
+- **Data Backup** - Automatic local + cloud storage
 
-- **Frontend**: React 18, TypeScript, Tailwind CSS, Framer Motion
-- **AI/ML**: OpenAI GPT-4, LangChain, RAG with Pinecone, MediaPipe
-- **Voice**: ElevenLabs API, Web Speech API, WebRTC
-- **Biometrics**: Terra API for wearable devices
-- **Monitoring**: LangSmith, Sentry, Prometheus metrics
-- **Infrastructure**: PWA, Service Workers, Circuit Breakers
+### 📱 Modern UI/UX
+- **Responsive Design** - Works perfectly on mobile and desktop
+- **Dark Mode** - Beautiful dark theme
+- **Glass Morphism** - Modern, elegant interface
+- **Smooth Animations** - Framer Motion powered interactions
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js 18+ and npm/yarn
-- API keys for:
-  - OpenAI (GPT-4 access)
-  - ElevenLabs (voice synthesis)
-  - Terra (wearable integration)
-  - Pinecone (vector database)
-  - LangSmith (optional, for monitoring)
+- Node.js 18+ and npm
+- Supabase account (free tier works great)
+- AI API keys (optional for enhanced features)
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/ai-fitness-coach.git
-cd ai-fitness-coach/fit-app
+git clone https://github.com/hpal1614/fit-app.git
+cd fit-app
 ```
 
-2. Install dependencies:
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
+3. **Set up environment variables**
 ```bash
+# Copy the setup script
+chmod +x setup-env.sh
+./setup-env.sh
+
+# Or manually create .env file
 cp .env.example .env
-# Edit .env with your API keys
 ```
 
-4. Start the development server:
+4. **Add your API keys to `.env`**
+```env
+# Supabase (Required for authentication and cloud storage)
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# AI Providers (Optional - app works without them)
+VITE_OPENROUTER_API_KEY=your_openrouter_key
+VITE_GROQ_API_KEY=your_groq_key
+VITE_GOOGLE_AI_API_KEY=your_google_ai_key
+```
+
+5. **Start the development server**
 ```bash
-npm start
+npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+6. **Open your browser**
+Navigate to `http://localhost:5173`
+
+## 🗄️ Database Setup
+
+### Supabase Setup (Recommended)
+
+1. **Create a Supabase project**
+   - Go to [supabase.com](https://supabase.com)
+   - Create a new project
+   - Copy your project URL and anon key
+
+2. **Set up the database schema**
+   - Go to SQL Editor in your Supabase dashboard
+   - Copy and run the content from `supabase-schema.sql`
+   - This creates all necessary tables and security policies
+
+3. **Test the connection**
+   - Restart your dev server
+   - Check browser console for "Supabase service initialized"
+   - Try signing up for a new account
+
+### Local Storage (Fallback)
+The app automatically falls back to local storage if Supabase is not configured.
+
+## 🏗️ Architecture
+
+### Frontend Stack
+- **React 18** - Modern React with hooks
+- **TypeScript** - Type-safe development
+- **Vite** - Fast build tool and dev server
+- **Tailwind CSS** - Utility-first styling
+- **Framer Motion** - Smooth animations
+
+### Backend Services
+- **Supabase** - Database, authentication, real-time features
+- **AI Providers** - OpenRouter, Groq, Google AI for intelligent features
+- **Local Storage** - IndexedDB for offline functionality
+
+### Key Components
+```
+src/
+├── components/
+│   ├── HomeDashboard.tsx      # Main app interface
+│   ├── WorkoutPlanner.tsx     # Workout creation and management
+│   ├── AuthModal.tsx          # User authentication
+│   └── nimbus/               # Advanced UI components
+├── services/
+│   ├── supabaseService.ts    # Supabase integration
+│   ├── hybridStorageService.ts # Smart storage management
+│   ├── workoutStorageService.ts # Workout data management
+│   └── aiService.ts          # AI provider management
+└── hooks/
+    ├── useAI.ts              # AI chat functionality
+    ├── useWorkout.ts         # Workout state management
+    └── useVoice.ts           # Voice recognition
+```
+
+## 🎯 Core Features
+
+### 1. AI Workout Generation
+- Generate personalized workout plans based on goals
+- AI analyzes fitness level and equipment availability
+- Creates progressive training programs
+
+### 2. PDF Workout Import
+- Upload workout PDFs from coaches or programs
+- AI extracts exercises, sets, and reps
+- Automatically creates weekly schedules
+
+### 3. Workout Planning
+- Create custom workout templates
+- Schedule workouts by day of the week
+- Track progress and personal records
+
+### 4. User Authentication
+- Secure sign-up and sign-in
+- Cloud data synchronization
+- User profile management
+
+## 🔧 Development
+
+### Available Scripts
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+```
 
 ### Environment Variables
-
-Create a `.env` file in the root directory:
-
 ```env
-# AI Services
-REACT_APP_OPENAI_API_KEY=your_openai_api_key
-REACT_APP_PINECONE_API_KEY=your_pinecone_api_key
-REACT_APP_PINECONE_ENVIRONMENT=your_pinecone_environment
-REACT_APP_PINECONE_INDEX=fitness-knowledge
+# Required for full functionality
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# Voice Services
-REACT_APP_ELEVENLABS_API_KEY=your_elevenlabs_api_key
-REACT_APP_ELEVENLABS_VOICE_ID=your_voice_id
+# Optional AI features
+VITE_OPENROUTER_API_KEY=your_openrouter_key
+VITE_GROQ_API_KEY=your_groq_key
+VITE_GOOGLE_AI_API_KEY=your_google_ai_key
 
-# Wearable Integration
-REACT_APP_TERRA_API_KEY=your_terra_api_key
-REACT_APP_TERRA_DEV_ID=your_terra_dev_id
-
-# Monitoring (Optional)
-REACT_APP_LANGSMITH_API_KEY=your_langsmith_api_key
-REACT_APP_SENTRY_DSN=your_sentry_dsn
+# Feature flags
+VITE_ENABLE_VOICE_AI=true
+VITE_ENABLE_WORKOUT_GENERATION=true
+VITE_ENABLE_MULTI_PROVIDER=true
 ```
 
-## 📱 Progressive Web App
+### Code Structure
+- **Components** - Reusable UI components
+- **Services** - Business logic and API calls
+- **Hooks** - Custom React hooks for state management
+- **Types** - TypeScript type definitions
+- **Constants** - App constants and configurations
 
-The app is a fully-featured PWA with:
+## 🚢 Deployment
 
-- **Offline Support**: Service worker caching for offline functionality
-- **Installable**: Add to home screen on mobile and desktop
-- **Push Notifications**: Workout reminders and achievement notifications
-- **Background Sync**: Sync workout data when connection is restored
-
-### Installing the PWA
-
-1. **Mobile**: Tap the "Install" banner or use browser's "Add to Home Screen"
-2. **Desktop**: Click install icon in address bar or use browser menu
-
-## 🏃‍♂️ Usage Guide
-
-### 1. AI Coach Chat
-- Natural conversation with your AI fitness coach
-- Ask about exercises, nutrition, recovery
-- Get personalized workout recommendations
-- Voice input/output for hands-free interaction
-
-### 2. Form Analysis
-- Position your device to capture full body
-- Select exercise and start recording
-- Receive real-time form corrections
-- Review detailed analysis and tips
-
-### 3. Workout Tracking
-- Pre-built workout programs
-- Custom workout creation
-- Real-time set/rep logging
-- Voice-controlled logging
-- Rest timer with notifications
-
-### 4. Biometric Integration
-- Connect Apple Watch, Garmin, Fitbit, etc.
-- Real-time heart rate monitoring
-- Recovery score calculation
-- Workout intensity adaptation
-- Sleep quality analysis
-
-## 🔧 Architecture
-
-### Services Architecture
-
-```
-src/services/
-├── AI & Knowledge
-│   ├── aiService.ts           # Core AI service with OpenAI
-│   ├── ragService.ts          # RAG implementation with Pinecone
-│   ├── enhancedAIService.ts   # Advanced AI features
-│   └── productionAIService.ts # Production-ready AI with monitoring
-│
-├── Voice & Audio
-│   ├── voiceService.ts        # Voice synthesis and recognition
-│   └── voiceCommandService.ts # Voice command processing
-│
-├── Computer Vision
-│   ├── poseDetectionService.ts # MediaPipe pose detection
-│   └── formAnalysisService.ts  # Exercise form analysis
-│
-├── Biometrics
-│   ├── terraService.ts         # Terra API integration
-│   └── biometricAnalysisService.ts # Biometric insights
-│
-├── Performance & Monitoring
-│   ├── monitoringService.ts    # LangSmith & metrics
-│   ├── circuitBreakerService.ts # Fault tolerance
-│   ├── rateLimiterService.ts   # API rate limiting
-│   └── healthCheckService.ts   # System health monitoring
-│
-└── Mobile & PWA
-    ├── mobileOptimizationService.ts # Touch gestures & mobile features
-    ├── pwaService.ts               # PWA & service workers
-    └── performanceOptimizationService.ts # Performance optimization
+### Vercel (Recommended)
+```bash
+npm run build
+npx vercel --prod
 ```
 
-### Component Structure
-
+### Netlify
+```bash
+npm run build
+npx netlify deploy --prod
 ```
-src/components/
-├── Core UI
-│   ├── AIChatInterface.tsx     # AI chat UI
-│   ├── WorkoutDashboard.tsx    # Main workout interface
-│   ├── VoiceCoachInterface.tsx # Voice coaching UI
-│   └── BottomNavigation.tsx    # Mobile navigation
-│
-├── Analysis
-│   ├── FormAnalysisInterface.tsx # Form analysis UI
-│   └── BiometricsDashboard.tsx   # Biometric monitoring
-│
-├── Mobile
-│   └── MobileWorkoutInterface.tsx # Mobile-optimized workout
-│
-└── Monitoring
-    └── MonitoringDashboard.tsx    # System monitoring UI
+
+### Manual Deployment
+```bash
+npm run build
+# Upload dist/ folder to your hosting provider
 ```
 
 ## 🧪 Testing
 
-Run the test suite:
+### Manual Testing Checklist
+- [ ] User registration and login
+- [ ] Workout plan creation
+- [ ] PDF upload and parsing
+- [ ] AI chat functionality
+- [ ] Data persistence across sessions
+- [ ] Mobile responsiveness
+- [ ] Dark mode toggle
 
+### Automated Testing
 ```bash
-# Unit tests
-npm test
-
-# Integration tests
-npm run test:integration
-
-# E2E tests
-npm run test:e2e
-
-# Performance tests
-npm run test:performance
-```
-
-## 📊 Performance
-
-### Optimization Features
-
-- **Code Splitting**: Lazy loading for all major components
-- **Resource Hints**: Preconnect, prefetch, preload for critical resources
-- **Image Optimization**: Lazy loading, WebP format, responsive images
-- **Caching Strategy**: Service worker with cache-first/network-first strategies
-- **Bundle Size**: < 300KB initial bundle
-
-### Performance Metrics
-
-- **First Contentful Paint**: < 1.5s
-- **Time to Interactive**: < 3s
-- **Lighthouse Score**: 95+
-- **Core Web Vitals**: All green
-
-## 🚢 Deployment
-
-### Build for Production
-
-```bash
-npm run build
-```
-
-### Deploy to Vercel
-
-```bash
-vercel --prod
-```
-
-### Deploy to AWS
-
-```bash
-# Build and upload to S3
-npm run build
-aws s3 sync build/ s3://your-bucket-name
-
-# Invalidate CloudFront
-aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
+npm run test        # Run unit tests
+npm run test:e2e    # Run end-to-end tests
 ```
 
 ## 🔒 Security
 
-- API keys stored in environment variables
-- Rate limiting on all API endpoints
-- Circuit breakers for external services
-- Content Security Policy headers
-- HTTPS enforced
+- **Row Level Security (RLS)** - Users can only access their own data
+- **Environment Variables** - Sensitive data not in code
+- **Input Validation** - All user inputs validated
+- **HTTPS Only** - Secure connections enforced
+
+## 📊 Performance
+
+- **Code Splitting** - Lazy loading for optimal performance
+- **Image Optimization** - Optimized assets and lazy loading
+- **Caching Strategy** - Intelligent caching for better UX
+- **Bundle Size** - Optimized for fast loading
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
@@ -267,18 +256,21 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- OpenAI for GPT-4 API
-- ElevenLabs for voice synthesis
-- Google for MediaPipe
-- Terra for wearable integration
-- LangChain for RAG architecture
+- **Supabase** - Database and authentication
+- **OpenAI/OpenRouter** - AI capabilities
+- **Groq** - Fast AI inference
+- **Google AI** - Alternative AI provider
+- **React Team** - Amazing framework
+- **Vite Team** - Fast build tool
 
 ## 📞 Support
 
-- **Documentation**: [docs.aifitnesscoach.com](https://docs.aifitnesscoach.com)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ai-fitness-coach/issues)
-- **Email**: support@aifitnesscoach.com
+- **Issues**: [GitHub Issues](https://github.com/hpal1614/fit-app/issues)
+- **Documentation**: Check the `/docs` folder for detailed guides
+- **Community**: Join our discussions
 
 ---
 
-Built with ❤️ by the AI Fitness Coach Team
+**Built with ❤️ for the fitness community**
+
+*Your AI-powered fitness journey starts here! 🚀*
