@@ -163,23 +163,24 @@ export const WorkoutPlanner: React.FC<WorkoutPlannerProps> = ({
   const handlePDFUpload = async (workout: any) => {
     // This would integrate with the PDF uploader service
     console.log('Processing PDF workout:', workout);
-    // Create a custom template from the PDF
+    
+    // Create a custom template from the parsed PDF data
     const customTemplate: StoredWorkoutTemplate = {
       id: `custom-${Date.now()}`,
-      name: `Custom Plan - ${workout.name || 'Uploaded PDF'}`,
-      description: 'AI-processed workout plan from your uploaded PDF.',
-      difficulty: 'intermediate',
-      duration: 8,
-      category: 'full-body',
-      goals: ['strength', 'muscle'],
-      equipment: ['dumbbells', 'barbell'],
-      daysPerWeek: 4,
-      estimatedTime: 60,
-      rating: 0,
-      downloads: 0,
+      name: workout.name || 'Uploaded PDF Workout',
+      description: workout.description || 'AI-processed workout plan from your uploaded PDF.',
+      difficulty: workout.difficulty || 'intermediate',
+      duration: workout.duration || 8,
+      category: workout.category || 'full-body',
+      goals: workout.goals || ['strength', 'muscle'],
+      equipment: workout.equipment || ['dumbbells', 'barbell'],
+      daysPerWeek: workout.daysPerWeek || 4,
+      estimatedTime: workout.estimatedTime || 60,
+      rating: workout.rating || 0,
+      downloads: workout.downloads || 0,
       isCustom: true,
       createdAt: new Date(),
-      schedule: [
+      schedule: workout.schedule || [
         { 
           day: 'Monday', 
           name: 'Day 1', 
