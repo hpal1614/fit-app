@@ -107,19 +107,23 @@ export const NimbusPDFUploader: React.FC<{
   const parseWorkoutWithAI = async (text: string, filename: string): Promise<AIWorkout> => {
     try {
       const aiService = getAIService();
-      
-      // Create AI prompt for workout parsing
-      const aiPrompt = `You are a fitness expert AI. Analyze this workout PDF content and extract a structured workout plan.
+      const aiPrompt = `You are a professional fitness trainer and workout plan expert. Your task is to analyze this workout PDF content and extract ONLY the actual exercises, sets, reps, and schedule information that is explicitly mentioned in the PDF.
 
-PDF Content:
-${text.substring(0, 3000)} // Limit to first 3000 chars for API efficiency
+PDF Content: ${text.substring(0, 3000)}
 
-IMPORTANT: Return ONLY a valid JSON object with this exact structure. Do not include any other text or explanations:
+CRITICAL INSTRUCTIONS:
+1. ONLY extract exercises that are explicitly mentioned in the PDF content
+2. DO NOT make up or add exercises that are not in the PDF
+3. Use the exact exercise names, sets, and reps as written in the PDF
+4. If the PDF mentions specific days (Monday, Tuesday, etc.), use those exact days
+5. If no specific days are mentioned, distribute exercises across a reasonable weekly schedule
+6. If the PDF content is unclear or contains no workout information, return an empty schedule
 
+Return ONLY a valid JSON object with this exact structure:
 {
-  "name": "Workout name from PDF or filename",
-  "description": "Brief description of the workout plan",
-  "difficulty": "beginner|intermediate|advanced",
+  "name": "Exact workout name from PDF or filename",
+  "description": "Brief description based on PDF content",
+  "difficulty": "beginner|intermediate|advanced (based on PDF content)",
   "duration": 8,
   "category": "strength|cardio|flexibility|full-body|sports",
   "goals": ["strength", "muscle", "endurance", "weight-loss"],
@@ -136,50 +140,35 @@ IMPORTANT: Return ONLY a valid JSON object with this exact structure. Do not inc
       "exercises": [
         {
           "id": "1",
-          "name": "Exercise name",
-          "sets": 3,
-          "reps": "8-12",
+          "name": "EXACT exercise name from PDF",
+          "sets": EXACT number of sets from PDF,
+          "reps": "EXACT reps from PDF (e.g., '8-12', '10', '5-8')",
           "restTime": 90,
-          "notes": "Form notes or tips"
+          "notes": "Form notes if mentioned in PDF"
         }
       ]
     }
   ]
 }
 
-Extract exercises, sets, reps, and organize them into a weekly schedule. If you can't find specific information, make reasonable estimates based on the workout type. Ensure all exercises have proper names, sets, and reps.
+IMPORTANT: Only include exercises that are actually mentioned in the PDF. If you cannot find clear workout information, return an empty schedule array. Accuracy is more important than completeness.`;
 
-If the PDF content is unclear or minimal, create a reasonable workout plan based on the filename and common fitness knowledge.`;
-
-      console.log('🤖 Sending to AI for parsing...');
-      console.log('🤖 Text length being sent to AI:', text.length);
-      console.log('🤖 Text preview:', text.substring(0, 200));
-      
       const aiResponse = await aiService.getCoachingResponse(
         aiPrompt,
         { currentWorkout: null, userProfile: null },
         'workout-planning'
       );
 
-      console.log('🤖 AI Response:', aiResponse);
-
-      // Try to parse AI response as JSON
       let parsedWorkout: AIWorkout;
-      
       try {
-        // Extract JSON from AI response - look for JSON between curly braces
         const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          const jsonString = jsonMatch[0];
-          console.log('🤖 Extracted JSON:', jsonString);
-          parsedWorkout = JSON.parse(jsonString);
+          parsedWorkout = JSON.parse(jsonMatch[0]);
         } else {
           throw new Error('No JSON found in AI response');
         }
       } catch (parseError) {
         console.warn('🤖 AI response parsing failed, using fallback:', parseError);
-        console.warn('🤖 Full AI response was:', aiResponse.response);
-        // Fallback to basic parsing
         parsedWorkout = parseWorkoutFromText(text, filename);
       }
 
@@ -214,13 +203,9 @@ If the PDF content is unclear or minimal, create a reasonable workout plan based
           })) : []
         }));
       }
-
-      console.log('✅ AI workout parsing completed');
       return parsedWorkout;
-
     } catch (error) {
       console.error('🤖 AI parsing failed, using fallback:', error);
-      // Fallback to basic parsing
       return parseWorkoutFromText(text, filename);
     }
   };
@@ -410,34 +395,17 @@ If the PDF content is unclear or minimal, create a reasonable workout plan based
   const extractExercisesFromText = (text: string): Array<{name: string, sets?: number, reps?: string}> => {
     const exercises: Array<{name: string, sets?: number, reps?: string}> = [];
 
-    // Common exercise patterns
+    // More specific exercise patterns to match actual workout format
     const exercisePatterns = [
+      // Pattern: "3 sets 10-12 reps Bench Press"
       /(\d+)\s*(?:sets?|x)\s*(\d+(?:-\d+)?)\s*(?:reps?|repetitions?)?\s*([A-Za-z\s]+)/gi,
+      // Pattern: "Bench Press 3 sets 10-12 reps"
       /([A-Za-z\s]+)\s*(\d+)\s*(?:sets?|x)\s*(\d+(?:-\d+)?)/gi,
-      /([A-Za-z\s]+)\s*(\d+(?:-\d+)?)\s*(?:reps?|repetitions?)/gi
+      // Pattern: "Bench Press 10-12 reps"
+      /([A-Za-z\s]+)\s*(\d+(?:-\d+)?)\s*(?:reps?|repetitions?)/gi,
+      // Pattern: "Bench Press 3x10"
+      /([A-Za-z\s]+)\s*(\d+)x(\d+)/gi
     ];
-
-    // Common exercise names to look for
-    const commonExercises = [
-      'bench press', 'squat', 'deadlift', 'overhead press', 'barbell row',
-      'pull-ups', 'push-ups', 'dips', 'bicep curls', 'tricep extensions',
-      'lateral raises', 'leg press', 'leg curls', 'leg extensions', 'calf raises',
-      'plank', 'russian twists', 'mountain climbers', 'burpees', 'jump squats',
-      'lunges', 'shoulder press', 'chest press', 'lat pulldown', 'face pulls'
-    ];
-
-    // Look for common exercises in the text
-    commonExercises.forEach(exerciseName => {
-      const regex = new RegExp(exerciseName, 'gi');
-      const matches = text.match(regex);
-      if (matches && matches.length > 0) {
-        exercises.push({
-          name: exerciseName.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-          sets: 3,
-          reps: '8-12'
-        });
-      }
-    });
 
     // Look for patterns like "3 sets 10 reps exercise name"
     exercisePatterns.forEach(pattern => {
@@ -449,8 +417,12 @@ If the PDF content is unclear or minimal, create a reasonable workout plan based
           const reps = match[2] || match[3];
 
           if (exerciseName && exerciseName.trim().length > 2) {
+            const cleanName = exerciseName.trim().split(' ').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+            
             exercises.push({
-              name: exerciseName.trim().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+              name: cleanName,
               sets: sets || 3,
               reps: reps || '8-12'
             });
@@ -471,81 +443,34 @@ If the PDF content is unclear or minimal, create a reasonable workout plan based
   // Create schedule from extracted exercises
   const createScheduleFromExercises = (exercises: Array<{name: string, sets?: number, reps?: string}>, workoutName: string): any[] => {
     if (exercises.length === 0) {
-      // Fallback to template if no exercises found
-      return [
-        {
-          day: 'Monday',
-          name: 'Upper Body Push',
-          exercises: [
-            { id: '1', name: 'Bench Press', sets: 4, reps: '8-12', restTime: 120, notes: 'Barbell or dumbbell' },
-            { id: '2', name: 'Overhead Press', sets: 3, reps: '8-12', restTime: 90, notes: 'Military press' },
-            { id: '3', name: 'Incline Press', sets: 3, reps: '10-12', restTime: 90, notes: 'Dumbbell incline' },
-            { id: '4', name: 'Lateral Raises', sets: 3, reps: '12-15', restTime: 60, notes: 'Side deltoid raises' },
-            { id: '5', name: 'Tricep Dips', sets: 3, reps: '8-15', restTime: 90, notes: 'Bodyweight or assisted' },
-            { id: '6', name: 'Push-ups', sets: 3, reps: '10-15', restTime: 60, notes: 'Full body push-ups' }
-          ]
-        },
-        {
-          day: 'Tuesday',
-          name: 'Upper Body Pull',
-          exercises: [
-            { id: '7', name: 'Pull-ups', sets: 4, reps: '5-10', restTime: 120, notes: 'Assisted if needed' },
-            { id: '8', name: 'Barbell Rows', sets: 4, reps: '8-12', restTime: 90, notes: 'Bent over rows' },
-            { id: '9', name: 'Lat Pulldowns', sets: 3, reps: '10-12', restTime: 90, notes: 'Wide grip' },
-            { id: '10', name: 'Bicep Curls', sets: 3, reps: '12-15', restTime: 60, notes: 'Dumbbell curls' },
-            { id: '11', name: 'Hammer Curls', sets: 3, reps: '12-15', restTime: 60, notes: 'Alternating arms' },
-            { id: '12', name: 'Face Pulls', sets: 3, reps: '12-15', restTime: 60, notes: 'Rear deltoid focus' }
-          ]
-        },
-        {
-          day: 'Thursday',
-          name: 'Lower Body',
-          exercises: [
-            { id: '13', name: 'Squats', sets: 4, reps: '8-12', restTime: 120, notes: 'Barbell back squats' },
-            { id: '14', name: 'Deadlifts', sets: 4, reps: '6-10', restTime: 180, notes: 'Romanian deadlifts' },
-            { id: '15', name: 'Leg Press', sets: 3, reps: '12-15', restTime: 90, notes: 'Machine or bodyweight' },
-            { id: '16', name: 'Lunges', sets: 3, reps: '10 each leg', restTime: 90, notes: 'Walking lunges' },
-            { id: '17', name: 'Calf Raises', sets: 4, reps: '15-20', restTime: 60, notes: 'Standing calf raises' },
-            { id: '18', name: 'Plank', sets: 3, reps: '30-60s', restTime: 60, notes: 'Core stability' }
-          ]
-        },
-        {
-          day: 'Friday',
-          name: 'Full Body',
-          exercises: [
-            { id: '19', name: 'Burpees', sets: 4, reps: '8-12', restTime: 120, notes: 'Full burpee with push-up' },
-            { id: '20', name: 'Mountain Climbers', sets: 3, reps: '20', restTime: 60, notes: 'Fast pace' },
-            { id: '21', name: 'Jump Squats', sets: 3, reps: '15-20', restTime: 90, notes: 'Explosive movement' },
-            { id: '22', name: 'Russian Twists', sets: 3, reps: '20 each side', restTime: 60, notes: 'Core rotation' },
-            { id: '23', name: 'Wall Balls', sets: 3, reps: '15-20', restTime: 90, notes: 'Squat and throw' },
-            { id: '24', name: 'Box Jumps', sets: 3, reps: '10-15', restTime: 120, notes: 'Explosive jumping' }
-          ]
-        }
-      ];
+      // Return empty schedule if no exercises found - accuracy over completeness
+      console.log('📄 No exercises found in PDF, returning empty schedule');
+      return [];
     }
 
-    // Distribute exercises across days
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    const exercisesPerDay = Math.ceil(exercises.length / days.length);
+    // Distribute exercises across a weekly schedule
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const exercisesPerDay = Math.ceil(exercises.length / 5); // 5 workout days
     const schedule = [];
 
-    for (let i = 0; i < days.length; i++) {
+    for (let i = 0; i < Math.min(5, days.length); i++) {
       const dayExercises = exercises.slice(i * exercisesPerDay, (i + 1) * exercisesPerDay);
       if (dayExercises.length > 0) {
         schedule.push({
           day: days[i],
           name: `${days[i]} Workout`,
           exercises: dayExercises.map((exercise, index) => ({
-            id: `${i * exercisesPerDay + index + 1}`,
+            id: `${i + 1}-${index + 1}`,
             name: exercise.name,
             sets: exercise.sets || 3,
             reps: exercise.reps || '8-12',
             restTime: 90,
-            notes: `Extracted from ${workoutName}`
+            notes: ''
           }))
         });
       }
     }
+
     return schedule;
   };
 

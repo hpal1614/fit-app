@@ -164,7 +164,14 @@ export const WorkoutPlanner: React.FC<WorkoutPlannerProps> = ({
     // This would integrate with the PDF uploader service
     console.log('Processing PDF workout:', workout);
     
-    // Create a custom template from the parsed PDF data
+    // Validate that we have actual parsed data
+    if (!workout || !workout.schedule || workout.schedule.length === 0) {
+      console.error('❌ No valid workout data parsed from PDF');
+      alert('Could not extract workout data from PDF. Please ensure the PDF contains clear workout information.');
+      return;
+    }
+    
+    // Create a custom template from the parsed PDF data ONLY
     const customTemplate: StoredWorkoutTemplate = {
       id: `custom-${Date.now()}`,
       name: workout.name || 'Uploaded PDF Workout',
@@ -180,56 +187,7 @@ export const WorkoutPlanner: React.FC<WorkoutPlannerProps> = ({
       downloads: workout.downloads || 0,
       isCustom: true,
       createdAt: new Date(),
-      schedule: workout.schedule || [
-        { 
-          day: 'Monday', 
-          name: 'Day 1', 
-          exercises: [
-            { id: '1', name: 'Push-ups', sets: 3, reps: '10-15', restTime: 60, notes: 'Full body push-ups' },
-            { id: '2', name: 'Squats', sets: 3, reps: '12-20', restTime: 60, notes: 'Bodyweight squats' },
-            { id: '3', name: 'Plank', sets: 3, reps: '30-60s', restTime: 60, notes: 'Hold position' },
-            { id: '4', name: 'Lunges', sets: 3, reps: '10 each leg', restTime: 60, notes: 'Alternating legs' },
-            { id: '5', name: 'Mountain Climbers', sets: 3, reps: '20', restTime: 60, notes: 'Fast pace' },
-            { id: '6', name: 'Burpees', sets: 3, reps: '8-12', restTime: 90, notes: 'Full burpee with push-up' }
-          ]
-        },
-        { 
-          day: 'Tuesday', 
-          name: 'Day 2', 
-          exercises: [
-            { id: '7', name: 'Pull-ups', sets: 3, reps: '5-10', restTime: 90, notes: 'Assisted if needed' },
-            { id: '8', name: 'Dips', sets: 3, reps: '8-15', restTime: 90, notes: 'Tricep dips' },
-            { id: '9', name: 'Rows', sets: 3, reps: '12-15', restTime: 60, notes: 'Inverted rows' },
-            { id: '10', name: 'Bicep Curls', sets: 3, reps: '12-15', restTime: 60, notes: 'Dumbbell curls' },
-            { id: '11', name: 'Tricep Extensions', sets: 3, reps: '12-15', restTime: 60, notes: 'Overhead extensions' }
-          ]
-        },
-        { 
-          day: 'Thursday', 
-          name: 'Day 3', 
-          exercises: [
-            { id: '12', name: 'Deadlifts', sets: 4, reps: '8-12', restTime: 120, notes: 'Romanian deadlifts' },
-            { id: '13', name: 'Leg Press', sets: 3, reps: '12-15', restTime: 90, notes: 'Machine or bodyweight' },
-            { id: '14', name: 'Calf Raises', sets: 4, reps: '15-20', restTime: 60, notes: 'Standing calf raises' },
-            { id: '15', name: 'Leg Extensions', sets: 3, reps: '12-15', restTime: 60, notes: 'Machine or bodyweight' },
-            { id: '16', name: 'Leg Curls', sets: 3, reps: '12-15', restTime: 60, notes: 'Machine or bodyweight' },
-            { id: '17', name: 'Glute Bridges', sets: 3, reps: '15-20', restTime: 60, notes: 'Hip thrusts' },
-            { id: '18', name: 'Wall Sits', sets: 3, reps: '30-60s', restTime: 60, notes: 'Hold position' }
-          ]
-        },
-        { 
-          day: 'Friday', 
-          name: 'Day 4', 
-          exercises: [
-            { id: '19', name: 'Bench Press', sets: 4, reps: '8-12', restTime: 120, notes: 'Dumbbell or barbell' },
-            { id: '20', name: 'Overhead Press', sets: 3, reps: '8-12', restTime: 90, notes: 'Military press' },
-            { id: '21', name: 'Lateral Raises', sets: 3, reps: '12-15', restTime: 60, notes: 'Side deltoid raises' },
-            { id: '22', name: 'Front Raises', sets: 3, reps: '12-15', restTime: 60, notes: 'Anterior deltoid raises' },
-            { id: '23', name: 'Chest Flyes', sets: 3, reps: '12-15', restTime: 60, notes: 'Dumbbell flyes' },
-            { id: '24', name: 'Push-ups', sets: 3, reps: '10-15', restTime: 60, notes: 'Decline push-ups' }
-          ]
-        }
-      ]
+      schedule: workout.schedule // Use ONLY the parsed schedule, no fallback
     };
     
     // Save template to storage
