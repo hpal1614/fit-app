@@ -50,6 +50,7 @@ import { WorkoutLoggerTab } from './components/WorkoutLoggerTab';
 import { EnhancedWorkoutLogger } from './components/EnhancedWorkoutLogger';
 import { IntegratedAICoach } from './components/ai/IntegratedAICoach';
 import { WorkoutGenerator } from './components/WorkoutGenerator';
+import { HomeDashboard } from './components/HomeDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { UserProfileCard } from './components/UserProfileCard';
 import { SettingsModal } from './components/SettingsModal';
@@ -73,11 +74,11 @@ interface UserStats {
   currentStreak: number;
 }
 
-type TabType = 'workouts' | 'generator' | 'ai-coach' | 'nutrition' | 'analytics' | 'profile';
+type TabType = 'generator' | 'workouts' | 'ai-coach' | 'nutrition' | 'analytics' | 'profile';
 
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeTab, setActiveTab] = useState<TabType>('workouts');
+  const [activeTab, setActiveTab] = useState<TabType>('generator');
   const [showNotificationBadge, setShowNotificationBadge] = useState(true);
   const [parsedWorkout, setParsedWorkout] = useState<NimbusPDFWorkout | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -178,8 +179,8 @@ function App() {
 
   // Simplified Navigation items
   const navigationItems: NavigationItem[] = [
+    { key: 'generator', label: 'Home', icon: Target },
     { key: 'workouts', label: 'Logger', icon: Dumbbell, badge: workout.isActive },
-    { key: 'generator', label: 'Generate', icon: Target },
     { key: 'ai-coach', label: 'AI Coach', icon: Brain },
     { key: 'nutrition', label: 'Nutrition', icon: Apple },
     { key: 'analytics', label: 'Stats', icon: TrendingUp },
@@ -303,7 +304,7 @@ function App() {
       <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-24">
         <div className="animate-fade-in">
           {activeTab === 'workouts' && <EnhancedWorkoutLogger workout={workout} appSettings={appSettings} onSettingsChange={setAppSettings} />}
-          {activeTab === 'generator' && <WorkoutGenerator />}
+          {activeTab === 'generator' && <HomeDashboard onNavigate={setActiveTab} workout={workout} appSettings={appSettings} onSettingsChange={setAppSettings} />}
           {activeTab === 'ai-coach' && (
             <IntegratedAICoach 
               context={workout.getContext()} 

@@ -474,6 +474,67 @@ export class DatabaseService {
       console.error('Failed to close database:', _error);
     }
   }
+
+  // Generic storage methods for workout storage service
+  async setItem(key: string, value: any): Promise<void> {
+    try {
+      // Store in a generic table or use localStorage as fallback
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(key, JSON.stringify(value));
+      } else {
+        // Fallback to database if localStorage not available
+        await this.db.table('userSettings').put({ id: key, value: JSON.stringify(value) });
+      }
+    } catch (error) {
+      console.error('Failed to set item:', error);
+      throw error;
+    }
+  }
+
+  async getItem(key: string): Promise<any> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
+      } else {
+        // Fallback to database if localStorage not available
+        const item = await this.db.table('userSettings').get(key);
+        return item ? JSON.parse(item.value) : null;
+      }
+    } catch (error) {
+      console.error('Failed to get item:', error);
+      return null;
+    }
+  }
+
+  async getAllKeys(): Promise<string[]> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return Object.keys(localStorage);
+      } else {
+        // Fallback to database if localStorage not available
+        const items = await this.db.table('userSettings').toArray();
+        return items.map(item => item.id);
+      }
+    } catch (error) {
+      console.error('Failed to get all keys:', error);
+      return [];
+    }
+  }
+
+  async removeItem(key: string): Promise<void> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(key);
+      } else {
+        // Fallback to database if localStorage not available
+        await this.db.table('userSettings').delete(key);
+      }
+    } catch (error) {
+      console.error('Failed to remove item:', error);
+      throw error;
+    }
+  }
 }
 
 export const databaseService = new DatabaseService();
