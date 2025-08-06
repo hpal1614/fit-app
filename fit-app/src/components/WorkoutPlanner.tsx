@@ -163,11 +163,13 @@ export const WorkoutPlanner: React.FC<WorkoutPlannerProps> = ({
   const handlePDFUpload = async (workout: any) => {
     // This would integrate with the PDF uploader service
     console.log('Processing PDF workout:', workout);
+    console.log('Workout schedule:', workout?.schedule);
+    console.log('Workout schedule length:', workout?.schedule?.length);
     
-    // Validate that we have actual parsed data
-    if (!workout || !workout.schedule || workout.schedule.length === 0) {
-      console.error('❌ No valid workout data parsed from PDF');
-      alert('Could not extract workout data from PDF. Please ensure the PDF contains clear workout information.');
+    // More flexible validation - allow partial data
+    if (!workout) {
+      console.error('❌ No workout data received');
+      alert('Could not process PDF. Please try again or ensure the PDF contains workout information.');
       return;
     }
     
@@ -187,8 +189,10 @@ export const WorkoutPlanner: React.FC<WorkoutPlannerProps> = ({
       downloads: workout.downloads || 0,
       isCustom: true,
       createdAt: new Date(),
-      schedule: workout.schedule // Use ONLY the parsed schedule, no fallback
+      schedule: workout.schedule || [] // Allow empty schedule for now
     };
+    
+    console.log('Created template:', customTemplate);
     
     // Save template to storage
     await workoutStorageService.saveWorkoutTemplate(customTemplate);

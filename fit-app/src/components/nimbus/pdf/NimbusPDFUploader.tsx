@@ -106,6 +106,9 @@ export const NimbusPDFUploader: React.FC<{
   // AI-powered workout parsing
   const parseWorkoutWithAI = async (text: string, filename: string): Promise<AIWorkout> => {
     try {
+      console.log('🤖 Starting AI parsing with text length:', text.length);
+      console.log('🤖 Text preview:', text.substring(0, 300));
+      
       const aiService = getAIService();
       const aiPrompt = `You are a professional fitness trainer and workout plan expert with deep knowledge of fitness terminology and PDF analysis. Your task is to intelligently analyze this workout PDF content and extract the actual workout information, understanding that the same information can be expressed in many different ways.
 
@@ -137,7 +140,7 @@ CRITICAL INSTRUCTIONS FOR INTELLIGENT ANALYSIS:
    - If it's bodyweight exercises, equipment is "bodyweight"
    - If it's a 12-week program, duration is 12 weeks
 
-5. **ACCURATE DATA EXTRACTION**: Only extract what's actually mentioned, but be smart about synonyms and variations.
+5. **FLEXIBLE EXTRACTION**: Even if you can only find a few exercises or partial information, include what you find. It's better to have some accurate data than none.
 
 Return ONLY a valid JSON object with this exact structure:
 {
@@ -171,19 +174,24 @@ Return ONLY a valid JSON object with this exact structure:
   ]
 }
 
-IMPORTANT: Be intelligent about understanding variations in terminology, but only include exercises that are actually mentioned in the PDF. If you cannot find clear workout information, return an empty schedule array. Accuracy is more important than completeness.`;
+IMPORTANT: Be intelligent about understanding variations in terminology. Include any exercises you can find, even if the schedule is incomplete. If you find ANY workout-related information, include it.`;
 
+      console.log('🤖 Sending prompt to AI...');
       const aiResponse = await aiService.getCoachingResponse(
         aiPrompt,
         { currentWorkout: null, userProfile: null },
         'workout-planning'
       );
 
+      console.log('🤖 AI Response received:', aiResponse.response.substring(0, 200));
+
       let parsedWorkout: AIWorkout;
       try {
         const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
+          console.log('🤖 Found JSON in AI response');
           parsedWorkout = JSON.parse(jsonMatch[0]);
+          console.log('🤖 Parsed workout:', parsedWorkout);
         } else {
           throw new Error('No JSON found in AI response');
         }
@@ -207,6 +215,8 @@ IMPORTANT: Be intelligent about understanding variations in terminology, but onl
       parsedWorkout.isCustom = parsedWorkout.isCustom !== undefined ? parsedWorkout.isCustom : true;
       parsedWorkout.createdAt = parsedWorkout.createdAt || new Date();
       parsedWorkout.schedule = Array.isArray(parsedWorkout.schedule) ? parsedWorkout.schedule : [];
+
+      console.log('🤖 Final parsed workout:', parsedWorkout);
 
       // Validate and fix schedule structure
       if (parsedWorkout.schedule.length > 0) {
