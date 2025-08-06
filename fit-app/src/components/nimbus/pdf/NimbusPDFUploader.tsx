@@ -176,23 +176,46 @@ Return ONLY a valid JSON object with this exact structure:
 
 IMPORTANT: Be intelligent about understanding variations in terminology. Include any exercises you can find, even if the schedule is incomplete. If you find ANY workout-related information, include it.`;
 
+      console.log('🤖 AI Debug - Input text length:', text.length);
+      console.log('🤖 AI Debug - Prompt length:', aiPrompt.length);
       console.log('🤖 Sending prompt to AI...');
+      
       const aiResponse = await aiService.getCoachingResponse(
         aiPrompt,
-        { currentWorkout: null, userProfile: null },
+        { 
+          activeWorkout: null, 
+          currentExercise: null, 
+          currentSet: 0, 
+          isRecording: false, 
+          userLevel: 'intermediate',
+          preferences: {
+            defaultRestTime: 90,
+            weightUnit: 'lbs',
+            voiceCoaching: false,
+            autoStartTimer: false,
+            motivationalMessages: false,
+            formReminders: false
+          }
+        },
         'workout-planning'
       );
 
-      console.log('🤖 AI Response received:', aiResponse.response.substring(0, 200));
+      console.log('🤖 AI Debug - Raw response length:', aiResponse.content.length);
+      console.log('🤖 AI Debug - Response preview:', aiResponse.content.substring(0, 300));
+      console.log('🤖 AI Debug - Contains JSON?', aiResponse.content.includes('{'));
+      console.log('🤖 AI Response received:', aiResponse.content.substring(0, 200));
 
       let parsedWorkout: AIWorkout;
       try {
-        const jsonMatch = aiResponse.response.match(/\{[\s\S]*\}/);
+        const jsonMatch = aiResponse.content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
+          console.log('🤖 AI Debug - Extracted JSON:', jsonMatch[0]);
           console.log('🤖 Found JSON in AI response');
           parsedWorkout = JSON.parse(jsonMatch[0]);
           console.log('🤖 Parsed workout:', parsedWorkout);
         } else {
+          console.log('🤖 AI Debug - No JSON found in response');
+          console.log('🤖 AI Debug - Full response:', aiResponse.content);
           throw new Error('No JSON found in AI response');
         }
       } catch (parseError) {
@@ -248,6 +271,11 @@ IMPORTANT: Be intelligent about understanding variations in terminology. Include
       reader.onload = async (e) => {
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
+          
+          // Add debugging information
+          console.log('🔍 PDF Debug - File size:', file.size);
+          console.log('🔍 PDF Debug - File type:', file.type);
+          console.log('🔍 PDF Debug - File name:', file.name);
           console.log('📄 ArrayBuffer created, size:', arrayBuffer.byteLength);
           
           // Try to use PDF.js if available
@@ -287,6 +315,21 @@ IMPORTANT: Be intelligent about understanding variations in terminology. Include
               console.log(`📄 Page ${pageNum} extracted, length:`, pageText.length);
               console.log(`📄 Page ${pageNum} preview:`, pageText.substring(0, 100));
             }
+            
+            // Add debugging information for extracted text
+            console.log('🔍 PDF Debug - Raw text length:', fullText.length);
+            console.log('🔍 PDF Debug - First 500 chars:', fullText.substring(0, 500));
+            console.log('🔍 PDF Debug - Contains "Exercise"?', fullText.includes('Exercise'));
+            console.log('🔍 PDF Debug - Contains "Sets"?', fullText.includes('Sets'));
+            console.log('🔍 PDF Debug - Contains "Reps"?', fullText.includes('Reps'));
+            console.log('🔍 PDF Debug - Contains "Bench"?', fullText.includes('Bench'));
+            console.log('🔍 PDF Debug - Contains "Press"?', fullText.includes('Press'));
+            
+            // Check for table structures:
+            const lines = fullText.split('\n');
+            console.log('🔍 PDF Debug - Total lines:', lines.length);
+            console.log('🔍 PDF Debug - Lines with numbers:', lines.filter(l => /\d/.test(l)).length);
+            console.log('🔍 PDF Debug - Lines with "sets" or "reps":', lines.filter(l => /sets?|reps?/i.test(l)).length);
             
             // Check if we got actual content
             if (fullText.trim().length < 50) {
@@ -423,6 +466,9 @@ IMPORTANT: Be intelligent about understanding variations in terminology. Include
 
   // Extract exercises from text using intelligent pattern matching
   const extractExercisesFromText = (text: string): Array<{name: string, sets?: number, reps?: string}> => {
+    console.log('📋 Exercise Debug - Text length:', text.length);
+    console.log('📋 Exercise Debug - Text preview:', text.substring(0, 200));
+    
     const exercises: Array<{name: string, sets?: number, reps?: string}> = [];
 
     // Intelligent exercise patterns to match various workout formats
@@ -442,6 +488,15 @@ IMPORTANT: Be intelligent about understanding variations in terminology. Include
       // Pattern: "Bench Press - 3 sets of 10-12"
       /([A-Za-z\s]+)\s*[-–]\s*(\d+)\s*(?:sets?|x)\s*(?:of\s*)?(\d+(?:-\d+)?)/gi
     ];
+
+    // Test each regex pattern individually:
+    exercisePatterns.forEach((pattern, index) => {
+      const matches = Array.from(text.matchAll(pattern));
+      console.log(`📋 Pattern ${index} found ${matches.length} matches`);
+      matches.slice(0, 3).forEach(match => {
+        console.log(`📋 Pattern ${index} match:`, match[0]);
+      });
+    });
 
     // Look for patterns like "3 sets 10 reps exercise name"
     exercisePatterns.forEach(pattern => {
@@ -476,6 +531,8 @@ IMPORTANT: Be intelligent about understanding variations in terminology. Include
       index === self.findIndex(e => e.name.toLowerCase() === exercise.name.toLowerCase())
     );
 
+    console.log('📋 Exercise Debug - Raw exercises found:', exercises);
+    console.log('📋 Exercise Debug - Unique exercises:', uniqueExercises);
     console.log('📄 Found exercises in text:', uniqueExercises);
     return uniqueExercises;
   };
@@ -549,7 +606,21 @@ IMPORTANT: Be intelligent about understanding variations in terminology. Include
       
       const testResponse = await aiService.getCoachingResponse(
         'Hello, this is a test message.',
-        { currentWorkout: null, userProfile: null },
+        { 
+          activeWorkout: null, 
+          currentExercise: null, 
+          currentSet: 0, 
+          isRecording: false, 
+          userLevel: 'intermediate',
+          preferences: {
+            defaultRestTime: 90,
+            weightUnit: 'lbs',
+            voiceCoaching: false,
+            autoStartTimer: false,
+            motivationalMessages: false,
+            formReminders: false
+          }
+        },
         'general-advice'
       );
       
@@ -561,9 +632,63 @@ IMPORTANT: Be intelligent about understanding variations in terminology. Include
     }
   };
 
+  // Test with Known Good Data
+  const testWithSampleData = () => {
+    const samplePDFText = `
+      Exercise Sets Reps Rest
+      Barbell Bench Press 5 1-4 90-120 Sec
+      Overhead Barbell Press 3 4-6 60 Sec
+      Bent Over Row 3 4-6 60 Sec
+      Pull Up 3 4-6 60 Sec
+      Skull Crushers 3 4-6 60 Sec
+    `;
+    
+    console.log('🧪 Testing with sample data...');
+    const exercises = extractExercisesFromText(samplePDFText);
+    console.log('🧪 Sample extraction result:', exercises);
+    
+    // This should find 5 exercises - if not, your regex is the problem
+  };
+
+  // Test AI Service Separately
+  const testAIService = async () => {
+    console.log('🧪 Testing AI service...');
+    
+    const simplePrompt = `Extract the workout name from: "BOOST YOUR BENCH PRESS WORKOUT PLAN"
+    Return only: {"name": "extracted name"}`;
+    
+    try {
+      const aiService = getAIService();
+      const response = await aiService.getCoachingResponse(
+        simplePrompt, 
+        { 
+          activeWorkout: null, 
+          currentExercise: null, 
+          currentSet: 0, 
+          isRecording: false, 
+          userLevel: 'intermediate',
+          preferences: {
+            defaultRestTime: 90,
+            weightUnit: 'lbs',
+            voiceCoaching: false,
+            autoStartTimer: false,
+            motivationalMessages: false,
+            formReminders: false
+          }
+        }, 
+        'workout-planning'
+      );
+      console.log('🧪 AI Service test response:', response);
+    } catch (error) {
+      console.log('🧪 AI Service test failed:', error);
+    }
+  };
+
   // Test AI on component mount
   React.useEffect(() => {
     testAI();
+    testWithSampleData();
+    testAIService();
   }, []);
 
   return (
