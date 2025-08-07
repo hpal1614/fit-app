@@ -1,8 +1,5 @@
 import type { Exercise, WorkoutContext, ProgressMetrics, PersonalRecord } from './workout';
 
-// Re-export commonly used types
-export type { WorkoutContext, Exercise } from './workout';
-
 // AI Coach configuration
 export interface AICoachConfig {
   provider: 'openai' | 'anthropic' | 'local' | 'hybrid';
@@ -84,10 +81,6 @@ export interface AIResponse {
     model?: string;
     cached?: boolean;
     provider?: string;
-    priority?: number;
-    retryCount?: number;
-    teamResponse?: boolean;
-    fallbackReason?: string;
   };
   timestamp: Date;
   isComplete: boolean;

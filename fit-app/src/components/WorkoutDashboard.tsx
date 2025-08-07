@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Play, Pause, Square, SkipForward, SkipBack, Timer, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, Pause, Square, SkipForward, SkipBack, Timer, Trophy, TrendingUp, MessageCircle, Trash2, Share2, CheckSquare, Square as SquareIcon } from 'lucide-react';
 import { useWorkout } from '../hooks/useWorkout';
 import { useVoice } from '../hooks/useVoice';
 import { useAI } from '../hooks/useAI';
@@ -36,17 +36,22 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
     getTotalWeight,
     getWorkoutProgress,
     isLoading,
-    error
+    error,
+    workoutHistory,
+    deleteWorkouts
   } = useWorkout({ enableTimers: true });
 
   const { speak } = useVoice({ workoutContext });
-  const { isAvailable: isAIAvailable } = useAI();
+  const { askCoach, getMotivation, isAvailable: isAIAvailable } = useAI();
 
   const [showAIChat, setShowAIChat] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [selectedWorkouts, setSelectedWorkouts] = useState<Set<string>>(new Set());
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
 
   // Handle voice commands from VoiceButton
-  const handleVoiceCommand = async (_transcript: string, result: any) => {
+  const handleVoiceCommand = async (transcript: string, result: any) => {
     if (result.success) {
       // Provide audio feedback for successful commands
       await speak(result.response);
@@ -111,6 +116,86 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
     } else {
       resumeWorkout();
       await speak('Workout resumed. Keep going!');
+    }
+  };
+
+  // Multi-select handlers
+  const toggleWorkoutSelection = (workoutId: string) => {
+    const newSelected = new Set(selectedWorkouts);
+    if (newSelected.has(workoutId)) {
+      newSelected.delete(workoutId);
+    } else {
+      newSelected.add(workoutId);
+    }
+    setSelectedWorkouts(newSelected);
+  };
+
+  const selectAllWorkouts = () => {
+    if (selectedWorkouts.size === workoutHistory.length) {
+      setSelectedWorkouts(new Set());
+    } else {
+      setSelectedWorkouts(new Set(workoutHistory.map(w => w.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedWorkouts.size === 0) return;
+    
+    const confirmDelete = window.confirm(`Are you sure you want to delete ${selectedWorkouts.size} workout(s)? This action cannot be undone.`);
+    
+    if (confirmDelete) {
+      try {
+        await deleteWorkouts(Array.from(selectedWorkouts));
+        setSelectedWorkouts(new Set());
+        setIsMultiSelectMode(false);
+        await speak(`Deleted ${selectedWorkouts.size} workouts successfully.`);
+      } catch (error) {
+        console.error('Failed to delete workouts:', error);
+        await speak('Failed to delete workouts. Please try again.');
+      }
+    }
+  };
+
+  const handleShareSelected = async () => {
+    if (selectedWorkouts.size === 0) return;
+    
+    const selectedWorkoutData = workoutHistory.filter(w => selectedWorkouts.has(w.id));
+    
+    // Create shareable workout summary
+    const workoutSummary = selectedWorkoutData.map(workout => {
+      const duration = Math.round(workout.duration / 60);
+      const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+      const totalWeight = workout.exercises.reduce((sum, ex) => 
+        sum + ex.sets.reduce((setSum, set) => setSum + (set.weight || 0), 0), 0
+      );
+      
+      return `💪 Workout ${new Date(workout.startedAt).toLocaleDateString()}
+🕐 Duration: ${duration} minutes
+📊 Sets: ${totalSets}, Weight: ${totalWeight}lbs
+🏋️ Exercises: ${workout.exercises.map(ex => ex.exercise.name).join(', ')}`;
+    }).join('\n\n');
+
+    const shareText = `Check out my fitness progress! 🔥\n\n${workoutSummary}\n\n#FitnessJourney #AIFitnessCoach`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My Workout Progress',
+          text: shareText,
+        });
+        await speak('Workout data shared successfully!');
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      // Fallback to clipboard
+      try {
+        await navigator.clipboard.writeText(shareText);
+        await speak('Workout summary copied to clipboard!');
+      } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        await speak('Failed to share workout data.');
+      }
     }
   };
 
@@ -258,8 +343,139 @@ export const WorkoutDashboard: React.FC<WorkoutDashboardProps> = ({ className = 
               <MessageCircle size={20} />
             </button>
           )}
+
+          {/* History Toggle */}
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className={`p-3 rounded-lg transition-colors ${
+              showHistory 
+                ? 'bg-fitness-blue text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Trophy size={20} />
+          </button>
         </div>
       </div>
+
+      {/* Workout History with Multi-Select */}
+      {showHistory && (
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Workout History</h2>
+            
+            <div className="flex items-center space-x-2">
+              {/* Multi-select toggle */}
+              <button
+                onClick={() => {
+                  setIsMultiSelectMode(!isMultiSelectMode);
+                  setSelectedWorkouts(new Set());
+                }}
+                className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isMultiSelectMode 
+                    ? 'bg-fitness-blue text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {isMultiSelectMode ? 'Exit Selection' : 'Select Multiple'}
+              </button>
+
+              {/* Multi-select actions */}
+              {isMultiSelectMode && (
+                <>
+                  <button
+                    onClick={selectAllWorkouts}
+                    className="px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  >
+                    {selectedWorkouts.size === workoutHistory.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                  
+                  {selectedWorkouts.size > 0 && (
+                    <>
+                      <button
+                        onClick={handleDeleteSelected}
+                        className="px-3 py-2 rounded-lg text-sm bg-red-100 text-red-700 hover:bg-red-200 transition-colors flex items-center space-x-1"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete ({selectedWorkouts.size})</span>
+                      </button>
+                      
+                      <button
+                        onClick={handleShareSelected}
+                        className="px-3 py-2 rounded-lg text-sm bg-green-100 text-green-700 hover:bg-green-200 transition-colors flex items-center space-x-1"
+                      >
+                        <Share2 size={14} />
+                        <span>Share ({selectedWorkouts.size})</span>
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Workout list */}
+          <div className="space-y-3">
+            {workoutHistory.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Trophy size={48} className="mx-auto mb-4 text-gray-300" />
+                <p>No workouts completed yet.</p>
+                <p className="text-sm">Start your first workout to see your progress here!</p>
+              </div>
+            ) : (
+              workoutHistory.map((workout) => (
+                <div
+                  key={workout.id}
+                  className={`p-4 border rounded-lg transition-colors ${
+                    selectedWorkouts.has(workout.id) 
+                      ? 'border-fitness-blue bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {/* Multi-select checkbox */}
+                      {isMultiSelectMode && (
+                        <button
+                          onClick={() => toggleWorkoutSelection(workout.id)}
+                          className="text-fitness-blue hover:text-blue-700"
+                        >
+                          {selectedWorkouts.has(workout.id) ? 
+                            <CheckSquare size={20} /> : 
+                            <SquareIcon size={20} />
+                          }
+                        </button>
+                      )}
+                      
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {new Date(workout.startedAt).toLocaleDateString()}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Duration: {Math.round(workout.duration / 60)} minutes • 
+                          Sets: {workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} • 
+                          Exercises: {workout.exercises.length}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {!isMultiSelectMode && (
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleShareSelected([workout.id])}
+                          className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                        >
+                          <Share2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Rest Timer */}
       {isResting && (

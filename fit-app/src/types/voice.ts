@@ -1,8 +1,5 @@
 import type { WorkoutContext } from './workout';
 
-// Re-export commonly used types
-export type { WorkoutContext } from './workout';
-
 // Voice configuration
 export interface VoiceConfig {
   // Speech Recognition (Input)
@@ -52,7 +49,6 @@ export type VoiceAction =
   | 'END_WORKOUT'
   | 'ADD_EXERCISE'
   | 'REST_TIMER'
-  | 'START_REST_TIMER'
   | 'NEXT_EXERCISE'
   | 'PREVIOUS_EXERCISE'
   | 'REPEAT_LAST'
@@ -68,11 +64,7 @@ export type VoiceAction =
   | 'PERSONAL_RECORD'
   | 'SET_PREFERENCE'
   | 'CANCEL_COMMAND'
-  | 'CLARIFY'
   | 'HELP'
-  | 'SHOW_STATS'
-  | 'SHOW_HISTORY'
-  | 'SHOW_SETTINGS'
   | 'unknown';
 
 export type VoiceContext = 
@@ -101,14 +93,12 @@ export interface VoiceCommandResult {
   parameters: Record<string, any>;
   confidence: number;
   originalTranscript: string;
-  transcript: string; // Alias for originalTranscript for backwards compatibility
   processedText: string;
   response?: string;
   timestamp: Date;
   context?: WorkoutContext;
   errors?: string[];
   suggestions?: string[];
-  reasoning?: string; // For AI-generated reasoning
 }
 
 export interface VoiceInput {
@@ -159,9 +149,6 @@ export type VoiceEmotion =
   | 'encouraging'
   | 'celebratory'
   | 'motivational'
-  | 'instructional'
-  | 'questioning'
-  | 'apologetic'
   | 'concerned'
   | 'excited'
   | 'calm'

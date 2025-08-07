@@ -181,7 +181,6 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
         parameters: {},
         confidence: 0,
         originalTranscript: input,
-        transcript: input,
         processedText: input,
         response: 'Voice service not available',
         timestamp: new Date(),
@@ -198,7 +197,6 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
         parameters: {},
         confidence: 0.8,
         originalTranscript: input,
-        transcript: input,
         processedText: input,
         response: 'Command processed',
         timestamp: new Date()
@@ -214,7 +212,6 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
           parameters: {},
           confidence: 0,
           originalTranscript: input,
-          transcript: input,
           processedText: input,
           response: 'Failed to process command',
           timestamp: new Date(),

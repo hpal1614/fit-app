@@ -9,300 +9,156 @@ import type {
 import type { WorkoutContext, Exercise } from '../types/workout';
 import { 
   AI_SYSTEM_PROMPTS, 
-  buildContextualPrompt
+  buildContextualPrompt,
+  SAFETY_DISCLAIMERS
 } from '../constants/aiPrompts';
 import { getExerciseById } from '../constants/exercises';
-// Removed OpenAI import - using team service instead
+import { OpenAI } from 'openai';
 
-// AI Provider Capabilities moved to IntelligentAIRouter class
+export class AICoachService {
+  private openai: OpenAI | null = null;
+  private config: AICoachConfig;
+  private cache: Map<string, AICache> = new Map();
+  private requestQueue: Map<string, Promise<AIResponse>> = new Map();
 
-// Removed AI_PROVIDER_STRENGTHS - logic moved to IntelligentAIRouter
+  private isInitialized = false;
 
-// Team Status Interface
-interface TeamStatus {
-  openrouter: 'idle' | 'trying' | 'success' | 'failed';
-  groq: 'idle' | 'trying' | 'success' | 'failed';
-  google: 'idle' | 'trying' | 'success' | 'failed';
-}
+  constructor(config?: Partial<AICoachConfig>) {
+    this.config = {
+      provider: 'openai',
+      model: 'gpt-3.5-turbo',
+      maxTokens: 1000,
+      temperature: 0.7,
+      enableLocalFallback: true,
+      enableCaching: true,
+      enableAnalytics: true,
+      personalityProfile: 'supportive',
+      expertise: 'adaptive',
+      responseStyle: 'conversational',
+      ...config
+    };
+  }
 
-// Intelligent AI Router
-export class IntelligentAIRouter {
-  async getOptimalProvider(requestType: AIRequestType): Promise<string[]> {
-    // Return providers ranked by capability for this request type
-    switch (requestType) {
-      case 'motivation':
-      case 'general-advice':
-      case 'form-analysis':
-        // Prioritize OpenRouter (Claude) for fitness coaching
-        return ['openrouter', 'groq', 'google'];
-        
-      case 'workout-planning':
-      case 'progress-analysis':
-        // Use analysis-heavy providers for data work
-        return ['google', 'openrouter', 'groq'];
-        
-      case 'nutrition-advice':
-      case 'exercise-explanation':
-        // Use conversation-heavy providers for explanations
-        return ['openrouter', 'groq', 'google'];
-        
-      default:
-        // Default: fastest first, then most reliable
-        return ['groq', 'openrouter', 'google'];
+  async initialize(config?: Partial<AICoachConfig>): Promise<boolean> {
+    try {
+      // Update config if provided
+      if (config) {
+        this.config = { ...this.config, ...config };
+      }
+      
+      // Note: In production, API key should come from backend proxy
+      if (this.config.apiKey) {
+        this.openai = new OpenAI({
+          apiKey: this.config.apiKey,
+          baseURL: this.config.baseUrl,
+          dangerouslyAllowBrowser: true // Only for development
+        });
+      }
+
+      this.isInitialized = true;
+      return true;
+    } catch (error) {
+      console.error('Failed to initialize AI service:', error);
+      return false;
     }
   }
-}
 
-// AI Team Service - Parallel Processing with Instant Failover
-export class AITeamService {
-  private router = new IntelligentAIRouter();
-  private activeRequests = new Map<string, AbortController>();
-  private teamStatus: TeamStatus = { openrouter: 'idle', groq: 'idle', google: 'idle' };
-  private currentProvider: string | null = null;
-  
-  async getTeamResponse(
+  async getCoachingResponse(
     query: string, 
     context: WorkoutContext, 
-    requestType: AIRequestType
+    requestType: AIRequestType = 'general-advice'
   ): Promise<AIResponse> {
-    const requestId = this.generateRequestId();
-    const abortController = new AbortController();
-    this.activeRequests.set(requestId, abortController);
-    
-    // Reset team status
-    this.teamStatus = { openrouter: 'idle', groq: 'idle', google: 'idle' };
-    
     try {
-      // Get optimal provider order for this request
-      const providerOrder = await this.router.getOptimalProvider(requestType);
-      
-      // PARALLEL STRATEGY: Start all providers simultaneously
-      // First successful response wins, others are cancelled
-      const promises = providerOrder.map((provider, index) => 
-        this.tryProvider(provider, query, context, requestType, {
-          signal: abortController.signal,
-          priority: index + 1,
-          timeout: 2000 + (index * 1000) // 2s, 3s, 4s timeouts
-        })
-      );
-      
-      // Race condition: first success wins
-      const response = await Promise.race([
-        ...promises,
-        this.emergencyTimeout(5000) // Emergency timeout after 5 seconds
-      ]);
-      
-      // Cancel remaining requests
-      abortController.abort();
-      
-      return response;
-      
-    } catch (error) {
-      // ALL providers failed - use intelligent fallback
-      return this.getIntelligentFallback(context, requestType);
-    } finally {
-      this.activeRequests.delete(requestId);
-    }
-  }
-  
-  private async tryProvider(
-    provider: string,
-    query: string, 
-    context: WorkoutContext,
-    requestType: AIRequestType,
-    options: { signal: AbortSignal; priority: number; timeout: number }
-  ): Promise<AIResponse> {
-    const startTime = Date.now();
-    
-    // Update team status
-    this.teamStatus[provider as keyof TeamStatus] = 'trying';
-    this.currentProvider = provider;
-    
-    // Add exponential backoff for retries
-    let retryCount = 0;
-    const maxRetries = 2;
-    
-    while (retryCount <= maxRetries) {
-      try {
-        // Check if request was cancelled
-        if (options.signal.aborted) {
-          this.teamStatus[provider as keyof TeamStatus] = 'failed';
-          throw new Error('Request cancelled');
+      // Check cache first
+      if (this.config.enableCaching) {
+        const cached = this.getCachedResponse(query, context);
+        if (cached) {
+          return cached;
         }
-        
-        // Call specific provider with timeout
-        const response = await Promise.race([
-          this.callSpecificProvider(provider, query, context, requestType),
-          this.timeoutPromise(options.timeout)
-        ]);
-        
-        // Success! Update team status
-        this.teamStatus[provider as keyof TeamStatus] = 'success';
-        this.currentProvider = null;
-        
-        // Add metadata about which provider responded
-        return {
-          ...response,
-          metadata: {
-            ...response.metadata,
-            provider,
-            priority: options.priority,
-            retryCount,
-            processingTime: Date.now() - startTime,
-            teamResponse: true
-          }
-        };
-        
-      } catch (error) {
-        retryCount++;
-        if (retryCount > maxRetries) {
-          this.teamStatus[provider as keyof TeamStatus] = 'failed';
-          throw error;
-        }
-        
-        // Exponential backoff: 500ms, 1s, 2s
-        const delay = Math.pow(2, retryCount) * 250;
-        await this.delay(delay);
       }
+
+      // Check if request is already in progress
+      const requestKey = this.getRequestKey(query, context, requestType);
+      if (this.requestQueue.has(requestKey)) {
+        return await this.requestQueue.get(requestKey)!;
+      }
+
+      // Create and queue the request
+      const requestPromise = this.processRequest(query, context, requestType);
+      this.requestQueue.set(requestKey, requestPromise);
+
+      try {
+        const response = await requestPromise;
+        
+        // Cache the response
+        if (this.config.enableCaching) {
+          this.cacheResponse(query, context, response);
+        }
+
+        return response;
+      } finally {
+        this.requestQueue.delete(requestKey);
+      }
+    } catch (error) {
+      return this.handleError(error, query, context, requestType);
     }
-    
-    // This should never be reached, but TypeScript requires it
-    this.teamStatus[provider as keyof TeamStatus] = 'failed';
-    throw new Error('Max retries exceeded');
   }
-  
-  private async callSpecificProvider(
-    provider: string,
+
+  private async processRequest(
     query: string,
     context: WorkoutContext,
     requestType: AIRequestType
   ): Promise<AIResponse> {
+    console.log('🤖 AI Query:', query, 'Type:', requestType);
+    
+    // Try real AI APIs first (primary functionality)
     const apiKeys = {
       openrouter: import.meta.env.VITE_OPENROUTER_API_KEY,
       groq: import.meta.env.VITE_GROQ_API_KEY,
       google: import.meta.env.VITE_GOOGLE_AI_API_KEY
     };
     
-    switch (provider) {
-      case 'openrouter':
-        if (!apiKeys.openrouter) throw new Error('OpenRouter API key not available');
+    console.log('🔑 Available API Keys:', {
+      openrouter: apiKeys.openrouter ? `${apiKeys.openrouter.substring(0, 20)}...` : 'NOT SET',
+      groq: apiKeys.groq ? `${apiKeys.groq.substring(0, 20)}...` : 'NOT SET',
+      google: apiKeys.google ? `${apiKeys.google.substring(0, 20)}...` : 'NOT SET'
+    });
+
+    // Try OpenRouter first (most capable)
+    if (apiKeys.openrouter) {
+      try {
+        console.log('🎯 Trying OpenRouter API...');
         return await this.callOpenRouter(query, context, requestType, apiKeys.openrouter);
-      case 'groq':
-        if (!apiKeys.groq) throw new Error('Groq API key not available');
-        return await this.callGroq(query, context, requestType, apiKeys.groq);
-      case 'google':
-        if (!apiKeys.google) throw new Error('Google API key not available');
-        return await this.callGemini(query, context, requestType, apiKeys.google);
-      default:
-        throw new Error(`Unknown provider: ${provider}`);
-    }
-  }
-  
-  private async emergencyTimeout(ms: number): Promise<AIResponse> {
-    await this.delay(ms);
-    throw new Error('All AI providers timed out - using emergency fallback');
-  }
-  
-  private getIntelligentFallback(context: WorkoutContext, requestType: AIRequestType): AIResponse {
-    // Intelligent context-aware fallback based on request type and workout context
-    const fallbackMessages: Record<string, string> = {
-      'motivation': this.getMotivationalFallback(context),
-      'form-analysis': this.getFormFallback(context),
-      'nutrition-advice': this.getNutritionFallback(context),
-      'nutrition': this.getNutritionFallback(context),
-      'general-advice': this.getGeneralFallback(),
-      'exercise-explanation': this.getGeneralFallback(),
-      'rest-guidance': this.getGeneralFallback(),
-      'workout-planning': this.getGeneralFallback()
-    };
-    
-    const content = fallbackMessages[requestType] || fallbackMessages['general-advice'];
-    
-    return {
-      content,
-      type: requestType,
-      confidence: 0.7,
-      timestamp: new Date(),
-      isComplete: true,
-      metadata: {
-        provider: 'intelligent-fallback',
-        model: 'context-aware-fallback',
-        processingTime: 0,
-        cached: false,
-        teamResponse: false,
-        fallbackReason: 'all-providers-failed'
+      } catch (error) {
+        console.warn('OpenRouter failed:', error);
       }
-    };
-  }
-  
-  private getMotivationalFallback(context: WorkoutContext): string {
-    const messages = [
-      "You're crushing it! Every rep gets you stronger! 💪",
-      "Remember why you started - you're building something incredible! 🔥",
-      "Progress isn't always visible, but consistency always pays off! ⭐",
-      "The hardest part is showing up, and you're already here! 🎯",
-      "Champions are made when nobody's watching - keep going! 🏆"
-    ];
-    
-    if (context.activeWorkout) {
-      const duration = Math.floor((context.workoutDuration || 0) / 60);
-      return `${messages[Math.floor(Math.random() * messages.length)]} You're ${duration} minutes into your workout - finish strong! 🚀`;
     }
-    
-    return messages[Math.floor(Math.random() * messages.length)];
-  }
-  
-  private getFormFallback(context: WorkoutContext): string {
-    if (context.currentExercise) {
-      const exercise = context.currentExercise.exercise;
-      return `**${exercise.name} Form Check:**\n\n` +
-        `Key points to focus on:\n` +
-        `• ${exercise.tips.join('\n• ')}\n\n` +
-        `Keep your core tight, control the movement, and focus on quality over quantity! 🎯`;
+
+    // Try Groq (fast and reliable)
+    if (apiKeys.groq) {
+      try {
+        console.log('⚡ Trying Groq API...');
+        return await this.callGroq(query, context, requestType, apiKeys.groq);
+      } catch (error) {
+        console.warn('Groq failed:', error);
+      }
     }
-    
-    return "**Form Check:** Focus on controlled movements, engage your core, and prioritize quality over quantity. If something feels wrong, stop and reset! 🎯";
-  }
-  
-  private getNutritionFallback(context: WorkoutContext): string {
-    const isPreWorkout = context.activeWorkout === null;
-    
-    if (isPreWorkout) {
-      return "**Pre-Workout Fuel:** Try a banana with some almond butter 30-60 minutes before training. Stay hydrated! 🍌💧";
-    } else {
-      return "**Post-Workout Recovery:** Get protein + carbs within 30-60 minutes. Chocolate milk, protein shake with fruit, or Greek yogurt work great! 🥛🍓";
+
+    // Try Google AI (Gemini)
+    if (apiKeys.google) {
+      try {
+        console.log('🧠 Trying Google Gemini API...');
+        return await this.callGemini(query, context, requestType, apiKeys.google);
+      } catch (error) {
+        console.warn('Google Gemini failed:', error);
+      }
     }
-  }
-  
-  private getGeneralFallback(): string {
-    return "I'm here to help with your fitness journey! While my AI brain is taking a quick break, remember: consistency beats perfection, form beats ego, and you're already winning by showing up! 💪✨\n\nTry asking again in a moment - I'll be back online soon!";
-  }
-  
-  // Utility methods
-  private generateRequestId(): string {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
-  }
-  
-  private async delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-  
-  private async timeoutPromise(ms: number): Promise<never> {
-    return new Promise((_, reject) => 
-      setTimeout(() => reject(new Error(`Provider timeout after ${ms}ms`)), ms)
-    );
-  }
-  
-  // Public methods for monitoring
-  getTeamStatus(): TeamStatus {
-    return { ...this.teamStatus };
-  }
-  
-  getCurrentProvider(): string | null {
-    return this.currentProvider;
+
+    // Only fallback to local if ALL APIs fail
+    console.log('❌ All AI APIs failed, using local fallback');
+    return this.getLocalResponse(query, context, requestType);
   }
 
-  // Provider-specific API calls
   private async callOpenRouter(
     query: string,
     context: WorkoutContext,
@@ -461,153 +317,236 @@ export class AITeamService {
     };
   }
 
-  private buildSystemPrompt(requestType: AIRequestType, context: WorkoutContext): string {
-    let basePrompt = AI_SYSTEM_PROMPTS.base;
+  private getLocalResponse(
+    query: string,
+    context: WorkoutContext,
+    requestType: AIRequestType
+  ): AIResponse {
+    let content = '';
     
+    // Handle different request types with local responses
     switch (requestType) {
-      case 'form-analysis':
-        basePrompt = AI_SYSTEM_PROMPTS.formAnalysis;
+      case 'motivation':
+        content = this.getLocalMotivation(query, context);
+        break;
+      case 'exercise-explanation':
+        content = this.getLocalExerciseInfo(query, context);
+        break;
+      case 'rest-guidance':
+        content = this.getLocalRestGuidance(context);
         break;
       case 'nutrition-advice':
-        basePrompt = AI_SYSTEM_PROMPTS.nutrition;
+        content = this.getLocalNutritionAdvice(query);
         break;
-      case 'motivation':
-        basePrompt = AI_SYSTEM_PROMPTS.motivation;
-        break;
-      case 'workout-planning':
-        basePrompt = AI_SYSTEM_PROMPTS.workoutPlanning;
+      case 'general-advice':
+      default:
+        content = this.getLocalGeneralAdvice(query, context);
         break;
     }
 
-    return buildContextualPrompt(basePrompt, context, requestType);
-  }
-
-  private buildUserPrompt(query: string, context: WorkoutContext, _requestType: AIRequestType): string {
-    let prompt = query;
-
-    // Add context information
-    if (context.activeWorkout) {
-      prompt += `\n\nCurrent workout context: ${context.activeWorkout.name}`;
-      if (context.currentExercise) {
-        prompt += `, currently doing ${context.currentExercise.exercise.name}`;
-      }
-    }
-
-    return prompt;
-  }
-}
-
-export class AICoachService {
-  private config: AICoachConfig;
-  private cache: Map<string, AICache> = new Map();
-  private requestQueue: Map<string, Promise<AIResponse>> = new Map();
-  private teamService = new AITeamService();
-
-  constructor(config?: Partial<AICoachConfig>) {
-    this.config = {
-      provider: 'openai',
-      model: 'gpt-3.5-turbo',
-      maxTokens: 1000,
-      temperature: 0.7,
-      enableLocalFallback: true,
-      enableCaching: true,
-      enableAnalytics: true,
-      personalityProfile: 'supportive',
-      expertise: 'adaptive',
-      responseStyle: 'conversational',
-      ...config
+    return {
+      content,
+      type: requestType,
+      confidence: 0.7, // Lower confidence for local responses
+      timestamp: new Date(),
+      isComplete: true,
+      metadata: {
+        processingTime: 50,
+        cached: false
+      },
+      safetyFlags: ['local-response']
     };
   }
 
-  async initialize(config?: Partial<AICoachConfig>): Promise<boolean> {
-    try {
-      // Update config if provided
-      if (config) {
-        this.config = { ...this.config, ...config };
+  private getLocalMotivation(_query: string, context: WorkoutContext): string {
+    const motivationMessages = [
+      "You're doing amazing! Every workout is a step towards your goals. Keep pushing forward!",
+      "Remember why you started. Your future self will thank you for not giving up today!",
+      "Progress isn't always visible immediately, but consistency always pays off. You've got this!",
+      "The hardest part is showing up, and you're already here. That's what separates you from the rest!",
+      "Champions are made when nobody's watching. Your dedication is building something incredible!"
+    ];
+
+    // Add context-specific motivation
+    if (context.activeWorkout) {
+      const duration = Math.floor((context.workoutDuration || 0) / 60);
+      return `${motivationMessages[Math.floor(Math.random() * motivationMessages.length)]} You're ${duration} minutes into your workout - keep that momentum going!`;
+    }
+
+    return motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
+  }
+
+  private getLocalExerciseInfo(query: string, context: WorkoutContext): string {
+    // Try to extract exercise name from query
+    const words = query.toLowerCase().split(' ');
+    
+    // Look for exercise in current context first
+    if (context.currentExercise) {
+      const exercise = context.currentExercise.exercise;
+      return `**${exercise.name}**\n\n` +
+        `**Primary Muscles:** ${exercise.primaryMuscles.join(', ')}\n\n` +
+        `**Instructions:**\n${exercise.instructions.map((inst, i) => `${i + 1}. ${inst}`).join('\n')}\n\n` +
+        `**Key Tips:**\n${exercise.tips.map(tip => `• ${tip}`).join('\n')}`;
+    }
+
+    // Try to find exercise by name in query
+    for (const word of words) {
+      const exercise = getExerciseById(word.replace(/s$/, '')); // Remove plural
+      if (exercise) {
+        return `**${exercise.name}**\n\n` +
+          `**Primary Muscles:** ${exercise.primaryMuscles.join(', ')}\n\n` +
+          `**Instructions:**\n${exercise.instructions.map((inst, i) => `${i + 1}. ${inst}`).join('\n')}\n\n` +
+          `**Key Tips:**\n${exercise.tips.map(tip => `• ${tip}`).join('\n')}`;
       }
+    }
+
+    return "I'd be happy to explain any exercise! Could you specify which exercise you'd like to know about? For example, you could ask about squats, deadlifts, bench press, or any other movement.";
+  }
+
+  private getLocalRestGuidance(context: WorkoutContext): string {
+    const defaultRest = context.userPreferences.defaultRestTime;
+    
+    if (context.currentExercise) {
+      const exercise = context.currentExercise.exercise;
       
-      // Team service handles all AI providers
-      return true;
-    } catch (error) {
-      console.error('Failed to initialize AI service:', error);
-      return false;
+      if (exercise.category === 'compound') {
+        return `For compound exercises like ${exercise.name}, I recommend 2-3 minutes of rest to allow full recovery between sets. This helps maintain strength and power for your next set.`;
+      } else {
+        return `For isolation exercises like ${exercise.name}, 60-90 seconds of rest is usually sufficient. You can adjust based on how you're feeling.`;
+      }
     }
+
+    return `Based on your settings, you typically rest for ${defaultRest} seconds between sets. For compound movements, consider 2-3 minutes. For isolation exercises, 60-90 seconds is usually enough.`;
   }
 
-  async getCoachingResponse(
-    query: string, 
-    context: WorkoutContext, 
-    requestType: AIRequestType = 'general-advice'
-  ): Promise<AIResponse> {
-    try {
-      // Check cache first
-      if (this.config.enableCaching) {
-        const cached = this.getCachedResponse(query, context);
-        if (cached) {
-          return cached;
-        }
-      }
+  private getLocalNutritionAdvice(query: string): string {
+    const isPreWorkout = query.toLowerCase().includes('before') || query.toLowerCase().includes('pre');
+    const isPostWorkout = query.toLowerCase().includes('after') || query.toLowerCase().includes('post');
 
-      // Check if request is already in progress
-      const requestKey = this.getRequestKey(query, context, requestType);
-      if (this.requestQueue.has(requestKey)) {
-        return await this.requestQueue.get(requestKey)!;
-      }
-
-      // Create and queue the request using the NEW TEAM SERVICE
-      const requestPromise = this.teamService.getTeamResponse(query, context, requestType);
-      this.requestQueue.set(requestKey, requestPromise);
-
-      try {
-        const response = await requestPromise;
-        
-        // Cache the response
-        if (this.config.enableCaching) {
-          this.cacheResponse(query, context, response);
-        }
-
-        return response;
-      } finally {
-        this.requestQueue.delete(requestKey);
-      }
-    } catch (error) {
-      return this.handleError(error, query, context, requestType);
+    if (isPreWorkout) {
+      return "**Pre-Workout Nutrition:**\n\n" +
+        "• Eat 30-60 minutes before training\n" +
+        "• Focus on easily digestible carbs (banana, oatmeal, toast)\n" +
+        "• Include a small amount of protein\n" +
+        "• Stay hydrated - drink water throughout the day\n" +
+        "• Avoid high fat or fiber foods that might cause discomfort\n\n" +
+        SAFETY_DISCLAIMERS.nutrition;
     }
+
+    if (isPostWorkout) {
+      return "**Post-Workout Nutrition:**\n\n" +
+        "• Eat within 30-60 minutes after training\n" +
+        "• Prioritize protein for muscle recovery (20-30g)\n" +
+        "• Include carbs to replenish energy stores\n" +
+        "• Great options: protein shake with fruit, Greek yogurt, chicken with rice\n" +
+        "• Don't forget to rehydrate!\n\n" +
+        SAFETY_DISCLAIMERS.nutrition;
+    }
+
+    return "**General Fitness Nutrition:**\n\n" +
+      "• Focus on whole, minimally processed foods\n" +
+      "• Eat adequate protein (0.8-1g per lb body weight)\n" +
+      "• Include complex carbs for energy\n" +
+      "• Don't fear healthy fats\n" +
+      "• Stay consistent and listen to your body\n\n" +
+      SAFETY_DISCLAIMERS.nutrition;
   }
 
-  // All old API call methods and local response logic have been moved to AITeamService
+  private getLocalGeneralAdvice(query: string, context: WorkoutContext): string {
+    const lowerQuery = query.toLowerCase();
+    
+    // Form and technique questions
+    if (lowerQuery.includes('form') || lowerQuery.includes('technique') || lowerQuery.includes('how to')) {
+      return "**Form & Technique Tips:**\n\n" +
+        "• Start with lighter weights to master the movement\n" +
+        "• Focus on slow, controlled movements\n" +
+        "• Keep your core engaged throughout\n" +
+        "• Breathe consistently - exhale on exertion\n" +
+        "• Record yourself or use a mirror to check form\n\n" +
+        "Good form prevents injury and maximizes results!";
+    }
+    
+    // Progressive overload questions
+    if (lowerQuery.includes('progress') || lowerQuery.includes('stronger') || lowerQuery.includes('improve')) {
+      return "**Progressive Overload Principles:**\n\n" +
+        "• Gradually increase weight, reps, or sets over time\n" +
+        "• Track your workouts to monitor progress\n" +
+        "• Aim for 2-3 more reps or 5-10 lbs more weight weekly\n" +
+        "• Don't rush - consistent small gains compound\n" +
+        "• Listen to your body and avoid ego lifting\n\n" +
+        "Progress takes time - trust the process!";
+    }
+    
+    // Recovery questions
+    if (lowerQuery.includes('rest') || lowerQuery.includes('recovery') || lowerQuery.includes('sore')) {
+      return "**Recovery & Rest Guidelines:**\n\n" +
+        "• Take 48-72 hours between training same muscle groups\n" +
+        "• Get 7-9 hours of quality sleep\n" +
+        "• Stay hydrated and eat adequate protein\n" +
+        "• Light movement helps with soreness\n" +
+        "• Listen to your body - fatigue is normal, pain isn't\n\n" +
+        "Recovery is when you actually get stronger!";
+    }
+    
+    // Default general advice with context
+    let advice = "I'm here to help with your fitness journey! ";
+    
+    if (context.activeWorkout) {
+      advice += "Great job on staying active! Remember to maintain good form and listen to your body during your workout.";
+    } else {
+      advice += "Whether you're looking for workout tips, form advice, or motivation, I've got you covered. What specific area would you like help with?";
+    }
+    
+    advice += "\n\n**Quick Tips:**\n" +
+      "• Consistency beats perfection\n" +
+      "• Focus on compound movements\n" +
+      "• Progressive overload is key\n" +
+      "• Recovery is part of training\n\n" +
+      "Ask me about specific exercises, nutrition, or motivation!";
 
-  // Public methods to get team status for monitoring
-  getTeamStatus() {
-    return this.teamService.getTeamStatus();
-  }
-
-  // Public method to get current provider
-  getCurrentProvider(): string | null {
-    return this.teamService.getCurrentProvider();
+    return advice;
   }
 
   // Specialized coaching methods
   async analyzeForm(exercise: Exercise, notes: string = ''): Promise<FormAnalysis> {
     try {
       const query = `Analyze form for ${exercise.name}. ${notes ? `User notes: ${notes}` : ''}`;
+      // const prompt = getExercisePrompt(exercise, 'technique');
       
-      const response = await this.teamService.getTeamResponse(query, {} as WorkoutContext, 'form-analysis');
-      
-      // Parse AI response into FormAnalysis structure
-      return {
-        exercise,
-        overallScore: 8, // Default score
-        strengths: ['Following basic movement pattern'],
-        areasForImprovement: [response.content],
-        specificTips: {
-          setup: exercise.instructions.slice(0, 2),
-          execution: exercise.instructions.slice(2, 4),
-          breathing: ['Breathe in during the eccentric phase', 'Exhale during the concentric phase'],
-          common_mistakes: exercise.tips
-        },
-        recommendedProgression: 'Focus on mastering current weight before increasing load'
-      };
+      if (this.openai && this.isInitialized) {
+        // Use AI for detailed analysis
+        const response = await this.processRequest(query, {} as WorkoutContext, 'form-analysis');
+        
+        // Parse AI response into FormAnalysis structure
+        return {
+          exercise,
+          overallScore: 8, // Default score
+          strengths: ['Following basic movement pattern'],
+          areasForImprovement: [response.content],
+          specificTips: {
+            setup: exercise.instructions.slice(0, 2),
+            execution: exercise.instructions.slice(2, 4),
+            breathing: ['Breathe in during the eccentric phase', 'Exhale during the concentric phase'],
+            common_mistakes: exercise.tips
+          },
+          recommendedProgression: 'Focus on mastering current weight before increasing load'
+        };
+      } else {
+        // Local fallback
+        return {
+          exercise,
+          overallScore: 7,
+          strengths: ['Attempting the exercise consistently'],
+          areasForImprovement: ['Focus on the key form points outlined in the exercise instructions'],
+          specificTips: {
+            setup: exercise.instructions.slice(0, 2),
+            execution: exercise.instructions.slice(2),
+            breathing: ['Control your breathing throughout the movement'],
+            common_mistakes: exercise.tips
+          },
+          recommendedProgression: 'Master the movement pattern before adding weight'
+        };
+      }
     } catch (error) {
       throw new Error(`Form analysis failed: ${error}`);
     }
@@ -655,7 +594,41 @@ export class AICoachService {
     };
   }
 
-  // Utility methods moved to AITeamService
+  // Utility methods
+  private buildSystemPrompt(requestType: AIRequestType, context: WorkoutContext): string {
+    let basePrompt = AI_SYSTEM_PROMPTS.base;
+    
+    switch (requestType) {
+      case 'form-analysis':
+        basePrompt = AI_SYSTEM_PROMPTS.formAnalysis;
+        break;
+      case 'nutrition-advice':
+        basePrompt = AI_SYSTEM_PROMPTS.nutrition;
+        break;
+      case 'motivation':
+        basePrompt = AI_SYSTEM_PROMPTS.motivation;
+        break;
+      case 'workout-planning':
+        basePrompt = AI_SYSTEM_PROMPTS.workoutPlanning;
+        break;
+    }
+
+    return buildContextualPrompt(basePrompt, context, requestType);
+  }
+
+  private buildUserPrompt(query: string, context: WorkoutContext, _requestType: AIRequestType): string {
+    let prompt = query;
+
+    // Add context information
+    if (context.activeWorkout) {
+      prompt += `\n\nCurrent workout context: ${context.activeWorkout.name}`;
+      if (context.currentExercise) {
+        prompt += `, currently doing ${context.currentExercise.exercise.name}`;
+      }
+    }
+
+    return prompt;
+  }
 
   private getCachedResponse(query: string, context: WorkoutContext): AIResponse | null {
     const cacheKey = this.getCacheKey(query, context);
@@ -783,6 +756,7 @@ export class AICoachService {
   destroy(): void {
     this.cache.clear();
     this.requestQueue.clear();
+    this.isInitialized = false;
   }
 
   // Singleton pattern

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Volume2, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { useVoice } from '../hooks/useVoice';
 import type { WorkoutContext } from '../types/workout';
 
@@ -45,7 +45,7 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
   // Handle command processing callback
   useEffect(() => {
     if (lastCommand && onCommandProcessed) {
-      onCommandProcessed(state.lastTranscript || '', lastCommand);
+      onCommandProcessed(state.lastTranscript, lastCommand);
     }
   }, [lastCommand, onCommandProcessed, state.lastTranscript]);
 

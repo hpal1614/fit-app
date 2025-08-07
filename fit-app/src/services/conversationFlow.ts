@@ -3,7 +3,7 @@ import type {
   VoiceAction,
   WorkoutContext
 } from '../types/voice';
-import { AICoachService } from './aiService';
+import { IntelligentAIService } from './intelligentAIService';
 import { FitnessNLP } from './naturalLanguageProcessor';
 
 interface ConversationFlow {
@@ -30,7 +30,7 @@ interface ConversationResponse {
   timeout?: number;
   suggestions?: string[];
   actions?: { text: string; action: VoiceAction; parameters?: any }[];
-  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
 }
 
 interface SetLoggingFlow extends ConversationFlow {
@@ -70,12 +70,12 @@ interface FormDiscussionFlow extends ConversationFlow {
 export class ConversationFlowManager {
   private currentFlow: ConversationFlow | null = null;
   private conversationHistory: ConversationTurn[] = [];
-  private aiService: AICoachService;
+  private aiService: IntelligentAIService;
   private nlp: FitnessNLP;
   private flowTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.aiService = AICoachService.getInstance();
+    this.aiService = new IntelligentAIService();
     this.nlp = new FitnessNLP();
   }
 
@@ -409,7 +409,7 @@ export class ConversationFlowManager {
   }
 
   private async handleMotivationSessionFlow(
-    _command: VoiceCommandResult,
+    command: VoiceCommandResult,
     transcript: string,
     context: WorkoutContext
   ): Promise<ConversationResponse> {
@@ -523,7 +523,7 @@ export class ConversationFlowManager {
   }
 
   private async handleNutritionChatFlow(
-    _command: VoiceCommandResult,
+    command: VoiceCommandResult,
     transcript: string,
     context: WorkoutContext
   ): Promise<ConversationResponse> {
@@ -574,7 +574,7 @@ export class ConversationFlowManager {
 
       default:
         const generalResponse = await this.aiService.getCoachingResponse(
-          command.originalTranscript || 'General fitness question',
+          command.transcript || 'General fitness question',
           context,
           'general-advice'
         );
@@ -672,7 +672,7 @@ export class ConversationFlowManager {
     return "Solid work!";
   }
 
-  private async logSet(exercise: string, reps: number, weight: number, _context: WorkoutContext): Promise<void> {
+  private async logSet(exercise: string, reps: number, weight: number, context: WorkoutContext): Promise<void> {
     // This would integrate with your workout service
     console.log(`Logging set: ${exercise} - ${reps} reps at ${weight} lbs`);
     // await workoutService.logSet(exercise, reps, weight);
