@@ -20,6 +20,16 @@ export default {
         'voice-idle': '#6B7280',
         'voice-error': '#EF4444',
         
+        // Primary/Secondary for gradients
+        'primary': {
+          500: '#3B82F6',
+          600: '#2563EB',
+        },
+        'secondary': {
+          500: '#8B5CF6',
+          600: '#7C3AED',
+        },
+        
         // Neutral Scale
         gray: {
           50: '#F9FAFB',

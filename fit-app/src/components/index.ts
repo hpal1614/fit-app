@@ -1,22 +1,17 @@
+// Core workout components
 export { WorkoutDashboard } from './WorkoutDashboard';
+export { EnhancedWorkoutLogger } from './EnhancedWorkoutLogger';
+export { HomeDashboard } from './HomeDashboard';
 export { AIChatInterface } from './AIChatInterface';
 export { VoiceButton } from './VoiceButton';
 export { WorkoutStats } from './WorkoutStats';
 export { ExerciseCard } from './ExerciseCard';
 export { SetLogger } from './SetLogger';
 export { RestTimer } from './RestTimer';
-export { BiometricsDashboard } from './BiometricsDashboard';
-export { FormAnalysisInterface } from './FormAnalysisInterface';
-export { MonitoringDashboard } from './MonitoringDashboard';
-export { MobileWorkoutInterface } from './MobileWorkoutInterface';
-export { VoiceCoachInterface } from './VoiceCoachInterface';
-export { WorkoutsTab } from './WorkoutsTab';
-export { BottomNavigation } from './BottomNavigation';
-
-// New components for updated UI
-export { UserProfileCard } from './UserProfileCard';
-export { WorkoutLoggerTab } from './WorkoutLoggerTab';
-export { AnalyticsDashboard } from './AnalyticsDashboard';
-export { VoiceAssistant } from './VoiceAssistant';
-export { WeeklyWorkoutDisplay } from './WeeklyWorkoutDisplay';
 export { TemplateManager } from './TemplateManager';
+export { WorkoutPlanner } from './WorkoutPlanner';
+export { WeeklyWorkoutDisplay } from './WeeklyWorkoutDisplay';
+export { default as MobileWorkoutInterface } from './MobileWorkoutInterface';
+
+// AI Components
+export { IntegratedAICoach } from './ai/IntegratedAICoach';
