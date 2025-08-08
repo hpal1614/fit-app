@@ -13,9 +13,12 @@ import { WorkoutGenerator } from './WorkoutGenerator';
 import { NimbusPDFUploader } from './nimbus/pdf/NimbusPDFUploader';
 import { NimbusWorkoutGenerator } from '../nimbus/components/NimbusWorkoutGenerator';
 import DatabaseService from '../services/databaseService';
+import { AdvancedPDFProcessor } from '../services/advancedPDFProcessor';
 
-// Create instance
+// Create instances
 const databaseService = new DatabaseService();
+const pdfProcessor = new AdvancedPDFProcessor();
+
 import { workoutStorageService, StoredWorkoutTemplate, DayWorkout } from '../services/workoutStorageService';
 import { EXERCISE_DATABASE } from '../constants/exercises';
 
@@ -1853,12 +1856,46 @@ const PDFTemplateUploader: React.FC<{ onTemplateCreated: (template: StoredWorkou
     setUploadStatus('uploading');
 
     try {
-      // Simulate PDF upload and processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('🚀 Starting advanced PDF processing...');
       setUploadStatus('processing');
 
-      // Simulate text extraction
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Use the advanced PDF processor
+      const result = await pdfProcessor.processPDFWorkout(file);
+      
+      setExtractedText(result.debug.extraction.text.slice(0, 1000) + '...');
+      setProcessedWorkout(result.template);
+
+      // Enhanced debug output showing AI analysis
+      console.groupCollapsed('%cAdvanced PDF → Template Analysis','color:#0f0; font-weight:bold');
+      console.log('📄 File:', file.name, '|', file.size, 'bytes');
+      console.log('🤖 AI Analysis:', result.analysis);
+      console.log('💪 Program Type:', result.analysis.programType);
+      console.log('📅 Duration:', result.analysis.duration, 'weeks |', result.analysis.frequency, 'days/week');
+      console.log('🎯 Confidence:', Math.round(result.analysis.confidence * 100) + '%');
+      console.table(result.template.schedule.flatMap(d => d.exercises).map(e => ({ 
+        name: e.name, 
+        sets: e.sets, 
+        reps: e.reps, 
+        rest: e.restTime + 's',
+        notes: e.notes || 'None'
+      })));
+      if (result.analysis.warnings.length > 0) {
+        console.warn('⚠️ Warnings:', result.analysis.warnings);
+      }
+      console.groupEnd();
+
+      setUploadStatus('success');
+      return; // Exit early on success
+    } catch (error) {
+      console.error('❌ Advanced PDF processing failed:', error);
+      console.log('🔄 Falling back to basic processing...');
+      
+      // Continue with fallback basic processing below
+    }
+
+    try {
+      // Fallback basic processing
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Basic heuristic parsing to map common PDF text to structured template
       const text = extractedText || `WEEK 1\nDAY 1: UPPER BODY\nBench Press 4x8-10\nRows 3x10-12\n`;
@@ -1890,11 +1927,11 @@ const PDFTemplateUploader: React.FC<{ onTemplateCreated: (template: StoredWorkou
 
       setExtractedText(text);
 
-      // Build strict template for logger integration
+      // Build strict template for logger integration (fallback version)
       const templateRaw: StoredWorkoutTemplate = {
         id: `pdf-template-${Date.now()}`,
-        name: fileName.replace(/\.pdf$/i, '') + ' Workout',
-        description: 'Imported from PDF and parsed into a structured plan',
+        name: fileName.replace(/\.pdf$/i, '') + ' Workout (Basic)',
+        description: 'Basic parsing fallback - manually review recommended',
         difficulty: 'intermediate',
         duration: 4,
         category: 'strength',
