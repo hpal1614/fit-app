@@ -287,55 +287,45 @@ export class AdvancedPDFProcessor {
    */
   private async analyzeWorkoutStructure(extraction: PDFExtractionResult): Promise<WorkoutAnalysisResult> {
     const prompt = `
-Analyze this fitness program PDF text and extract workout structure. Return a JSON response with:
+You are a fitness expert analyzing a workout PDF. Extract the workout structure and return ONLY a valid JSON object.
 
-1. Program type (PPL, UpperLower, FullBody, etc.)
-2. Duration in weeks
-3. Days per week
-4. Exercise list with sets/reps
-5. Weekly schedule
-6. Progression rules
+PDF Content (first 2000 chars):
+${extraction.text.slice(0, 2000)}
 
-PDF Text:
-${extraction.text}
-
-Detected Sections:
-${extraction.structure.detectedSections.map(s => `${s.type}: ${s.content}`).join('\n')}
-
-Return ONLY valid JSON in this exact format:
+Return ONLY this JSON structure with NO additional text:
 {
-  "programType": "PPL|UpperLower|FullBody|Strength|Hypertrophy|Custom",
-  "duration": number,
-  "frequency": number,
+  "programType": "PPL",
+  "duration": 4,
+  "frequency": 3,
   "exercises": [
     {
-      "originalText": "string",
-      "canonicalName": "string", 
-      "targetSets": number,
-      "targetReps": "string",
-      "restTime": number,
-      "notes": ["string"],
-      "confidence": number
+      "originalText": "Bench Press 3x8-10",
+      "canonicalName": "Bench Press",
+      "targetSets": 3,
+      "targetReps": "8-10",
+      "restTime": 90,
+      "notes": [],
+      "confidence": 0.9
     }
   ],
   "schedule": [
     {
-      "day": "Monday|Tuesday|etc",
-      "dayName": "Day 1|Upper|etc", 
-      "focus": "string",
-      "exercises": [...],
-      "estimatedTime": number,
-      "targetIntensity": "Light|Moderate|Heavy"
+      "day": "Monday",
+      "dayName": "Upper Body",
+      "focus": "Chest and Arms",
+      "exercises": [],
+      "estimatedTime": 60,
+      "targetIntensity": "Moderate"
     }
   ],
   "progression": {
-    "type": "linear|percentage|weekly|custom",
-    "increment": number,
-    "frequency": "string",
-    "conditions": ["string"]
+    "type": "linear",
+    "increment": 2.5,
+    "frequency": "weekly",
+    "conditions": []
   },
-  "confidence": number,
-  "warnings": ["string"]
+  "confidence": 0.8,
+  "warnings": []
 }`;
 
     try {
@@ -349,19 +339,49 @@ Return ONLY valid JSON in this exact format:
         response += chunk;
       }
 
-      // Extract JSON from response (handle AI responses that include explanations)
+      console.log('🤖 Raw AI Response:', response.slice(0, 500) + '...');
+
+      // Multiple strategies to extract JSON
+      let jsonStr = '';
+      
+      // Strategy 1: Find JSON between curly braces
       const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('AI response did not contain valid JSON');
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      } else {
+        // Strategy 2: Look for JSON after colon
+        const colonMatch = response.match(/:\s*(\{[\s\S]*\})/);
+        if (colonMatch) {
+          jsonStr = colonMatch[1];
+        } else {
+          throw new Error('No JSON found in AI response');
+        }
       }
 
-      const analysis = JSON.parse(jsonMatch[0]);
+      // Clean the JSON string
+      jsonStr = jsonStr
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*]/g, ']')
+        .trim();
+
+      console.log('🔧 Cleaned JSON:', jsonStr.slice(0, 300) + '...');
+
+      let analysis;
+      try {
+        analysis = JSON.parse(jsonStr);
+      } catch (parseError) {
+        console.error('❌ JSON Parse failed:', parseError);
+        console.log('📄 Failed JSON:', jsonStr);
+        throw new Error(`JSON parsing failed: ${parseError.message}`);
+      }
       
       // Validate and sanitize the analysis
       return this.validateAnalysis(analysis);
       
     } catch (error) {
-      console.error('AI analysis failed:', error);
+      console.error('❌ AI analysis failed:', error);
       return this.generateFallbackAnalysis(extraction.text);
     }
   }
@@ -467,33 +487,115 @@ Return ONLY valid JSON in this exact format:
   }
 
   private generateFallbackAnalysis(text: string): WorkoutAnalysisResult {
-    console.warn('🔄 Using fallback analysis');
+    console.warn('🔄 Using enhanced fallback analysis');
     
-    // Basic regex-based fallback
-    const exerciseMatches = text.match(/([A-Za-z\s]+):?\s*(\d+)\s*[xX×]\s*(\d+(?:-\d+)?)/g) || [];
-    
-    const exercises: AnalyzedExercise[] = exerciseMatches.slice(0, 12).map((match, i) => {
-      const parts = match.match(/([A-Za-z\s]+):?\s*(\d+)\s*[xX×]\s*(\d+(?:-\d+)?)/);
-      return {
-        originalText: match,
-        canonicalName: parts?.[1]?.trim() || `Exercise ${i + 1}`,
-        targetSets: parseInt(parts?.[2] || '3'),
-        targetReps: parts?.[3] || '8-12',
-        restTime: 90,
-        notes: [],
-        confidence: 0.6,
-        alternatives: []
-      };
+    // Enhanced regex patterns for better exercise detection
+    const exercisePatterns = [
+      /([A-Za-z\s]+):?\s*(\d+)\s*[xX×]\s*(\d+(?:-\d+)?)/g,  // "Exercise 3x8-10"
+      /([A-Za-z\s]+):?\s*(\d+)\s*sets?\s*[xX×]?\s*(\d+(?:-\d+)?)\s*reps?/gi, // "Exercise: 3 sets x 8 reps"
+      /(\d+)\s*[xX×]\s*(\d+(?:-\d+)?)\s*([A-Za-z\s]+)/g,   // "3x8 Exercise"
+      /[-•\u2022]\s*([A-Za-z\s]+):?\s*(\d+)\s*[xX×]\s*(\d+(?:-\d+)?)/g  // "• Exercise 3x8"
+    ];
+
+    let allMatches: string[] = [];
+    exercisePatterns.forEach(pattern => {
+      const matches = text.match(pattern) || [];
+      allMatches = allMatches.concat(matches);
     });
 
+    // Remove duplicates and clean up
+    const uniqueMatches = [...new Set(allMatches)];
+    
+    const exercises: AnalyzedExercise[] = uniqueMatches.slice(0, 15).map((match, i) => {
+      // Try different parsing approaches
+      let name = '', sets = 3, reps = '8-12';
+      
+      const standardMatch = match.match(/([A-Za-z\s]+):?\s*(\d+)\s*[xX×]\s*(\d+(?:-\d+)?)/);
+      if (standardMatch) {
+        name = standardMatch[1]?.trim();
+        sets = parseInt(standardMatch[2]) || 3;
+        reps = standardMatch[3] || '8-12';
+      } else {
+        // Fallback: extract any exercise-like name
+        const nameMatch = match.match(/([A-Za-z\s]{3,})/);
+        name = nameMatch?.[1]?.trim() || `Exercise ${i + 1}`;
+      }
+
+      // Clean up the name
+      name = name.replace(/[-•\u2022]/g, '').replace(/^\d+\.?\s*/, '').trim();
+      
+      return {
+        originalText: match,
+        canonicalName: name,
+        targetSets: Math.max(1, Math.min(6, sets)), // Limit to reasonable range
+        targetReps: reps,
+        restTime: name.toLowerCase().includes('cardio') ? 30 : 90,
+        notes: [],
+        confidence: 0.7,
+        alternatives: []
+      };
+    }).filter(ex => ex.canonicalName.length > 2); // Filter out too-short names
+
+    // Try to detect program structure from text
+    const detectProgramType = (): string => {
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('push') && lowerText.includes('pull') && lowerText.includes('leg')) return 'PPL';
+      if (lowerText.includes('upper') && lowerText.includes('lower')) return 'UpperLower';
+      if (lowerText.includes('full body')) return 'FullBody';
+      if (lowerText.includes('strength')) return 'Strength';
+      return 'Custom';
+    };
+
+    // Try to detect frequency
+    const detectFrequency = (): number => {
+      const dayMatches = text.match(/day\s*\d+/gi) || [];
+      const weekMatches = text.match(/week\s*\d+/gi) || [];
+      if (dayMatches.length > 0) return Math.min(7, dayMatches.length);
+      if (weekMatches.length > 0) return 3; // Default for weekly programs
+      return Math.min(5, Math.max(3, Math.ceil(exercises.length / 6))); // Estimate based on exercises
+    };
+
+    // Try to detect duration
+    const detectDuration = (): number => {
+      const weekMatches = text.match(/week\s*(\d+)/gi) || [];
+      if (weekMatches.length > 0) {
+        const maxWeek = Math.max(...weekMatches.map(m => parseInt(m.match(/\d+/)?.[0] || '1')));
+        return Math.max(1, Math.min(12, maxWeek));
+      }
+      return 4; // Default
+    };
+
+    const programType = detectProgramType();
+    const frequency = detectFrequency();
+    const duration = detectDuration();
+
+    // Create basic schedule
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const schedule: ParsedSchedule[] = [];
+    
+    for (let i = 0; i < frequency; i++) {
+      const dayExercises = exercises.slice(i * Math.ceil(exercises.length / frequency), (i + 1) * Math.ceil(exercises.length / frequency));
+      if (dayExercises.length > 0) {
+        schedule.push({
+          day: daysOfWeek[i] || `Day ${i + 1}`,
+          dayName: `Workout ${i + 1}`,
+          focus: programType === 'PPL' ? ['Push', 'Pull', 'Legs'][i % 3] : 
+                 programType === 'UpperLower' ? ['Upper', 'Lower'][i % 2] : 'Full Body',
+          exercises: dayExercises,
+          estimatedTime: Math.min(90, Math.max(30, dayExercises.length * 8)), // ~8 min per exercise
+          targetIntensity: 'Moderate'
+        });
+      }
+    }
+
     return {
-      programType: 'Custom',
-      duration: 4,
-      frequency: 3,
+      programType: programType as any,
+      duration,
+      frequency,
       exercises,
-      schedule: [{
+      schedule: schedule.length > 0 ? schedule : [{
         day: 'Monday',
-        dayName: 'Workout Day',
+        dayName: 'Full Body Workout',
         focus: 'Full Body',
         exercises,
         estimatedTime: 60,
@@ -503,10 +605,12 @@ Return ONLY valid JSON in this exact format:
         type: 'linear',
         increment: 2.5,
         frequency: 'weekly',
-        conditions: []
+        conditions: ['Increase weight when all sets completed with good form']
       },
-      confidence: 0.6,
-      warnings: ['Used fallback analysis - results may be less accurate']
+      confidence: 0.75, // Improved confidence with enhanced analysis
+      warnings: exercises.length === 0 ? 
+        ['No exercises detected - manual review required'] : 
+        ['Enhanced fallback analysis used - verify accuracy']
     };
   }
 
