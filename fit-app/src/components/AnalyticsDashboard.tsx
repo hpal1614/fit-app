@@ -47,3 +47,4 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ classNam
     </div>
   );
 };
+

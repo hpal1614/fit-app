@@ -195,3 +195,4 @@ export const WorkoutGenerator: React.FC<WorkoutGeneratorProps> = ({
     </div>
   );
 };
+

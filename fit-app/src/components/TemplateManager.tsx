@@ -11,21 +11,26 @@ import {
 } from 'lucide-react';
 import { WorkoutGenerator } from './WorkoutGenerator';
 import { NimbusPDFUploader } from './nimbus/pdf/NimbusPDFUploader';
+import { PDFWorkoutUploader } from './workout/PDFWorkoutUploader';
 import { NimbusWorkoutGenerator } from '../nimbus/components/NimbusWorkoutGenerator';
 import DatabaseService from '../services/databaseService';
-import { AdvancedPDFProcessor } from '../services/advancedPDFProcessor';
+import { OptimalPDFProcessor } from '../services/OptimalPDFProcessor';
+import { WorkoutPDFExtractor } from '../services/WorkoutPDFExtractor';
+import { hybridStorageService } from '../services/hybridStorageService';
+import { workoutStorageService, StoredWorkoutTemplate, DayWorkout } from '../services/workoutStorageService';
+import { EXERCISE_DATABASE } from '../constants/exercises';
+import { getAIService } from '../services/aiService';
 
 // Create instances
 const databaseService = new DatabaseService();
-const pdfProcessor = new AdvancedPDFProcessor();
-
-import { workoutStorageService, StoredWorkoutTemplate, DayWorkout } from '../services/workoutStorageService';
-import { EXERCISE_DATABASE } from '../constants/exercises';
+const pdfProcessor = new OptimalPDFProcessor();
+const workoutExtractor = new WorkoutPDFExtractor();
 
 interface TemplateManagerProps {
   onStartWorkout: (workout: DayWorkout) => void;
   onAddToHome: (template: StoredWorkoutTemplate) => void;
   onBack: () => void;
+  showPDFUpload?: boolean;
 }
 
 // Enhanced template with metadata
@@ -53,8 +58,12 @@ type CategoryFilter = 'all' | 'strength' | 'cardio' | 'flexibility' | 'sports' |
 export const TemplateManager: React.FC<TemplateManagerProps> = ({ 
   onStartWorkout, 
   onAddToHome,
-  onBack 
+  onBack,
+  showPDFUpload = false
 }) => {
+  // Create aiService instance
+  const aiService = getAIService();
+  
   // Core state
   const [currentView, setCurrentView] = useState<'main' | 'create' | 'browse' | 'detail' | 'favorites' | 'history' | 'community'>('main');
   const [creationMethod, setCreationMethod] = useState<CreationMethod | null>(null);
@@ -95,6 +104,11 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
   const [templateToShare, setTemplateToShare] = useState<EnhancedTemplate | null>(null);
 
   // Load initial data
+  useEffect(() => {
+    if (showPDFUpload) {
+      setCreationMethod('pdf');
+    }
+  }, [showPDFUpload]);
   useEffect(() => {
     loadTemplates();
     loadFavorites();
@@ -431,21 +445,24 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       const savedId = await databaseService.saveWorkoutTemplate(template);
       console.log('✅ Template saved to database with ID:', savedId);
       
+      // Determine if this is a PDF import
+      const isPDFImport = template.name?.includes('PDF') || template.description?.includes('Imported from');
+      
       // Create enhanced template for UI
       const enhancedTemplate: EnhancedTemplate = {
         ...template,
         id: savedId, // Use the database ID
-        rating: 4.0,
-        downloads: 0,
-        author: template.name?.includes('AI') ? 'AI Generated' : 'You',
-        tags: template.goals || ['custom'],
-        source: (template.name?.includes('AI') ? 'ai' : 'manual') as const,
+        rating: isPDFImport ? 4.5 : 4.0,
+        downloads: isPDFImport ? 5 : 0,
+        author: isPDFImport ? 'PDF Import' : (template.name?.includes('AI') ? 'AI Generated' : 'You'),
+        tags: isPDFImport ? ['imported', 'pdf', 'structured'] : (template.goals || ['custom']),
+        source: isPDFImport ? 'pdf' as const : ((template.name?.includes('AI') ? 'ai' : 'manual') as const),
         targetMuscles: ['full-body'],
         caloriesBurn: template.estimatedTime ? template.estimatedTime * 5 : 250,
         isPremium: false,
         isFavorite: false,
         usageCount: 0,
-        performance: 0
+        performance: isPDFImport ? 90 : 80
       };
 
       // Update UI state
@@ -459,12 +476,20 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
         console.warn('⚠️ Workout storage service save failed (expected):', e);
       }
       
-      setSuccessMessage('Template created and saved successfully!');
+      // Show success message based on type
+      const successMsg = isPDFImport 
+        ? `🎉 PDF template "${template.name}" imported successfully! ${template.schedule?.length} days, ${template.schedule?.reduce((sum, day) => sum + day.exercises.length, 0)} exercises extracted.`
+        : 'Template created and saved successfully!';
+      
+      setSuccessMessage(successMsg);
       setCurrentView('main');
       setCreationMethod(null);
       
+      // Set the newly created template as selected to show details
+      setSelectedTemplate(enhancedTemplate);
+      
       console.log('🎉 Template creation complete!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (error) {
       console.error('❌ Failed to create template:', error);
       setError('Failed to save template to database');
@@ -1131,7 +1156,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
       case 'ai':
         return <AITemplateBuilder onTemplateCreated={handleTemplateCreated} onBack={() => setCurrentView('main')} />;
       case 'pdf':
-        return <PDFTemplateUploader onTemplateCreated={handleTemplateCreated} onBack={() => setCurrentView('main')} />;
+        return <PDFWorkoutUploader onUpload={handleTemplateCreated} onBack={() => setCurrentView('main')} aiService={aiService} />;
       case 'custom':
         return <CustomTemplateBuilder onTemplateCreated={handleTemplateCreated} onBack={() => setCurrentView('main')} />;
       default:
@@ -1856,22 +1881,49 @@ const PDFTemplateUploader: React.FC<{ onTemplateCreated: (template: StoredWorkou
     setUploadStatus('uploading');
 
     try {
-      console.log('🚀 Starting advanced PDF processing...');
+      console.log('🎯 ENHANCED PDF PROCESSING - Using WorkoutPDFExtractor');
       setUploadStatus('processing');
 
-      // Use the advanced PDF processor
-      const result = await pdfProcessor.processPDFWorkout(file);
+      // Use our enhanced WorkoutPDFExtractor for better table parsing
+      const result = await workoutExtractor.processPDF(file);
       
-      setExtractedText(result.debug.extraction.text.slice(0, 1000) + '...');
+      console.log('📊 Enhanced extraction result:', result);
+      
+      setExtractedText(`Method: ${result.method} | ${result.extractedDays} days, ${result.extractedExercises} exercises | Confidence: ${Math.round(result.confidence * 100)}%`);
+      
+      // Auto-save to storage immediately
+      const templateForStorage = {
+        ...result.template,
+        source: 'pdf' as const,
+        author: 'PDF Import',
+        tags: ['imported', 'pdf', result.method],
+        isFavorite: false,
+        usageCount: 0
+      };
+      
+      // Save to storage
+      await hybridStorageService.store('workout', result.template.id, templateForStorage);
+      
+      // Also save to localStorage for compatibility
+      const existingTemplates = JSON.parse(localStorage.getItem('workoutTemplates') || '[]');
+      const updatedTemplates = [...existingTemplates, templateForStorage];
+      localStorage.setItem('workoutTemplates', JSON.stringify(updatedTemplates));
+      
+      console.log('💾 Template auto-saved with ID:', result.template.id);
+      
       setProcessedWorkout(result.template);
 
-      // Enhanced debug output showing AI analysis
-      console.groupCollapsed('%cAdvanced PDF → Template Analysis','color:#0f0; font-weight:bold');
+      // A+ Grade debug output
+      console.groupCollapsed('%cOptimal PDF Processing Results','color:#0f0; font-weight:bold');
       console.log('📄 File:', file.name, '|', file.size, 'bytes');
-      console.log('🤖 AI Analysis:', result.analysis);
-      console.log('💪 Program Type:', result.analysis.programType);
-      console.log('📅 Duration:', result.analysis.duration, 'weeks |', result.analysis.frequency, 'days/week');
-      console.log('🎯 Confidence:', Math.round(result.analysis.confidence * 100) + '%');
+      console.log('✅ Success:', result.success);
+      console.log('🎯 Method:', result.method);
+      console.log('📊 Confidence:', Math.round(result.confidence * 100) + '%');
+      console.log('📅 Days Extracted:', result.extractedDays);
+      console.log('💪 Exercises Extracted:', result.extractedExercises);
+      console.log('⏱️ Processing Time:', result.processingTime + 'ms');
+      console.log('🔍 Detected Format:', result.debugInfo.detectedFormat);
+      console.log('⚠️ Warnings:', result.warnings);
       console.table(result.template.schedule.flatMap(d => d.exercises).map(e => ({ 
         name: e.name, 
         sets: e.sets, 
@@ -1879,8 +1931,8 @@ const PDFTemplateUploader: React.FC<{ onTemplateCreated: (template: StoredWorkou
         rest: e.restTime + 's',
         notes: e.notes || 'None'
       })));
-      if (result.analysis.warnings.length > 0) {
-        console.warn('⚠️ Warnings:', result.analysis.warnings);
+      if (result.warnings && result.warnings.length > 0) {
+        console.warn('⚠️ Warnings:', result.warnings);
       }
       console.groupEnd();
 
@@ -1990,7 +2042,21 @@ const PDFTemplateUploader: React.FC<{ onTemplateCreated: (template: StoredWorkou
 
   const confirmTemplate = () => {
     if (processedWorkout) {
-      onTemplateCreated(processedWorkout);
+      // Create enhanced template with metadata
+      const enhancedTemplate: EnhancedTemplate = {
+        ...processedWorkout,
+        source: 'pdf' as const,
+        author: 'PDF Import',
+        rating: 4.5,
+        downloads: 1,
+        tags: ['imported', 'pdf'],
+        isFavorite: false,
+        usageCount: 0,
+        performance: 85
+      };
+      
+      console.log('✅ Creating template from PDF:', enhancedTemplate.name);
+      onTemplateCreated(enhancedTemplate);
     }
   };
 

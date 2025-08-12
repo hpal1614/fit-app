@@ -3,10 +3,13 @@ import { useState, useEffect } from 'react';
 // import { EnhancedWorkoutLogger } from './components/EnhancedWorkoutLogger';
 import { HomeDashboard, EnhancedWorkoutLogger } from './components';
 import ProgramSelection from './components/onboarding/ProgramSelection';
+import { PDFDebugInterface } from './components/PDFDebugInterface';
+// Temporarily commented out to fix build
+// import { WorkoutExtractionDemo } from './components/WorkoutExtractionDemo';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'onboarding'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'onboarding' | 'debug' | 'extraction-demo'>('home');
   const [isAppReady, setIsAppReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,6 +19,10 @@ function App() {
       const hash = (window.location.hash || '').toLowerCase();
       if (hash.includes('onboarding') || hash.includes('templates')) {
         setCurrentView('onboarding');
+      } else if (hash.includes('debug') || hash.includes('pdf-test')) {
+        setCurrentView('debug');
+      } else if (hash.includes('extraction-demo') || hash.includes('workout-extraction')) {
+        setCurrentView('extraction-demo');
       }
     };
     applyHashRoute();
@@ -83,6 +90,55 @@ function App() {
               appSettings={{}}
               onSettingsChange={() => {}}
             />
+          );
+        case 'debug':
+          return (
+            <div className="min-h-screen bg-gray-100 p-6">
+              <div className="max-w-6xl mx-auto">
+                <div className="mb-6">
+                  <button
+                    onClick={() => {
+                      setCurrentView('home');
+                      window.location.hash = '';
+                    }}
+                    className="text-blue-600 hover:text-blue-800 mb-4"
+                  >
+                    ← Back to Home
+                  </button>
+                  <h1 className="text-3xl font-bold text-gray-900">PDF Processing Debug Interface</h1>
+                  <p className="text-gray-600 mt-2">
+                    Comprehensive testing and debugging tool for PDF processing system
+                  </p>
+                </div>
+                <PDFDebugInterface />
+              </div>
+            </div>
+          );
+        case 'extraction-demo':
+          return (
+            <div className="min-h-screen bg-gray-100 p-6">
+              <div className="max-w-6xl mx-auto">
+                <div className="mb-6">
+                  <button
+                    onClick={() => {
+                      setCurrentView('home');
+                      window.location.hash = '';
+                    }}
+                    className="text-blue-600 hover:text-blue-800 mb-4"
+                  >
+                    ← Back to Home
+                  </button>
+                  <h1 className="text-3xl font-bold text-gray-900">Workout PDF Extraction Demo</h1>
+                  <p className="text-gray-600 mt-2">
+                    Test the automatic extraction of workout data from your PDF format
+                  </p>
+                  <p className="text-orange-600 mt-4">
+                    📧 Demo temporarily disabled due to build issues. Please use the PDF Debug Interface instead!
+                  </p>
+                </div>
+                {/* <WorkoutExtractionDemo /> */}
+              </div>
+            </div>
           );
         case 'workout':
           return (

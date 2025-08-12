@@ -4,7 +4,7 @@ import { EXERCISE_DATABASE } from '../constants/exercises';
 import { NimbusAIService } from '../nimbus/services/NimbusAIService';
 import { v4 as uuidv4 } from 'uuid';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 interface PDFAnalysisResult {
   template: StoredWorkoutTemplate;

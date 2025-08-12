@@ -148,3 +148,4 @@ class FitnessRAGService {
 
 // Export singleton instance
 export const fitnessRAG = new FitnessRAGService();
+

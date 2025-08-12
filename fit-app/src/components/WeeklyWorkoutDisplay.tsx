@@ -19,10 +19,15 @@ export const WeeklyWorkoutDisplay: React.FC<WeeklyWorkoutDisplayProps> = ({
   const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
   
   const getDayWorkout = (dayIndex: number): DayWorkout | null => {
-    const dayName = dayNames[dayIndex];
-    return weekWorkouts.find(workout => 
-      new Date(workout.scheduledDate).getDay() === dayIndex
-    ) || null;
+    // Find workout by day index (0 = Sunday, 1 = Monday, etc.)
+    return weekWorkouts.find(workout => {
+      if (workout.scheduledDate) {
+        return new Date(workout.scheduledDate).getDay() === dayIndex;
+      }
+      // Fallback: match by day name or index
+      return workout.day === dayNames[dayIndex] || 
+             weekWorkouts.indexOf(workout) === dayIndex;
+    }) || null;
   };
 
   const getDayStatus = (dayIndex: number, workout: DayWorkout | null) => {

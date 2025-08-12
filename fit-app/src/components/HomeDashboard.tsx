@@ -79,6 +79,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onSettingsChange 
 }) => {
   const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [showPDFUpload, setShowPDFUpload] = useState(false);
   const [showWorkoutGenerator, setShowWorkoutGenerator] = useState(false);
   const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
   const [showAICoach, setShowAICoach] = useState(false);
@@ -111,13 +112,21 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         console.log('HomeDashboard: Loaded stats:', stats);
         
         setWeekWorkouts(workouts);
+        
+        // Ensure stats object exists with fallback values
+        const safeStats = stats || {
+          thisWeekWorkouts: 0,
+          totalMinutes: 0,
+          currentStreak: 0,
+          completedWorkouts: 0
+        };
         setUserStats({
-          workoutsThisWeek: stats.thisWeekWorkouts,
-          totalMinutes: stats.totalMinutes,
-          caloriesBurned: Math.round(stats.totalMinutes * 6.67), // Rough estimate
-          currentStreak: stats.currentStreak,
+          workoutsThisWeek: safeStats.thisWeekWorkouts || 0,
+          totalMinutes: safeStats.totalMinutes || 0,
+          caloriesBurned: Math.round((safeStats.totalMinutes || 0) * 6.67), // Rough estimate
+          currentStreak: safeStats.currentStreak || 0,
           nextWorkout: workouts.length > 0 ? 'Today' : 'No plan',
-          lastWorkout: stats.completedWorkouts > 0 ? '2 days ago' : 'Never'
+          lastWorkout: safeStats.completedWorkouts > 0 ? '2 days ago' : 'Never'
         });
       } catch (error) {
         console.error('Failed to load workout data:', error);
@@ -226,19 +235,37 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     try {
       await workoutStorageService.saveWorkoutTemplate(sampleTemplate);
       await workoutStorageService.activateWorkoutTemplate(sampleTemplate.id);
-      await workoutStorageService.generateWeeklySchedule(sampleTemplate);
       console.log('Sample template added and activated successfully');
       
       // Reload workout data
       const workouts = await workoutStorageService.getCurrentWeekWorkouts();
       setWeekWorkouts(workouts);
       console.log('Loaded workouts:', workouts);
+      
+      // Show success message
+      setSuccessMessage('Sample template added successfully!');
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
     } catch (error) {
       console.error('Failed to add sample template:', error);
+      setSuccessMessage('Failed to add sample template');
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
     }
   };
 
   const quickActions = [
+    { 
+      title: 'Upload PDF', 
+      icon: <Plus className="w-5 h-5" />, 
+      action: () => {
+        // Open PDF upload directly
+        setShowPDFUpload(true);
+        setShowTemplateManager(true);
+      },
+      color: 'from-pink-500 to-rose-600',
+      highlight: true
+    },
     { 
       title: weekWorkouts.length > 0 ? 'Today\'s Workout' : 'Start Workout', 
       icon: <Play className="w-5 h-5" />, 
@@ -287,6 +314,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     return (
       <div className="h-full">
         <TemplateManager 
+          showPDFUpload={showPDFUpload}
           onStartWorkout={(workout) => {
             console.log('Starting workout:', workout);
             setSelectedWorkout(workout);
@@ -306,7 +334,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             setShowSuccessMessage(true);
             setTimeout(() => setShowSuccessMessage(false), 5000);
           }}
-          onBack={() => setShowTemplateManager(false)}
+          onBack={() => {
+            setShowTemplateManager(false);
+            setShowPDFUpload(false);
+          }}
         />
       </div>
     );
@@ -492,7 +523,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <button
               key={index}
               onClick={action.action}
-              className={`bg-gradient-to-r ${action.color} p-4 rounded-xl text-white font-semibold hover:scale-105 transition-all duration-200 flex flex-col items-center space-y-2`}
+              className={`bg-gradient-to-r ${action.color} p-4 rounded-xl text-white font-semibold hover:scale-105 transition-all duration-200 flex flex-col items-center space-y-2 ${
+                action.highlight ? 'ring-2 ring-white/30 shadow-lg animate-pulse' : ''
+              }`}
             >
               {action.icon}
               <span>{action.title}</span>
@@ -628,6 +661,26 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <div>Workout Active: {workout.isActive ? 'Yes' : 'No'}</div>
             <div>Template Creator: Available</div>
             <div>Integration: Complete ✅</div>
+            <div>User Stats: {JSON.stringify(userStats)}</div>
+            <div>Week Workouts Data: {weekWorkouts.map(w => `${w.name} (${w.exercises.length} ex)`).join(', ')}</div>
+          </div>
+          <div className="mt-3 space-y-2">
+            <button
+              onClick={addSampleTemplate}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+            >
+              Add Sample Template
+            </button>
+            <button
+              onClick={async () => {
+                const templates = await workoutStorageService.getAllTemplates();
+                console.log('All templates:', templates);
+                alert(`Found ${templates.length} templates`);
+              }}
+              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs ml-2"
+            >
+              Check Templates
+            </button>
           </div>
         </div>
       </div>
@@ -671,6 +724,18 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <span>Open Workout Planner</span>
         </button>
       </div>
+
+      {/* Floating Action Button for PDF Upload */}
+      <button
+        onClick={() => {
+          setShowPDFUpload(true);
+          setShowTemplateManager(true);
+        }}
+        className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 flex items-center justify-center z-50 animate-pulse"
+        title="Upload PDF Workout"
+      >
+        <Plus className="w-8 h-8" />
+      </button>
 
       {/* Auth Modal */}
       <AuthModal

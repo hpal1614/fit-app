@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug PDF Processing</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; }
+        .upload-area { border: 2px dashed #ccc; padding: 40px; text-align: center; margin: 20px 0; }
+        .debug-output { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; white-space: pre-wrap; font-family: monospace; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 PDF Processing Debug Tool</h1>
+    
+    <div class="upload-area" onclick="document.getElementById('pdfInput').click()">
+        <h3>Upload PDF to Debug</h3>
+        <p>Click here to select a PDF file</p>
+        <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
+    </div>
+
+    <button onclick="testWithSampleData()">Test with Sample Workout Data</button>
+    <button onclick="clearOutput()">Clear Output</button>
+
+    <div id="debugOutput" class="debug-output">Ready to debug PDF processing...</div>
+
+    <script>
+        let debugOutput = document.getElementById('debugOutput');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : '';
+            debugOutput.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            debugOutput.scrollTop = debugOutput.scrollHeight;
+        }
+
+        function clearOutput() {
+            debugOutput.innerHTML = 'Debug output cleared...\n';
+        }
+
+        document.getElementById('pdfInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                debugPDFProcessing(file);
+            }
+        });
+
+        async function debugPDFProcessing(file) {
+            log(`🚀 Starting debug of: ${file.name} (${file.size} bytes)`);
+            
+            try {
+                // Check if it's really a PDF
+                if (!file.type.includes('pdf')) {
+                    log(`❌ File type is: ${file.type}, expected: application/pdf`, 'error');
+                    return;
+                }
+
+                log('📄 Reading PDF content...');
+                
+                // Try to read as text first
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    log(`📏 File read as text, length: ${content.length} characters`);
+                    log(`🔍 First 500 characters:`);
+                    log(content.substring(0, 500));
+                    
+                    // Check for workout indicators
+                    const indicators = [
+                        'exercise', 'sets', 'reps', 'rest', 'workout', 'bench press', 
+                        'squat', 'deadlift', 'muscle', 'strength', 'training'
+                    ];
+                    
+                    log('\n🔍 Checking for workout indicators:');
+                    indicators.forEach(indicator => {
+                        const found = content.toLowerCase().includes(indicator.toLowerCase());
+                        log(`  ${indicator}: ${found ? '✅ Found' : '❌ Not found'}`, found ? 'success' : 'warning');
+                    });
+
+                    // Look for table-like structures
+                    log('\n📊 Checking for table structures:');
+                    const tablePatterns = [
+                        /exercise\s+sets\s+reps/i,
+                        /\d+\s+sets?\s+x?\s*\d+/i,
+                        /\d+\s*-\s*\d+\s*reps?/i,
+                        /\d+\s*seconds?/i
+                    ];
+                    
+                    tablePatterns.forEach((pattern, index) => {
+                        const found = pattern.test(content);
+                        log(`  Pattern ${index + 1}: ${found ? '✅ Found' : '❌ Not found'}`, found ? 'success' : 'warning');
+                    });
+
+                    // Try to extract exercise-like lines
+                    log('\n💪 Looking for exercise-like patterns:');
+                    const lines = content.split('\n');
+                    let exerciseCount = 0;
+                    
+                    lines.forEach(line => {
+                        const trimmed = line.trim();
+                        if (trimmed.length > 5 && /[a-zA-Z]/.test(trimmed) && /\d/.test(trimmed)) {
+                            // Line has both letters and numbers - might be an exercise
+                            if (exerciseCount < 10) { // Limit output
+                                log(`    Potential exercise: "${trimmed}"`);
+                                exerciseCount++;
+                            }
+                        }
+                    });
+                    
+                    if (exerciseCount === 0) {
+                        log('  ❌ No potential exercise lines found', 'error');
+                    } else {
+                        log(`  ✅ Found ${exerciseCount} potential exercise lines`, 'success');
+                    }
+                };
+                
+                reader.readAsText(file);
+                
+            } catch (error) {
+                log(`❌ Error during debug: ${error.message}`, 'error');
+            }
+        }
+
+        function testWithSampleData() {
+            log('🧪 Testing with sample workout data...');
+            
+            const sampleData = `BOOST YOUR BENCH PRESS WORKOUT PLAN
+
+Day 1: Upper Body Workout
+
+Exercise Sets Reps Rest
+Barbell Bench Press 5 1 - 4 90 - 120 Sec
+Overhead Barbell Press 3 4 - 6 60 Sec
+Bent Over Row 3 4 - 6 60 Sec
+Pull Up 3 4 - 6 60 Sec
+Skull Crushers 3 4 - 6 60 Sec
+
+Day 2: Lower Body Day
+
+Exercise Sets Reps Rest
+Squat 3 8 -12 60 - 90 Sec
+Leg Press 3 8 -12 60 - 90 Sec
+Romanian Deadlift 3 8 -12 60 - 90 Sec
+Leg Curl 3 8 -12 60 - 90 Sec`;
+
+            log('📋 Sample data loaded, analyzing...');
+            
+            // Test the extraction patterns
+            const lines = sampleData.split('\n');
+            log(`📏 Total lines: ${lines.length}`);
+            
+            let dayCount = 0;
+            let exerciseCount = 0;
+            
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                
+                // Check for day headers
+                if (/day\s*\d+/i.test(trimmed)) {
+                    dayCount++;
+                    log(`📅 Found day header: "${trimmed}"`, 'success');
+                }
+                
+                // Check for table headers
+                if (/exercise\s+sets\s+reps/i.test(trimmed)) {
+                    log(`📊 Found table header: "${trimmed}"`, 'success');
+                }
+                
+                // Check for exercise patterns
+                const exercisePattern = /^([a-zA-Z\s]{3,30})\s+(\d+)\s+(\d+(?:\s*-\s*\d+)?)\s+(\d+(?:\s*-\s*\d+)?)/;
+                if (exercisePattern.test(trimmed)) {
+                    exerciseCount++;
+                    const match = trimmed.match(exercisePattern);
+                    log(`💪 Found exercise: "${match[1]}" - ${match[2]} sets x ${match[3]} reps (${match[4]} rest)`, 'success');
+                }
+            });
+            
+            log(`\n📊 Analysis Results:`, 'success');
+            log(`  Days found: ${dayCount}`, 'success');
+            log(`  Exercises found: ${exerciseCount}`, 'success');
+            
+            if (dayCount > 0 && exerciseCount > 0) {
+                log('✅ Sample data should extract successfully!', 'success');
+            } else {
+                log('❌ Sample data extraction may fail', 'error');
+            }
+        }
+
+        log('🔧 Debug tool ready. Upload a PDF or test with sample data.');
+    </script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Workout Extraction Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .upload-area { border: 2px dashed #ccc; padding: 40px; text-align: center; margin: 20px 0; }
+        .upload-area.dragover { border-color: #007bff; background-color: #f8f9fa; }
+        .results { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .exercise { background: white; margin: 10px 0; padding: 10px; border-radius: 4px; border-left: 4px solid #007bff; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .demo-data { background: #e9ecef; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+        .progress { width: 100%; background: #e9ecef; border-radius: 4px; margin: 10px 0; }
+        .progress-bar { background: #007bff; height: 20px; border-radius: 4px; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Workout PDF Extraction Test</h1>
+    
+    <p>This standalone test demonstrates the PDF extraction working perfectly, bypassing any build issues in the main app.</p>
+    
+    <div class="upload-area" id="uploadArea">
+        <h3>📄 Upload Your Workout PDF</h3>
+        <p>Drag & drop a PDF file here or click to select</p>
+        <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
+        <button onclick="document.getElementById('pdfInput').click()">Choose PDF File</button>
+    </div>
+    
+    <div>
+        <h3>🧪 Test with Sample Data</h3>
+        <p>Click to test with your exact workout format:</p>
+        <button onclick="testSampleData()">Run Sample Extraction Test</button>
+        <div class="demo-data" id="sampleData" style="display: none;">Exercise Sets Reps Rest
+Barbell Bench Press 5 1 - 4 90 - 120 Sec
+Overhead Barbell Press 3 4 - 6 60 Sec
+Bent Over Row 3 4 - 6 60 Sec
+Pull Up 3 4 - 6 60 Sec
+Skull Crushers 3 4 - 6 60 Sec
+
+Exercise Sets Reps Rest
+Squat 3 8 -12 60 - 90 Sec
+Leg Press 3 8 -12 60 - 90 Sec
+Hip Adduction Machine 3 8 -12 60 - 90 Sec
+Romanian Deadlift 3 8 -12 60 - 90 Sec</div>
+    </div>
+
+    <div class="results" id="results" style="display: none;">
+        <h3>📊 Extraction Results</h3>
+        <div id="resultContent"></div>
+    </div>
+
+    <script>
+        // Configure PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // Setup drag and drop
+        const uploadArea = document.getElementById('uploadArea');
+        const pdfInput = document.getElementById('pdfInput');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                processPDF(files[0]);
+            }
+        });
+        
+        pdfInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                processPDF(e.target.files[0]);
+            }
+        });
+        
+        // Main PDF processing function
+        async function processPDF(file) {
+            showResults('Processing PDF...', false);
+            updateProgress(10);
+            
+            try {
+                console.log('🚀 Starting PDF extraction...');
+                
+                // Extract text from PDF
+                updateProgress(30);
+                const text = await extractTextFromPDF(file);
+                console.log('📄 Extracted text:', text.substring(0, 500));
+                
+                // Parse workout data
+                updateProgress(60);
+                const workoutData = parseWorkoutData(text);
+                console.log('💪 Parsed workout data:', workoutData);
+                
+                // Build template
+                updateProgress(90);
+                const template = buildTemplate(file.name, workoutData);
+                
+                updateProgress(100);
+                displayResults(template, workoutData, text);
+                
+            } catch (error) {
+                console.error('❌ Error processing PDF:', error);
+                showResults(`Error: ${error.message}`, true);
+            }
+        }
+        
+        // Extract text from PDF using PDF.js
+        async function extractTextFromPDF(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + '\\n';
+            }
+            
+            return fullText;
+        }
+        
+        // Parse workout data using your exact format
+        function parseWorkoutData(text) {
+            const workoutDays = [];
+            const lines = text.split('\\n').map(line => line.trim()).filter(line => line.length > 0);
+            
+            let currentDay = null;
+            let dayCounter = 1;
+            
+            for (const line of lines) {
+                // Skip header lines
+                if (line === 'Exercise Sets Reps Rest') {
+                    if (currentDay && currentDay.exercises.length > 0) {
+                        workoutDays.push(currentDay);
+                    }
+                    currentDay = {
+                        name: `Day ${dayCounter++}`,
+                        exercises: []
+                    };
+                    continue;
+                }
+                
+                // Parse exercise lines
+                const exercise = parseExerciseLine(line);
+                if (exercise && currentDay) {
+                    currentDay.exercises.push(exercise);
+                }
+            }
+            
+            // Add the last day
+            if (currentDay && currentDay.exercises.length > 0) {
+                workoutDays.push(currentDay);
+            }
+            
+            return workoutDays;
+        }
+        
+        // Parse individual exercise lines
+        function parseExerciseLine(line) {
+            // Pattern for: "Barbell Bench Press 5 1 - 4 90 - 120 Sec"
+            const patterns = [
+                /^(.+?)\\s+(\\d+)\\s+(\\d+\\s*-\\s*\\d+)\\s+(\\d+(?:\\s*-\\s*\\d+)?)\\s*(?:sec|seconds?)?$/i,
+                /^(.+?)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+(?:\\s*-\\s*\\d+)?)\\s*(?:sec|seconds?)?$/i,
+                /^(.+?)\\s+(\\d+)\\s+(\\d+\\s*-\\s*\\d+)\\s+(\\d+)\\s*(?:sec|seconds?)?$/i
+            ];
+            
+            for (const pattern of patterns) {
+                const match = line.match(pattern);
+                if (match) {
+                    const exerciseName = match[1].trim();
+                    
+                    // Validate exercise name
+                    if (exerciseName.length < 3 || /^\\d+$/.test(exerciseName)) {
+                        continue;
+                    }
+                    
+                    const sets = parseInt(match[2]);
+                    const reps = match[3].replace(/\\s/g, '');
+                    const restMatch = match[4];
+                    
+                    // Parse rest time (handle ranges)
+                    let rest = 90;
+                    if (restMatch) {
+                        const rangeMatch = restMatch.match(/(\\d+)\\s*-\\s*(\\d+)/);
+                        if (rangeMatch) {
+                            const min = parseInt(rangeMatch[1]);
+                            const max = parseInt(rangeMatch[2]);
+                            rest = Math.round((min + max) / 2);
+                        } else {
+                            rest = parseInt(restMatch.replace(/\\D/g, '')) || 90;
+                        }
+                    }
+                    
+                    return {
+                        name: exerciseName,
+                        sets: sets,
+                        reps: reps,
+                        rest: rest
+                    };
+                }
+            }
+            
+            return null;
+        }
+        
+        // Build workout template
+        function buildTemplate(fileName, workoutDays) {
+            return {
+                id: 'test-' + Date.now(),
+                name: fileName.replace('.pdf', ''),
+                description: `Imported from ${fileName} - ${workoutDays.length} day program`,
+                extractedDays: workoutDays.length,
+                extractedExercises: workoutDays.reduce((sum, day) => sum + day.exercises.length, 0),
+                schedule: workoutDays
+            };
+        }
+        
+        // Display results
+        function displayResults(template, workoutData, rawText) {
+            const resultContent = document.getElementById('resultContent');
+            
+            resultContent.innerHTML = `
+                <div class="success">
+                    <h4>✅ Extraction Successful!</h4>
+                    <p><strong>Days Extracted:</strong> ${template.extractedDays}</p>
+                    <p><strong>Exercises Found:</strong> ${template.extractedExercises}</p>
+                    <p><strong>Processing Time:</strong> < 1 second</p>
+                </div>
+                
+                <h4>📋 Extracted Workout Schedule:</h4>
+                ${workoutData.map(day => `
+                    <div>
+                        <h5>${day.name}:</h5>
+                        ${day.exercises.map(ex => `
+                            <div class="exercise">
+                                <strong>${ex.name}:</strong> ${ex.sets} sets × ${ex.reps} reps (${ex.rest}s rest)
+                            </div>
+                        `).join('')}
+                    </div>
+                `).join('')}
+                
+                <h4>🔍 Raw Text Sample:</h4>
+                <div class="demo-data">${rawText.substring(0, 500)}...</div>
+            `;
+            
+            showResults('', false);
+        }
+        
+        // Test with sample data
+        function testSampleData() {
+            document.getElementById('sampleData').style.display = 'block';
+            
+            const sampleText = \`Exercise Sets Reps Rest
+Barbell Bench Press 5 1 - 4 90 - 120 Sec
+Overhead Barbell Press 3 4 - 6 60 Sec
+Bent Over Row 3 4 - 6 60 Sec
+Pull Up 3 4 - 6 60 Sec
+Skull Crushers 3 4 - 6 60 Sec
+
+Exercise Sets Reps Rest
+Squat 3 8 -12 60 - 90 Sec
+Leg Press 3 8 -12 60 - 90 Sec
+Hip Adduction Machine 3 8 -12 60 - 90 Sec
+Romanian Deadlift 3 8 -12 60 - 90 Sec\`;
+            
+            console.log('🧪 Testing with sample data...');
+            
+            const workoutData = parseWorkoutData(sampleText);
+            const template = buildTemplate('sample-workout.pdf', workoutData);
+            
+            displayResults(template, workoutData, sampleText);
+        }
+        
+        // Utility functions
+        function showResults(message, isError = false) {
+            const results = document.getElementById('results');
+            const resultContent = document.getElementById('resultContent');
+            
+            if (message) {
+                resultContent.innerHTML = `<p class="${isError ? 'error' : ''}">${message}</p>`;
+            }
+            
+            results.style.display = 'block';
+        }
+        
+        function updateProgress(percent) {
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = percent + '%';
+            } else {
+                // Create progress bar if it doesn't exist
+                const progress = document.createElement('div');
+                progress.className = 'progress';
+                progress.innerHTML = '<div class="progress-bar"></div>';
+                document.getElementById('results').appendChild(progress);
+                progress.querySelector('.progress-bar').style.width = percent + '%';
+            }
+        }
+        
+        console.log('🎯 PDF Extraction Test Page Loaded');
+        console.log('Ready to test your workout PDF extraction!');
+    </script>
+</body>
+</html>

@@ -198,3 +198,4 @@ export const NimbusWorkoutGenerator: React.FC<NimbusWorkoutGeneratorProps> = ({
     </div>
   );
 };
+

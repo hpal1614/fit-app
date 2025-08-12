@@ -69,3 +69,4 @@ const RestTimerSettings: React.FC<RestTimerSettingsProps> = ({ onSave, className
 };
 
 export default RestTimerSettings;
+
