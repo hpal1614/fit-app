@@ -228,91 +228,344 @@ export const PDFWorkoutUploader: React.FC<{
     }
   };
 
-  // AI workout parsing with enhanced day detection
+  // REALISTIC WORKOUT EXTRACTOR
+  // Sets proper expectations and handles common failure cases
+
+  interface ExtractionResult {
+    success: boolean;
+    confidence: 'high' | 'medium' | 'low';
+    workout: ExtractedWorkout;
+    issues: string[];
+    suggestions: string[];
+  }
+
   const parseWorkoutWithAI = async (textContent: string, source: string): Promise<ExtractedWorkout> => {
-    const prompt = `Extract workout information from this content. CRITICALLY IMPORTANT: Identify ALL workout days correctly.
-
-SOURCE: ${source}
-CONTENT: ${textContent.substring(0, 8000)}
-
-Return ONLY valid JSON in this EXACT format:
-{
-  "title": "Workout Program Name",
-  "days": number_of_workout_days,
-  "exercises": [
-    {
-      "dayNumber": 1,
-      "dayName": "Day 1: Upper Body",
-      "exercises": [
-        {
-          "name": "Bench Press",
-          "sets": 3,
-          "reps": "8-12",
-          "notes": "any special notes"
-        }
-      ]
+    console.log('🔍 Starting realistic workout extraction...');
+    
+    // STEP 0: Content validation and quality check
+    const contentQuality = assessContentQuality(textContent, source);
+    console.log('📊 Content quality assessment:', contentQuality);
+    
+    if (contentQuality.score < 0.3) {
+      console.warn('⚠️ Low quality content detected, using manual template...');
+      return createManualTemplate(source, contentQuality.issues);
     }
-  ]
-}
-
-CRITICAL RULES FOR DAY DETECTION:
-1. Look for day markers: "Day 1", "Day 2", "Day 3", "Day 4", etc.
-2. Look for workout splits: "Upper Body", "Lower Body", "Push", "Pull", "Legs"
-3. Look for session names: "Workout A", "Workout B", "Session 1", "Session 2"
-4. Count ALL distinct workout sessions
-5. If you see "Day 1" and "Day 2", then days = 2 (NOT 1!)
-6. If you see "Upper Body" and "Lower Body", then days = 2
-7. If you see "Push", "Pull", "Legs", then days = 3
-
-EXERCISE GROUPING:
-- Group ALL exercises under the correct day
-- Don't create separate days for individual exercises
-- Use standard exercise names
-
-RESPOND WITH ONLY JSON, NO OTHER TEXT.`;
-
+    
     try {
-      console.log('🔍 Sending workout content to AI for parsing...');
+      // STEP 1: Simple structure analysis
+      const analysis = analyzeWorkoutStructure(textContent);
       
-      const response = await aiService.getCoachingResponse(
-        prompt,
-        { type: 'workout_extraction', contentLength: textContent.length },
-        'workout_planning'
-      );
-
-      console.log('🤖 AI Response received:', response.content.substring(0, 200));
-
-      // Extract JSON from response
-      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('AI could not extract structured workout data');
-      }
-
-      const parsedData = JSON.parse(jsonMatch[0]);
+      // STEP 2: Extract workout days
+      const workoutDays = extractWorkoutDays(textContent, analysis);
       
-      console.log('📊 Parsed workout data:', parsedData);
-
-      // Validate the data structure
-      if (!parsedData.exercises || !Array.isArray(parsedData.exercises)) {
-        throw new Error('Invalid workout structure detected');
-      }
-
-      if (parsedData.exercises.length === 0) {
-        throw new Error('No workout days found in content');
-      }
-
-      // CRITICAL FIX: Ensure day count matches actual workout days
-      parsedData.days = parsedData.exercises.length;
-
-      console.log(`✅ Successfully detected ${parsedData.days} workout days`);
-
-      return parsedData;
-
+      // STEP 3: Extract exercises with confidence scoring
+      const extractedDays = await extractExercisesWithConfidence(workoutDays, aiService);
+      
+      // STEP 4: Build and validate result
+      const result = buildValidatedResult(extractedDays, source, analysis);
+      
+      console.log('✅ Extraction completed:', {
+        days: result.days,
+        totalExercises: result.exercises.reduce((total, day) => total + day.exercises.length, 0),
+        confidence: assessResultConfidence(result)
+      });
+      
+      return result;
+      
     } catch (error) {
-      console.error('❌ AI parsing failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown AI parsing error';
-      throw new Error(`AI extraction failed: ${errorMessage}. Please use manual edit to correct the workout.`);
+      console.error('❌ Extraction failed:', error);
+      return createFallbackTemplate(textContent, source);
     }
+  };
+
+  // Assess content quality to set expectations
+  const assessContentQuality = (textContent: string, source: string) => {
+    const issues: string[] = [];
+    let score = 1.0;
+    
+    // Check content length
+    if (textContent.length < 100) {
+      issues.push('Very short content');
+      score -= 0.4;
+    }
+    
+    // Check for fitness-related keywords
+    const fitnessKeywords = ['exercise', 'workout', 'sets', 'reps', 'training', 'muscle', 'strength'];
+    const hasKeywords = fitnessKeywords.some(keyword => 
+      textContent.toLowerCase().includes(keyword)
+    );
+    
+    if (!hasKeywords) {
+      issues.push('No fitness-related keywords detected');
+      score -= 0.5;
+    }
+    
+    // Check for structure indicators
+    const structureIndicators = ['day', 'workout', 'exercise', 'week', 'session'];
+    const hasStructure = structureIndicators.some(indicator => 
+      textContent.toLowerCase().includes(indicator)
+    );
+    
+    if (!hasStructure) {
+      issues.push('No clear workout structure detected');
+      score -= 0.3;
+    }
+    
+    // Check for exercise names (words that might be exercises)
+    const exercisePattern = /\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g;
+    const potentialExercises = textContent.match(exercisePattern);
+    
+    if (!potentialExercises || potentialExercises.length < 3) {
+      issues.push('Few recognizable exercise names found');
+      score -= 0.2;
+    }
+    
+    return {
+      score: Math.max(0, score),
+      issues,
+      hasWorkoutContent: hasKeywords && hasStructure
+    };
+  };
+
+  // Simple and reliable structure analysis
+  const analyzeWorkoutStructure = (textContent: string) => {
+    const lines = textContent.split('\n').filter(line => line.trim().length > 0);
+    
+    // Look for clear day/workout markers
+    const dayMarkers = lines.filter(line => 
+      /^(day\s*\d+|workout\s*\d+|week\s*\d+)/i.test(line.trim())
+    );
+    
+    // Look for body part sections
+    const bodyPartMarkers = lines.filter(line => 
+      /^(chest|back|legs?|arms?|shoulders?|push|pull|upper|lower)/i.test(line.trim())
+    );
+    
+    // Look for exercise table headers
+    const tableHeaders = lines.filter(line => 
+      /exercise.*sets.*reps/i.test(line)
+    );
+    
+    return {
+      dayMarkers,
+      bodyPartMarkers,
+      tableHeaders,
+      estimatedDays: Math.max(dayMarkers.length, bodyPartMarkers.length, 1),
+      hasTableStructure: tableHeaders.length > 0
+    };
+  };
+
+  // Extract workout days with confidence
+  const extractWorkoutDays = (textContent: string, analysis: any) => {
+    const lines = textContent.split('\n').filter(line => line.trim().length > 0);
+    const workoutDays: Array<{name: string; content: string; confidence: number}> = [];
+    
+    if (analysis.dayMarkers.length > 0) {
+      // Use day markers to split content
+      let currentDay = '';
+      let currentContent = '';
+      
+      for (const line of lines) {
+        const isDayMarker = /^(day\s*\d+|workout\s*\d+)/i.test(line.trim());
+        
+        if (isDayMarker) {
+          if (currentDay && currentContent) {
+            workoutDays.push({
+              name: currentDay,
+              content: currentContent,
+              confidence: 0.8
+            });
+          }
+          currentDay = line.trim();
+          currentContent = '';
+        } else {
+          currentContent += line + '\n';
+        }
+      }
+      
+      // Add last day
+      if (currentDay && currentContent) {
+        workoutDays.push({
+          name: currentDay,
+          content: currentContent,
+          confidence: 0.8
+        });
+      }
+    } else if (analysis.bodyPartMarkers.length > 0) {
+      // Use body part markers
+      analysis.bodyPartMarkers.forEach((marker: string, index: number) => {
+        workoutDays.push({
+          name: marker,
+          content: `Body part workout: ${marker}`,
+          confidence: 0.6
+        });
+      });
+    } else {
+      // Fallback: treat as single workout
+      workoutDays.push({
+        name: 'Full Body Workout',
+        content: textContent,
+        confidence: 0.4
+      });
+    }
+    
+    return workoutDays;
+  };
+
+  // Extract exercises with confidence scoring
+  const extractExercisesWithConfidence = async (workoutDays: any[], aiService: any) => {
+    const extractedDays = [];
+    
+    for (let i = 0; i < workoutDays.length; i++) {
+      const day = workoutDays[i];
+      
+      try {
+        // Simple AI prompt
+        const prompt = `Extract exercises from: ${day.content.substring(0, 1000)}
+        
+Return JSON array: [{"name": "Exercise", "sets": 3, "reps": "8-12"}]`;
+        
+        const response = await aiService.getCoachingResponse(
+          prompt,
+          { type: 'simple_extraction' },
+          'workout_planning'
+        );
+        
+        // Simple JSON extraction
+        const jsonMatch = response.content.match(/\[[\s\S]*?\]/);
+        let exercises = [];
+        
+        if (jsonMatch) {
+          try {
+            exercises = JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            console.log('JSON parse failed, using text extraction...');
+            exercises = extractExercisesFromText(day.content);
+          }
+        } else {
+          exercises = extractExercisesFromText(day.content);
+        }
+        
+        // Ensure valid exercises
+        if (!Array.isArray(exercises) || exercises.length === 0) {
+          exercises = [{
+            name: 'Exercise 1',
+            sets: 3,
+            reps: '8-12',
+            notes: 'Please edit this exercise'
+          }];
+        }
+        
+        extractedDays.push({
+          dayNumber: i + 1,
+          dayName: day.name,
+          exercises: exercises.map((ex: any) => ({
+            name: ex.name || 'Unknown Exercise',
+            sets: parseInt(ex.sets) || 3,
+            reps: ex.reps || '8-12',
+            notes: ex.notes || ''
+          }))
+        });
+        
+      } catch (error) {
+        console.error(`Failed to process day ${i + 1}:`, error);
+        
+        // Fallback for this day
+        extractedDays.push({
+          dayNumber: i + 1,
+          dayName: day.name,
+          exercises: [{
+            name: 'Exercise 1',
+            sets: 3,
+            reps: '8-12',
+            notes: 'AI extraction failed - please edit'
+          }]
+        });
+      }
+    }
+    
+    return extractedDays;
+  };
+
+  // Simple text-based exercise extraction
+  const extractExercisesFromText = (text: string) => {
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
+    const exercises = [];
+    
+    for (const line of lines) {
+      // Skip headers
+      if (line.toLowerCase().includes('exercise') && line.toLowerCase().includes('sets')) {
+        continue;
+      }
+      
+      // Look for exercise patterns
+      const exerciseMatch = line.match(/^([A-Za-z\s\-]+?)\s+(\d+)\s+([\d,\-]+)/);
+      if (exerciseMatch) {
+        exercises.push({
+          name: exerciseMatch[1].trim(),
+          sets: parseInt(exerciseMatch[2]),
+          reps: exerciseMatch[3],
+          notes: ''
+        });
+      }
+    }
+    
+    return exercises;
+  };
+
+  // Build validated result
+  const buildValidatedResult = (extractedDays: any[], source: string, analysis: any): ExtractedWorkout => {
+    return {
+      title: `Workout Program from ${source}`,
+      days: extractedDays.length,
+      exercises: extractedDays
+    };
+  };
+
+  // Create manual template when content quality is too low
+  const createManualTemplate = (source: string, issues: string[]): ExtractedWorkout => {
+    console.log('📝 Creating manual template due to content issues:', issues);
+    
+    return {
+      title: `Manual Template - ${source}`,
+      days: 1,
+      exercises: [{
+        dayNumber: 1,
+        dayName: 'Day 1: Full Body',
+        exercises: [
+          { name: 'Exercise 1', sets: 3, reps: '8-12', notes: 'Please edit - content quality was too low for automatic extraction' },
+          { name: 'Exercise 2', sets: 3, reps: '8-12', notes: 'Issues detected: ' + issues.join(', ') },
+          { name: 'Exercise 3', sets: 3, reps: '8-12', notes: 'Edit these exercises to match your workout' }
+        ]
+      }]
+    };
+  };
+
+  // Simple fallback template
+  const createFallbackTemplate = (textContent: string, source: string): ExtractedWorkout => {
+    return {
+      title: `Fallback Template - ${source}`,
+      days: 1,
+      exercises: [{
+        dayNumber: 1,
+        dayName: 'Day 1: Full Body',
+        exercises: [
+          { name: 'Exercise 1', sets: 3, reps: '8-12', notes: 'Extraction failed - please edit' },
+          { name: 'Exercise 2', sets: 3, reps: '8-12', notes: 'Replace with your actual exercises' },
+          { name: 'Exercise 3', sets: 3, reps: '8-12', notes: 'Edit as needed' }
+        ]
+      }]
+    };
+  };
+
+  // Helper function to assess result confidence
+  const assessResultConfidence = (result: ExtractedWorkout): 'high' | 'medium' | 'low' => {
+    const totalExercises = result.exercises.reduce((total, day) => total + day.exercises.length, 0);
+    const avgExercisesPerDay = totalExercises / result.days;
+    
+    if (avgExercisesPerDay >= 4 && result.days >= 2) return 'high';
+    if (avgExercisesPerDay >= 2 && result.days >= 1) return 'medium';
+    return 'low';
   };
 
   // Convert extracted workout to StoredWorkoutTemplate format
