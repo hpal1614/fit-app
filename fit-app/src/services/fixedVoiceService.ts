@@ -99,6 +99,30 @@ class FixedVoiceService {
       isSupported: this.isSupported
     };
   }
+
+  // Add initialize method to match expected interface
+  async initialize(): Promise<boolean> {
+    // Service is already initialized in constructor
+    return this.isSupported;
+  }
+
+  // Add onStateChange method to match expected interface
+  onStateChange(callback: (state: any) => void): void {
+    // Set up state change callback
+    this.onResult((transcript, confidence) => {
+      callback({
+        isListening: this.isListening,
+        transcript,
+        confidence,
+        isSupported: this.isSupported
+      });
+    });
+  }
+
+  // Add destroy method for cleanup
+  destroy(): void {
+    this.stopListening();
+  }
 }
 
 // Export singleton instance
