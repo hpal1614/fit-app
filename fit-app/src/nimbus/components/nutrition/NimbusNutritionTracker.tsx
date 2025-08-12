@@ -4,30 +4,10 @@ import {
   Calendar, BarChart3, X, 
   ChefHat, Zap, Brain, Star, Award, Utensils, Scale,
   Mic, 
-  CheckCircle, Info, Heart, Activity
+  CheckCircle, Info, Heart, Activity, Database, Wifi, WifiOff
 } from 'lucide-react';
-
-// Food item interface
-interface FoodItem {
-  id: string;
-  name: string;
-  brand?: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  fiber?: number;
-  sugar?: number;
-  sodium?: number;
-  serving_size: string;
-  barcode?: string;
-  category: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  timestamp: Date;
-  quantity: number;
-  image?: string;
-  verified: boolean;
-  source: 'manual' | 'barcode' | 'search' | 'voice' | 'ai';
-}
+import { useNutritionAPI } from '../../../hooks/useNutritionAPI';
+import { FoodItem } from '../../../services/nutrition/types/nutrition.types';
 
 // Meal plan interface
 interface MealPlan {
@@ -61,7 +41,6 @@ export const NimbusNutritionTracker: React.FC<NimbusNutritionTrackerProps> = ({ 
   // Core state
   const [currentView, setCurrentView] = useState<'dashboard' | 'add-food' | 'barcode' | 'meal-plan' | 'analytics' | 'settings'>('dashboard');
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(false);
   
   // Food tracking state
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
@@ -69,6 +48,10 @@ export const NimbusNutritionTracker: React.FC<NimbusNutritionTrackerProps> = ({ 
   const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [voiceInput, setVoiceInput] = useState(false);
+  
+  // Nutrition API hook
+  const nutritionAPI = useNutritionAPI();
+  const { isLoading, error, searchFood, lookupBarcode, getUsageStats, getAvailableProviders } = nutritionAPI;
   
   // Meal planning state
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
@@ -195,29 +178,14 @@ export const NimbusNutritionTracker: React.FC<NimbusNutritionTrackerProps> = ({ 
   };
 
   // Food search functionality
-  const searchFood = async (query: string) => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const mockResults: FoodItem[] = [
-        {
-          id: 'search-1',
-          name: query,
-          calories: 150,
-          protein: 6,
-          carbs: 12,
-          fat: 8,
-          serving_size: '1 serving',
-          category: 'breakfast',
-          timestamp: new Date(),
-          quantity: 1,
-          verified: true,
-          source: 'search'
-        }
-      ];
-      setSearchResults(mockResults);
-      setIsLoading(false);
-    }, 1000);
+  const handleSearchFood = async (query: string) => {
+    const result = await searchFood(query);
+    if (result.success) {
+      setSearchResults(result.results);
+    } else {
+      console.error('Search failed:', result.error);
+      setSearchResults([]);
+    }
   };
 
   // Add food item
@@ -263,6 +231,11 @@ export const NimbusNutritionTracker: React.FC<NimbusNutritionTrackerProps> = ({ 
         <div>
           <h2 className="text-2xl font-bold text-white">Nutrition Dashboard</h2>
           <p className="text-white/80">Track your daily nutrition goals</p>
+          {error && (
+            <div className="mt-2 p-2 bg-red-500/20 border border-red-500/40 rounded-lg">
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-3">
           <button 
@@ -413,6 +386,38 @@ export const NimbusNutritionTracker: React.FC<NimbusNutritionTrackerProps> = ({ 
         </button>
       </div>
 
+      {/* API Status */}
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-white font-medium flex items-center space-x-2">
+            <Database className="w-5 h-5" />
+            <span>API Status</span>
+          </h3>
+          <div className="flex items-center space-x-2">
+            {getAvailableProviders().length > 0 ? (
+              <Wifi className="w-4 h-4 text-green-400" />
+            ) : (
+              <WifiOff className="w-4 h-4 text-red-400" />
+            )}
+            <span className="text-white/60 text-sm">
+              {getAvailableProviders().length} APIs available
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {['openfoodfacts', 'fatsecret', 'spoonacular', 'nutritionix', 'usda'].map(api => (
+            <div key={api} className="flex items-center space-x-1">
+              {getAvailableProviders().includes(api) ? (
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              ) : (
+                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+              )}
+              <span className="text-white/60 text-xs capitalize">{api}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Today's meals */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
         <div className="flex items-center justify-between mb-4">
@@ -496,14 +501,14 @@ export const NimbusNutritionTracker: React.FC<NimbusNutritionTrackerProps> = ({ 
               className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <button
-            onClick={() => searchFood(searchQuery)}
-            disabled={!searchQuery.trim() || isLoading}
-            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-          >
-            {isLoading ? <Search className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-            <span>Search</span>
-          </button>
+                  <button
+          onClick={() => handleSearchFood(searchQuery)}
+          disabled={!searchQuery.trim() || isLoading}
+          className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+        >
+          {isLoading ? <Search className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+          <span>Search</span>
+        </button>
         </div>
         
         <div className="flex space-x-2 mb-4">
@@ -524,13 +529,29 @@ export const NimbusNutritionTracker: React.FC<NimbusNutritionTrackerProps> = ({ 
             {searchResults.map(item => (
               <div key={item.id} className="bg-white/5 border border-white/20 rounded-lg p-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-white font-medium">{item.name}</h4>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h4 className="text-white font-medium">{item.name}</h4>
+                      {item.australianProduct && (
+                        <span className="bg-green-500/20 text-green-300 text-xs px-2 py-1 rounded-full">
+                          AU
+                        </span>
+                      )}
+                      {item.verified && (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      )}
+                    </div>
                     <p className="text-white/60 text-sm">{item.serving_size} • {item.calories} calories</p>
                     <div className="flex space-x-4 text-xs text-white/60 mt-1">
                       <span>P: {item.protein}g</span>
                       <span>C: {item.carbs}g</span>
                       <span>F: {item.fat}g</span>
+                    </div>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <span className="text-white/40 text-xs capitalize">Source: {item.source}</span>
+                      <span className="text-white/40 text-xs">
+                        Confidence: {Math.round(item.confidence * 100)}%
+                      </span>
                     </div>
                   </div>
                   <button
@@ -538,7 +559,7 @@ export const NimbusNutritionTracker: React.FC<NimbusNutritionTrackerProps> = ({ 
                       addFoodItem(item);
                       setCurrentView('dashboard');
                     }}
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2"
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2 ml-4"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add</span>

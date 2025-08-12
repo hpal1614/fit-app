@@ -7,6 +7,7 @@ import {
   RefreshCw, Shield, Lightbulb, Users, Wifi
 } from 'lucide-react';
 import { getFixedVoiceService } from '../services/fixedVoiceService';
+// import { getContextualVoiceService, WorkoutContext } from '../services/contextualVoiceService';
 import { nimbusAI } from '../nimbus/services/NimbusAIService';
 import { EXERCISE_DATABASE, getExercisesByMuscleGroup, searchExercises } from '../constants/exercises';
 import { MuscleGroup } from '../types/workout';
@@ -86,6 +87,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
   const [selectedReason, setSelectedReason] = useState<'difficulty' | 'pain'>('difficulty');
   const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([]);
   const [voiceService, setVoiceService] = useState<ReturnType<typeof getFixedVoiceService> | null>(null);
+  // const [contextualVoiceService, setContextualVoiceService] = useState<ReturnType<typeof getContextualVoiceService> | null>(null);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [voiceConfidence, setVoiceConfidence] = useState(0);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0); // Start with first exercise (index 0)
@@ -192,6 +194,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const voiceServiceRef = useRef<ReturnType<typeof getFixedVoiceService> | null>(null);
+  // const contextualVoiceServiceRef = useRef<ReturnType<typeof getContextualVoiceService> | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // Carousel scroll handler
@@ -376,7 +379,49 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
     playSound('button');
   };
 
-  // Voice System
+  // Enhanced Contextual Voice System
+  // const toggleContextualVoice = async () => {
+  //   console.log('🧠 toggleContextualVoice called, current state:', { 
+  //     isListening, 
+  //     contextualVoiceServiceRef: !!contextualVoiceServiceRef.current,
+  //     hasContext: !!contextualVoiceServiceRef.current?.getCurrentState()?.hasContext
+  //   });
+  //   
+  //   initAudio();
+  //   
+  //   if (!contextualVoiceServiceRef.current) {
+  //     console.error('❌ Contextual voice service not available');
+  //     showSmartSuggestion('Voice service not available. Please check microphone permissions.');
+  //     return;
+  //   }
+  //   
+  //   if (isListening) {
+  //     console.log('🛑 Stopping contextual voice listening...');
+  //     contextualVoiceServiceRef.current.stopListening();
+  //     setIsListening(false);
+  //     setIsWakeWordMode(false);
+  //     setCouchResponse('');
+  //     stopAllAudio();
+  //     setVoiceText('🧠 Contextual AI off');
+  //   } else {
+  //     console.log('🧠 Starting contextual voice listening...');
+  //     const success = await contextualVoiceServiceRef.current.startListening();
+  //     if (success) {
+  //       setIsListening(true);
+  //       setIsWakeWordMode(false);
+  //       setCouchResponse('');
+  //       setVoiceText('🧠 Listening... Say "Hey Coach" for smart assistance');
+  //       showSmartSuggestion('Contextual voice active! I understand your workout progress and can make smart suggestions.');
+  //     } else {
+  //       console.error('❌ Failed to start contextual voice recognition');
+  //       showSmartSuggestion('Failed to start voice recognition. Please check microphone permissions.');
+  //     }
+  //   }
+  //   
+  //   playSound('button');
+  // };
+
+  // Legacy voice system (kept for compatibility)
   const toggleVoice = async () => {
     console.log('🎤 toggleVoice called, current state:', { isListening, voiceServiceRef: !!voiceServiceRef.current });
     initAudio();
@@ -504,6 +549,16 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
         return nextTime;
       });
     }, 1000);
+  };
+
+  const stopRestTimer = () => {
+    console.log('Stopping rest timer');
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setTimerRunning(false);
+    playSound('button');
   };
 
   // Log Set System
@@ -717,6 +772,70 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
   useEffect(() => {
     loadExerciseHistory();
   }, [currentExerciseIndex]);
+
+  // Update workout context for contextual voice service
+  // useEffect(() => {
+  //   if (contextualVoiceServiceRef.current && contextualVoiceServiceRef.current.updateWorkoutContext) {
+  //     const currentExercise = workoutExercises[currentExerciseIndex];
+  //     const currentState = getExerciseState(currentExerciseIndex);
+  //     
+  //     const workoutContext: WorkoutContext = {
+  //       currentExercise: {
+  //         name: currentExercise?.name || 'Unknown Exercise',
+  //         index: currentExerciseIndex,
+  //         totalSets: getTotalSets(currentExerciseIndex),
+  //         completedSets: currentState.completedSets
+  //       },
+  //       currentSet: {
+  //         weight: currentState.weight,
+  //         reps: currentState.reps,
+  //         rpe: currentState.rpe,
+  //         setNumber: currentState.completedSets + 1
+  //       },
+  //       previousSets: currentState.history.map(set => ({
+  //         weight: set.weight,
+  //         reps: set.reps,
+  //         rpe: set.rpe,
+  //         timestamp: new Date() // You might have actual timestamps
+  //       })),
+  //       exerciseHistory: exerciseHistory.map(set => ({
+  //         weight: set.weight,
+  //         reps: set.reps,
+  //         rpe: set.rpe,
+  //         date: new Date() // Replace with actual dates
+  //       })),
+  //       workoutProgress: {
+  //         totalExercises: workoutExercises.length,
+  //         currentExerciseIndex: currentExerciseIndex,
+  //         overallProgress: calculateOverallProgress()
+  //       },
+  //       restTimer: {
+  //         isRunning: timerRunning,
+  //         timeRemaining: restTime
+  //       },
+  //       personalRecords: {
+  //         oneRepMax: calculateOneRepMax(currentState.weight, currentState.reps),
+  //         bestSet: getBestSetForExercise(currentExerciseIndex)
+  //       },
+  //       preferences: {
+  //         defaultIncrement: currentIncrement,
+  //         targetRPE: 3, // Or get from user preferences
+  //         preferredRestTime: 90 // Or get from settings
+  //       }
+  //     };
+
+  //     contextualVoiceServiceRef.current.updateWorkoutContext(workoutContext);
+  //     console.log('🧠 Workout context updated in voice service');
+  //   }
+  // }, [
+  //   currentExerciseIndex, 
+  //   currentExerciseState.weight, 
+  //   currentExerciseState.reps, 
+  //   currentExerciseState.rpe,
+  //   currentExerciseState.completedSets,
+  //   timerRunning,
+  //   restTime
+  // ]);
 
   // Load exercise history for smart defaults
   const loadExerciseHistory = async () => {
@@ -1682,6 +1801,145 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
     // === FALLBACK ===
     showSmartSuggestion(`🎤 Heard: "${transcript}" - Try: "add weight", "log set", "start timer"`);
   };
+
+  // Helper functions for contextual voice service
+  // const calculateOneRepMax = (weight: number, reps: number): number => {
+  //   // Brzycki formula: 1RM = Weight × (36 / (37 - Reps))
+  //   if (reps === 1) return weight;
+  //   return Math.round(weight * (36 / (37 - reps)));
+  // };
+
+  // const getBestSetForExercise = (exerciseIndex: number): { weight: number; reps: number } => {
+  //   const state = getExerciseState(exerciseIndex);
+  //   if (state.history.length === 0) {
+  //     return { weight: state.weight, reps: state.reps };
+  //   }
+  //   
+  //   // Find set with highest estimated 1RM
+  //   const bestSet = state.history.reduce((best, current) => {
+  //     const currentMax = calculateOneRepMax(current.weight, current.reps);
+  //     const bestMax = calculateOneRepMax(best.weight, best.reps);
+  //     return currentMax > bestMax ? current : best;
+  //   });
+  //   
+  //   return { weight: bestSet.weight, reps: bestSet.reps };
+  // };
+
+  // Enhanced contextual command processor
+  // const processContextualVoiceCommand = (contextualResponse: string) => {
+  //   console.log('🧠 Processing contextual command:', contextualResponse);
+  //   
+  //   const [action, ...params] = contextualResponse.split(':');
+  //   
+  //   try {
+  //     switch (action) {
+  //       case 'ADJUST_WEIGHT':
+  //         const newWeight = parseInt(params[0]);
+  //         if (newWeight > 0) {
+  //           updateExerciseState(currentExerciseIndex, { weight: newWeight });
+  //           speakCouchResponse(`Weight adjusted to ${newWeight} pounds.`);
+  //           setVoiceText(`🧠 Weight set to ${newWeight} lbs`);
+  //         }
+  //         break;
+
+  //       case 'ADJUST_REPS':
+  //         const newReps = parseInt(params[0]);
+  //         if (newReps > 0) {
+  //           updateExerciseState(currentExerciseIndex, { reps: newReps });
+  //           speakCouchResponse(`Reps set to ${newReps}.`);
+  //           setVoiceText(`🧠 Reps set to ${newReps}`);
+  //         }
+  //         break;
+
+  //       case 'LOG_SET':
+  //         if (params.length >= 2) {
+  //           const weight = parseInt(params[0]);
+  //           const reps = parseInt(params[1]);
+  //           updateExerciseState(currentExerciseIndex, { weight, reps });
+  //           setTimeout(() => logSet(), 500);
+  //           speakCouchResponse(`Logging ${reps} reps at ${weight} pounds.`);
+  //           setVoiceText(`🧠 Logged: ${weight}lbs × ${reps} reps`);
+  //         } else {
+  //           logSet();
+  //           speakCouchResponse(`Set logged!`);
+  //           setVoiceText(`🧠 Set logged`);
+  //         }
+  //         break;
+
+  //       case 'SUGGEST_WEIGHT':
+  //         const suggestedWeight = parseInt(params[0]);
+  //         const reason = params[1] || '';
+  //         speakCouchResponse(`I suggest ${suggestedWeight} pounds. ${reason}`);
+  //         setVoiceText(`💡 Suggestion: ${suggestedWeight} lbs`);
+  //         showSmartSuggestion(`AI suggests ${suggestedWeight} lbs: ${reason}`);
+  //         break;
+
+  //       case 'START_TIMER':
+  //         startRestTimer();
+  //         speakCouchResponse('Rest timer started.');
+  //         setVoiceText('🧠 Timer started');
+  //         break;
+
+  //       case 'STOP_TIMER':
+  //         stopRestTimer();
+  //         speakCouchResponse('Rest timer stopped.');
+  //         setVoiceText('🧠 Timer stopped');
+  //         break;
+
+  //       case 'NEXT_EXERCISE':
+  //         if (currentExerciseIndex < workoutExercises.length - 1) {
+  //           setCurrentExerciseIndex(currentExerciseIndex + 1);
+  //           const nextExercise = workoutExercises[currentExerciseIndex + 1];
+  //           speakCouchResponse(`Moving to ${nextExercise.name}.`);
+  //           setVoiceText(`🧠 Next: ${nextExercise.name}`);
+  //         } else {
+  //           speakCouchResponse('This is the last exercise.');
+  //           setVoiceText('🧠 Last exercise');
+  //         }
+  //         break;
+
+  //       case 'REPORT':
+  //         const reportText = params.join(':');
+  //         speakCouchResponse(reportText);
+  //         setVoiceText('🧠 ' + reportText.substring(0, 50) + (reportText.length > 50 ? '...' : ''));
+  //         break;
+
+  //       case 'CONFIRM':
+  //         const confirmText = params.join(':');
+  //         speakCouchResponse(confirmText);
+  //         setVoiceText('✅ ' + confirmText);
+  //         break;
+
+  //       case 'HELP':
+  //         const helpText = 'I can adjust weights, log sets, manage timers, check progress, compare with history, and suggest improvements based on your workout context.';
+  //         speakCouchResponse(helpText);
+  //         setVoiceText('🧠 Help provided');
+  //         break;
+
+  //       case 'UNKNOWN':
+  //         const unknownCommand = params.join(':');
+  //         speakCouchResponse(`I didn't understand "${unknownCommand}". Try asking about your progress, adjusting weight, or logging sets.`);
+  //         setVoiceText('❓ Command unclear');
+  //         break;
+
+  //       default:
+  //         console.warn('🧠 Unknown contextual action:', action);
+  //         speakCouchResponse('I understood your request but need to implement that action.');
+  //         setVoiceText('🔧 Action pending');
+  //     }
+
+  //     // Auto-exit wake word mode after processing
+  //     setTimeout(() => {
+  //       setIsWakeWordMode(false);
+  //       setVoiceText('🧠 Say "Hey Coach" for contextual assistance');
+  //     }, 3000);
+
+  //   } catch (error) {
+  //     console.error('🧠 Error processing contextual command:', error);
+  //     speakCouchResponse('Sorry, I had trouble processing that contextual command.');
+  //     setVoiceText('❌ Processing error');
+  //   }
+  // };
 
   // Show Smart Suggestion
   const showSmartSuggestion = (message: string, duration: number = 4000) => {
@@ -3627,12 +3885,17 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
       )}
 
       {/* Rest Timer Settings Modal */}
-      <RestTimerSettings
-        isVisible={showRestTimerSettings}
-        onClose={() => setShowRestTimerSettings(false)}
-        settings={restTimerSettings}
-        onSettingsChange={setRestTimerSettings}
-      />
+              {showRestTimerSettings && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <RestTimerSettings
+              onSave={(settings) => {
+                setRestTimerSettings(settings);
+                setShowRestTimerSettings(false);
+              }}
+              className="max-w-md w-full"
+            />
+          </div>
+        )}
 
       {/* Quick Start Timer Button */}
       {!timerRunning && (

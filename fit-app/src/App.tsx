@@ -1,47 +1,50 @@
 import { useState, useEffect } from 'react';
-// import { HomeDashboard } from './components/HomeDashboard';
-// import { EnhancedWorkoutLogger } from './components/EnhancedWorkoutLogger';
 import { HomeDashboard, EnhancedWorkoutLogger } from './components';
-import ProgramSelection from './components/onboarding/ProgramSelection';
-import { PDFDebugInterface } from './components/PDFDebugInterface';
-// Temporarily commented out to fix build
-// import { WorkoutExtractionDemo } from './components/WorkoutExtractionDemo';
+import { HomePage } from './components/HomePage';
+import { NutritionAPITest } from './components/NutritionAPITest';
+import { APIDebugTest } from './components/APIDebugTest';
+import { ComprehensiveAPITest } from './components/ComprehensiveAPITest';
+import { NimbusNutritionTracker } from './nimbus/components/nutrition/NimbusNutritionTracker';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'onboarding' | 'debug' | 'extraction-demo'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'nutrition' | 'test' | 'debug' | 'comprehensive'>('home');
   const [isAppReady, setIsAppReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Handle deep-link via hash: #onboarding, #templates
-    const applyHashRoute = () => {
-      const hash = (window.location.hash || '').toLowerCase();
-      if (hash.includes('onboarding') || hash.includes('templates')) {
-        setCurrentView('onboarding');
-      } else if (hash.includes('debug') || hash.includes('pdf-test')) {
-        setCurrentView('debug');
-      } else if (hash.includes('extraction-demo') || hash.includes('workout-extraction')) {
-        setCurrentView('extraction-demo');
-      }
-    };
-    applyHashRoute();
-    window.addEventListener('hashchange', applyHashRoute);
-    return () => window.removeEventListener('hashchange', applyHashRoute);
-  }, []);
 
   useEffect(() => {
     // Initialize the application
     const initializeApp = async () => {
       try {
+        // Check for required features
+        const hasVoiceSupport = 'speechSynthesis' in window && 
+          ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+        
         const hasIndexedDB = 'indexedDB' in window;
+        
         if (!hasIndexedDB) {
-          setError('Your browser does not support required features');
-          return;
+          throw new Error('This app requires IndexedDB support for local data storage.');
         }
+
+        // Check for API keys in development
+        const hasApiKeys = import.meta.env.VITE_OPENROUTER_API_KEY ||
+                          import.meta.env.VITE_GROQ_API_KEY ||
+                          import.meta.env.VITE_GOOGLE_AI_API_KEY;
+
+        if (!hasApiKeys) {
+          console.warn('No AI API keys found. AI features will be limited.');
+        }
+
+        if (!hasVoiceSupport) {
+          console.warn('Voice features are not supported in this browser.');
+        }
+
+        // Small delay to ensure everything is loaded
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         setIsAppReady(true);
       } catch (err) {
-        setError('Failed to initialize app');
+        setError(err instanceof Error ? err.message : 'Failed to initialize application');
       }
     };
 
@@ -50,11 +53,17 @@ function App() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="bg-red-500/10 border border-red-500 rounded-xl p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-red-400 mb-4">App Error</h1>
-          <p className="text-red-300 mb-2">{error}</p>
-          <button onClick={() => window.location.reload()} className="mt-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Reload</button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">App Error</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-fitness-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Reload App
+          </button>
         </div>
       </div>
     );
@@ -62,125 +71,181 @@ function App() {
 
   if (!isAppReady) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="text-white/80">Loading...</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-fitness-blue mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">AI Fitness Coach</h1>
+          <p className="text-gray-600">Loading your personal trainer...</p>
+          
+          {/* Loading features checklist */}
+          <div className="mt-8 space-y-2 text-sm text-gray-500">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-fitness-blue rounded-full animate-pulse"></div>
+              <span>Initializing voice recognition</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-fitness-green rounded-full animate-pulse"></div>
+              <span>Loading AI coaching system</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-fitness-orange rounded-full animate-pulse"></div>
+              <span>Setting up workout database</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-fitness-purple rounded-full animate-pulse"></div>
+              <span>Preparing analytics dashboard</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-fitness-red rounded-full animate-pulse"></div>
+              <span>Loading nutrition API</span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
+  const handleNavigate = (view: string) => {
+    setCurrentView(view as any);
+  };
+
   const renderCurrentView = () => {
-    try {
-      if (currentView === 'onboarding') {
+    switch (currentView) {
+      case 'home':
         return (
-          <ProgramSelection
-            onChoosePdf={() => (window.location.hash = '#templates-pdf')}
-            onChooseAI={() => (window.location.hash = '#templates-ai')}
-            onChooseBrowse={() => (window.location.hash = '#templates-browse')}
-            onBack={() => (window.location.hash = '')}
+          <HomeDashboard 
+            onNavigate={() => setCurrentView('workout')} 
+            workout={{
+              isActive: false,
+              duration: 0,
+              getContext: () => ({})
+            }}
+            appSettings={{}}
+            onSettingsChange={() => {}}
           />
         );
-      }
-
-      switch (currentView) {
-        case 'home':
-          return (
-            <HomeDashboard
-              onNavigate={() => setCurrentView('workout')}
-              workout={{ isActive: false, duration: 0, getContext: () => ({}) }}
-              appSettings={{}}
-              onSettingsChange={() => {}}
-            />
-          );
-        case 'debug':
-          return (
-            <div className="min-h-screen bg-gray-100 p-6">
-              <div className="max-w-6xl mx-auto">
-                <div className="mb-6">
-                  <button
-                    onClick={() => {
-                      setCurrentView('home');
-                      window.location.hash = '';
-                    }}
-                    className="text-blue-600 hover:text-blue-800 mb-4"
-                  >
-                    ← Back to Home
-                  </button>
-                  <h1 className="text-3xl font-bold text-gray-900">PDF Processing Debug Interface</h1>
-                  <p className="text-gray-600 mt-2">
-                    Comprehensive testing and debugging tool for PDF processing system
-                  </p>
-                </div>
-                <PDFDebugInterface />
-              </div>
-            </div>
-          );
-        case 'extraction-demo':
-          return (
-            <div className="min-h-screen bg-gray-100 p-6">
-              <div className="max-w-6xl mx-auto">
-                <div className="mb-6">
-                  <button
-                    onClick={() => {
-                      setCurrentView('home');
-                      window.location.hash = '';
-                    }}
-                    className="text-blue-600 hover:text-blue-800 mb-4"
-                  >
-                    ← Back to Home
-                  </button>
-                  <h1 className="text-3xl font-bold text-gray-900">Workout PDF Extraction Demo</h1>
-                  <p className="text-gray-600 mt-2">
-                    Test the automatic extraction of workout data from your PDF format
-                  </p>
-                  <p className="text-orange-600 mt-4">
-                    📧 Demo temporarily disabled due to build issues. Please use the PDF Debug Interface instead!
-                  </p>
-                </div>
-                {/* <WorkoutExtractionDemo /> */}
-              </div>
-            </div>
-          );
-        case 'workout':
-          return (
-            <EnhancedWorkoutLogger
-              appSettings={{
-                autoAdvanceEnabled: true,
-                defaultRestTime: 120,
-                soundEnabled: true,
-                notificationsEnabled: true,
-                voiceCommandsEnabled: true,
-                aiCoachingEnabled: true,
-                offlineMode: false,
-                debugMode: false,
-              }}
-              onSettingsChange={() => {}}
-            />
-          );
-        default:
-          return (
-            <HomeDashboard
-              onNavigate={() => setCurrentView('workout')}
-              workout={{ isActive: false, duration: 0, getContext: () => ({}) }}
-              appSettings={{}}
-              onSettingsChange={() => {}}
-            />
-          );
-      }
-    } catch (err) {
-      console.error('Component render error:', err);
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-          <div className="bg-red-500/10 border border-red-500 rounded-xl p-8 text-center max-w-md">
-            <h1 className="text-2xl font-bold text-red-400 mb-4">Component Error</h1>
-            <p className="text-red-300 mb-4">There was an error loading the component.</p>
-            <button onClick={() => window.location.reload()} className="mt-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Reload</button>
-          </div>
-        </div>
-      );
+      case 'workout':
+        return (
+          <EnhancedWorkoutLogger 
+            appSettings={{
+              autoAdvanceEnabled: true,
+              defaultRestTime: 120,
+              soundEnabled: true,
+              notificationsEnabled: true,
+              voiceCommandsEnabled: true,
+              aiCoachingEnabled: true,
+              offlineMode: false,
+              debugMode: false
+            }}
+            onSettingsChange={() => {}}
+          />
+        );
+      case 'nutrition':
+        return <NimbusNutritionTracker />;
+      case 'test':
+        return <NutritionAPITest />;
+      case 'debug':
+        return <APIDebugTest />;
+      case 'comprehensive':
+        return <ComprehensiveAPITest />;
+      default:
+        return (
+          <HomeDashboard 
+            onNavigate={() => setCurrentView('workout')} 
+            workout={{
+              isActive: false,
+              duration: 0,
+              getContext: () => ({})
+            }}
+            appSettings={{}}
+            onSettingsChange={() => {}}
+          />
+        );
     }
   };
 
-  return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">{renderCurrentView()}</div>;
+  // Don't show navigation for the main app views (home, workout)
+  if (currentView === 'home' || currentView === 'workout') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+        {renderCurrentView()}
+      </div>
+    );
+  }
+
+  // Show navigation for nutrition and testing views
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      {/* Navigation */}
+      <nav className="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <button
+            onClick={() => setCurrentView('home')}
+            className="text-2xl font-bold text-white hover:text-blue-300 transition-colors"
+          >
+            Fit App
+          </button>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setCurrentView('workout')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                currentView === 'workout' 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              💪 Workout
+            </button>
+            <button
+              onClick={() => setCurrentView('nutrition')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                currentView === 'nutrition' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              🍎 Nutrition
+            </button>
+            <button
+              onClick={() => setCurrentView('test')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                currentView === 'test' 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              API Test
+            </button>
+            <button
+              onClick={() => setCurrentView('debug')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                currentView === 'debug' 
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              Debug
+            </button>
+            <button
+              onClick={() => setCurrentView('comprehensive')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                currentView === 'comprehensive' 
+                  ? 'bg-purple-500 text-white' 
+                  : 'bg-white/10 text-white/80 hover:bg-white/20'
+              }`}
+            >
+              🧪 Test
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Content */}
+      <main className="max-w-6xl mx-auto p-6">
+        {renderCurrentView()}
+      </main>
+    </div>
+  );
 }
 
 export default App;
