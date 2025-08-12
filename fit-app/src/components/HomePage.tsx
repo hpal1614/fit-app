@@ -6,12 +6,12 @@ import {
   Camera, 
   Mic, 
   Search, 
-  Settings, 
+  // Settings, 
   Users,
   Dumbbell,
   Heart,
   Target,
-  Trophy
+  // Trophy
 } from 'lucide-react';
 
 interface HomePageProps {

@@ -26,9 +26,9 @@ const MobileWorkoutInterface: React.FC<MobileWorkoutInterfaceProps> = ({
   const [workoutTime, setWorkoutTime] = useState(0);
 
   useEffect(() => {
-    if (currentExercise && currentExercise.startTime) {
+    if (currentExercise && (currentExercise as any).startTime) {
       const interval = setInterval(() => {
-        setWorkoutTime(Math.floor((Date.now() - currentExercise.startTime!.getTime()) / 1000));
+        setWorkoutTime(Math.floor((Date.now() - (currentExercise as any).startTime!.getTime()) / 1000));
       }, 1000);
       return () => clearInterval(interval);
     }

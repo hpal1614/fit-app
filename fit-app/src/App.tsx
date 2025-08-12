@@ -5,6 +5,9 @@ import { NutritionAPITest } from './components/NutritionAPITest';
 import { APIDebugTest } from './components/APIDebugTest';
 import { ComprehensiveAPITest } from './components/ComprehensiveAPITest';
 import { NimbusNutritionTracker } from './nimbus/components/nutrition/NimbusNutritionTracker';
+import { UserFriendlyNutritionTracker } from './components/UserFriendlyNutritionTracker';
+import { SimpleNutritionTracker } from './components/SimpleNutritionTracker';
+import { TestNutritionUI } from './components/TestNutritionUI';
 import './App.css';
 
 function App() {
@@ -141,7 +144,7 @@ function App() {
           />
         );
       case 'nutrition':
-        return <NimbusNutritionTracker />;
+        return <UserFriendlyNutritionTracker />;
       case 'test':
         return <NutritionAPITest />;
       case 'debug':
@@ -188,11 +191,7 @@ function App() {
           <div className="flex space-x-4">
             <button
               onClick={() => setCurrentView('workout')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                currentView === 'workout' 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
-              }`}
+              className="px-4 py-2 rounded-lg transition-colors bg-white/10 text-white/80 hover:bg-white/20"
             >
               💪 Workout
             </button>

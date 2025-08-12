@@ -32,9 +32,12 @@ import { EnhancedWorkoutLogger } from './EnhancedWorkoutLogger';
 import { IntegratedAICoach } from './ai/IntegratedAICoach';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { NimbusNutritionTracker } from '../nimbus/components/nutrition/NimbusNutritionTracker';
+import { TestNutritionUI } from './TestNutritionUI';
+import { UserFriendlyNutritionTracker } from './UserFriendlyNutritionTracker';
 import { WeeklyWorkoutDisplay } from './WeeklyWorkoutDisplay';
 import { useWorkout } from '../hooks/useWorkout';
-import { workoutStorageService, DayWorkout, StoredWorkoutTemplate } from '../services/workoutStorageService';
+import { workoutStorageService, DayWorkout } from '../services/workoutStorageService';
+import type { StoredWorkoutTemplate } from '../services/workoutStorageService';
 
 interface WidgetProps {
   title: string;
@@ -73,7 +76,7 @@ interface HomeDashboardProps {
 }
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({ 
-  onNavigate, 
+  // onNavigate, 
   workout, 
   appSettings, 
   onSettingsChange 
@@ -233,7 +236,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     };
 
     try {
-      await workoutStorageService.saveWorkoutTemplate(sampleTemplate);
+      await workoutStorageService.saveWorkoutTemplate({
+        ...sampleTemplate,
+        updatedAt: new Date()
+      });
       await workoutStorageService.activateWorkoutTemplate(sampleTemplate.id);
       console.log('Sample template added and activated successfully');
       
@@ -414,7 +420,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <span>Back to Home</span>
           </button>
         </div>
-        <NimbusNutritionTracker />
+        <UserFriendlyNutritionTracker />
       </div>
     );
   }
