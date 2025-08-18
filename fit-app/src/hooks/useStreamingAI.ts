@@ -199,8 +199,7 @@ export const useStreamingAI = (options: UseStreamingAIOptions = {}) => {
             "• Days per week (3/4/5/6) ",
             "Once you provide these details, I'll create your complete 8-week program! 🎯"
           ];
-        } else if ((lowerMessage.includes('muscle') || lowerMessage.includes('gym') || lowerMessage.includes('60') || lowerMessage.includes('5')) && 
-                   (lowerMessage.includes('muscle') || lowerMessage.includes('gym') || lowerMessage.includes('60') || lowerMessage.includes('5'))) {
+        } else if (lowerMessage.includes('muscle') || lowerMessage.includes('gym') || lowerMessage.includes('60') || lowerMessage.includes('5') || lowerMessage.includes('4 years') || lowerMessage.includes('training')) {
           // Handle parameter-only responses (when user provides details without context)
           const experienceLevel = lowerMessage.includes('beginner') || lowerMessage.includes('novice') || lowerMessage.includes('new') || lowerMessage.includes('start') ? 'beginner' : 
                                  lowerMessage.includes('intermediate') || lowerMessage.includes('some experience') || lowerMessage.includes('2 years') || lowerMessage.includes('3 years') ? 'intermediate' : 
@@ -270,6 +269,51 @@ export const useStreamingAI = (options: UseStreamingAIOptions = {}) => {
               "Please make sure you've provided all the required information: ",
               "experience level, goal, equipment, time, and frequency. ",
               "Try asking again with all the details! 💪"
+            ];
+          }
+        } else if (lowerMessage === 'workout' || lowerMessage === 'workouts') {
+          // Handle simple "workout" requests - generate a default template
+          const profile: UserProfile = {
+            experienceLevel: 'intermediate',
+            primaryGoal: 'muscle_building',
+            equipment: 'gym',
+            timePerSession: 60,
+            daysPerWeek: 4
+          };
+          
+          try {
+            const template = TemplateGenerator.generateWorkoutTemplate(profile);
+            
+            let workoutTable = '';
+            template.workouts.forEach((workout, index) => {
+              workoutTable += `\n📅 **${workout.name}** (${workout.notes})\n`;
+              workoutTable += `| Exercise | Sets | Reps | Rest |\n`;
+              workoutTable += `|----------|------|------|------|\n`;
+              
+              workout.exercises.forEach(exercise => {
+                const sets = exercise.sets.length;
+                const reps = exercise.sets[0]?.reps || '8-12';
+                const rest = exercise.sets[0]?.rest || '60-90s';
+                workoutTable += `| ${exercise.name} | ${sets} | ${reps} | ${rest} |\n`;
+              });
+              workoutTable += `\n`;
+            });
+            
+            responses = [
+              `Perfect! I've created a workout template for you! 💪 `,
+              `**Template: ${template.name}** `,
+              `**Description:** ${template.description} `,
+              `\n${workoutTable}`,
+              `\n**Progression Plan:** ${template.progressionPlan} `,
+              `\n**Notes:** ${template.notes.join(', ')} `,
+              `\n💾 **Save Template:** Click the "Save Template" button below to use this in your workout logger! `,
+              `\n🤔 **Want to customize?** Tell me your experience level, goal, equipment, time, and frequency for a personalized plan! `,
+              `\n🍎 **Want Nutrition Plan?** Just ask for a 'nutrition plan' to complement your workouts! 🎯`
+            ];
+          } catch (error) {
+            responses = [
+              "I'm having trouble generating your workout template. ",
+              "Please provide your experience level, goal, equipment, time, and frequency for a personalized plan! 💪"
             ];
           }
         } else if (lowerMessage.includes('beginner') || lowerMessage.includes('start') || lowerMessage.includes('new')) {
