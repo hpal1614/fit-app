@@ -83,33 +83,44 @@ export const useStreamingAI = (options: UseStreamingAIOptions = {}) => {
           ];
         }
       }
-      // Workout Planning
-      else if (lowerMessage.includes('workout') || lowerMessage.includes('routine') || lowerMessage.includes('exercise')) {
-        // Check for template creation requests with parameters
-        if (lowerMessage.includes('create') || lowerMessage.includes('make') || lowerMessage.includes('generate') || lowerMessage.includes('template')) {
-          // Enhanced parameter extraction
-          const experienceLevel = lowerMessage.includes('beginner') ? 'beginner' : 
-                                 lowerMessage.includes('intermediate') ? 'intermediate' : 
-                                 lowerMessage.includes('advanced') ? 'advanced' : null;
+      // Workout Planning - Enhanced Template Detection
+      else if (lowerMessage.includes('workout') || lowerMessage.includes('routine') || lowerMessage.includes('exercise') || 
+               lowerMessage.includes('program') || lowerMessage.includes('training') || lowerMessage.includes('plan') ||
+               lowerMessage.includes('8 week') || lowerMessage.includes('weeks') || lowerMessage.includes('template')) {
+        
+        // Enhanced template keyword detection
+        const templateKeywords = [
+          'template', 'plan', 'routine', 'program', 'workout', 'training',
+          'create workout', 'make workout', 'generate workout', 'design workout',
+          'week program', 'weeks program', '8 week', 'weekly plan', 'create', 'make', 'generate'
+        ];
+        
+        const isTemplateRequest = templateKeywords.some(keyword => lowerMessage.includes(keyword));
+        
+        if (isTemplateRequest) {
+          // Enhanced parameter extraction with more variations
+          const experienceLevel = lowerMessage.includes('beginner') || lowerMessage.includes('novice') || lowerMessage.includes('new') ? 'beginner' : 
+                                 lowerMessage.includes('intermediate') || lowerMessage.includes('some experience') ? 'intermediate' : 
+                                 lowerMessage.includes('advanced') || lowerMessage.includes('expert') || lowerMessage.includes('experienced') ? 'advanced' : null;
           
-          const primaryGoal = lowerMessage.includes('muscle building') ? 'muscle_building' :
-                             lowerMessage.includes('weight loss') ? 'weight_loss' :
-                             lowerMessage.includes('strength') ? 'strength' :
-                             lowerMessage.includes('athletic') ? 'athletic' : null;
+          const primaryGoal = lowerMessage.includes('muscle building') || lowerMessage.includes('gain muscle') || lowerMessage.includes('build muscle') ? 'muscle_building' :
+                             lowerMessage.includes('weight loss') || lowerMessage.includes('lose weight') || lowerMessage.includes('fat loss') ? 'weight_loss' :
+                             lowerMessage.includes('strength') || lowerMessage.includes('get stronger') ? 'strength' :
+                             lowerMessage.includes('athletic') || lowerMessage.includes('performance') ? 'athletic' : null;
           
-          const equipment = lowerMessage.includes('gym') ? 'gym' :
-                           lowerMessage.includes('home') ? 'home' :
-                           lowerMessage.includes('minimal') ? 'minimal' : null;
+          const equipment = lowerMessage.includes('gym') || lowerMessage.includes('fitness center') ? 'gym' :
+                           lowerMessage.includes('home') || lowerMessage.includes('house') ? 'home' :
+                           lowerMessage.includes('minimal') || lowerMessage.includes('bodyweight') ? 'minimal' : null;
           
-          const timePerSession = lowerMessage.includes('90') ? 90 :
-                                lowerMessage.includes('60') ? 60 :
-                                lowerMessage.includes('45') ? 45 :
-                                lowerMessage.includes('30') ? 30 : null;
+          const timePerSession = lowerMessage.includes('90') || lowerMessage.includes('90min') ? 90 :
+                                lowerMessage.includes('60') || lowerMessage.includes('60min') || lowerMessage.includes('hour') ? 60 :
+                                lowerMessage.includes('45') || lowerMessage.includes('45min') ? 45 :
+                                lowerMessage.includes('30') || lowerMessage.includes('30min') ? 30 : null;
           
-          const daysPerWeek = lowerMessage.includes('6') ? 6 :
-                             lowerMessage.includes('5') ? 5 :
-                             lowerMessage.includes('4') ? 4 :
-                             lowerMessage.includes('3') ? 3 : null;
+          const daysPerWeek = lowerMessage.includes('6') || lowerMessage.includes('6x') || lowerMessage.includes('6 times') ? 6 :
+                             lowerMessage.includes('5') || lowerMessage.includes('5x') || lowerMessage.includes('5 times') ? 5 :
+                             lowerMessage.includes('4') || lowerMessage.includes('4x') || lowerMessage.includes('4 times') ? 4 :
+                             lowerMessage.includes('3') || lowerMessage.includes('3x') || lowerMessage.includes('3 times') ? 3 : null;
           
           // Check if all required parameters are provided
           if (experienceLevel && primaryGoal && equipment && timePerSession && daysPerWeek) {
@@ -161,23 +172,34 @@ export const useStreamingAI = (options: UseStreamingAIOptions = {}) => {
               ];
             }
           } else {
-            // Ask for missing parameters
+            // Ask for missing parameters with better formatting
             const missingParams = [];
-            if (!experienceLevel) missingParams.push('experience level (beginner/intermediate/advanced)');
-            if (!primaryGoal) missingParams.push('primary goal (weight loss/muscle building/strength/athletic)');
-            if (!equipment) missingParams.push('available equipment (gym/home/minimal)');
-            if (!timePerSession) missingParams.push('time per session (30/45/60/90 minutes)');
-            if (!daysPerWeek) missingParams.push('days per week (3/4/5/6)');
+            if (!experienceLevel) missingParams.push('• Experience level (beginner/intermediate/advanced)');
+            if (!primaryGoal) missingParams.push('• Primary goal (muscle building/weight loss/strength/athletic)');
+            if (!equipment) missingParams.push('• Equipment available (gym/home/minimal)');
+            if (!timePerSession) missingParams.push('• Time per session (30/45/60/90 minutes)');
+            if (!daysPerWeek) missingParams.push('• Days per week (3/4/5/6)');
             
             responses = [
-              "Perfect! I'll create a personalized workout template for you! 💪 ",
-              "I just need a few more details: ",
-              missingParams.join(', ') + ". ",
-              "Once you share these details, I'll generate a complete workout template you can use in the logging system! 🎯"
+              "I'll help you create a workout template! 💪 ",
+              "I need a few more details to personalize your plan: ",
+              "\n" + missingParams.join('\n') + "\n",
+              "Once you provide these details, I'll generate your complete workout template! 🎯"
             ];
           }
-        } else
-        if (lowerMessage.includes('beginner') || lowerMessage.includes('start') || lowerMessage.includes('new')) {
+        } else if (lowerMessage.includes('8 week') || lowerMessage.includes('weeks program')) {
+          // Special handling for duration-based requests
+          responses = [
+            "I'll help you create an 8-week workout program! 💪 ",
+            "To personalize your program, I need to know: ",
+            "• Experience level (beginner/intermediate/advanced) ",
+            "• Primary goal (muscle building/weight loss/strength/athletic) ",
+            "• Equipment available (gym/home/minimal) ",
+            "• Time per session (30/45/60/90 minutes) ",
+            "• Days per week (3/4/5/6) ",
+            "Once you provide these details, I'll create your complete 8-week program! 🎯"
+          ];
+        } else if (lowerMessage.includes('beginner') || lowerMessage.includes('start') || lowerMessage.includes('new')) {
           responses = [
             "Ah, a fresh warrior ready to conquer the fitness world! 💪 ",
             "Let's start you off with a killer 3-day routine: Monday (upper body), Wednesday (lower body), Friday (full body). ",
