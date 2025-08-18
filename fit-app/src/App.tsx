@@ -8,10 +8,13 @@ import { NimbusNutritionTracker } from './nimbus/components/nutrition/NimbusNutr
 import { UserFriendlyNutritionTracker } from './components/UserFriendlyNutritionTracker';
 import { SimpleNutritionTracker } from './components/SimpleNutritionTracker';
 import { TestNutritionUI } from './components/TestNutritionUI';
+import { BottomNavigation } from './components/BottomNavigation';
+import { WorkoutsTab } from './components/WorkoutsTab';
+import { AICoachTab } from './components/AICoachTab';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'nutrition' | 'test' | 'debug' | 'comprehensive'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'nutrition' | 'ai-coach' | 'test' | 'debug' | 'comprehensive'>('home');
   const [isAppReady, setIsAppReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,13 +60,13 @@ function App() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">App Error</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+        <div className="card p-8 max-w-md w-full text-center">
+          <div className="text-error text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">App Error</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-fitness-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            className="btn-primary"
           >
             Reload App
           </button>
@@ -76,30 +79,30 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-fitness-blue mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">AI Fitness Coach</h1>
-          <p className="text-gray-600">Loading your personal trainer...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">AI Fitness Coach</h1>
+          <p className="text-gray-600 dark:text-gray-400">Loading your personal trainer...</p>
           
           {/* Loading features checklist */}
-          <div className="mt-8 space-y-2 text-sm text-gray-500">
+          <div className="mt-8 space-y-2 text-sm text-gray-500 dark:text-gray-400">
             <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-fitness-blue rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
               <span>Initializing voice recognition</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-fitness-green rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-secondary rounded-full animate-pulse"></div>
               <span>Loading AI coaching system</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-fitness-orange rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
               <span>Setting up workout database</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-fitness-purple rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
               <span>Preparing analytics dashboard</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-fitness-red rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-error rounded-full animate-pulse"></div>
               <span>Loading nutrition API</span>
             </div>
           </div>
@@ -128,23 +131,11 @@ function App() {
           />
         );
       case 'workout':
-        return (
-          <EnhancedWorkoutLogger 
-            appSettings={{
-              autoAdvanceEnabled: true,
-              defaultRestTime: 120,
-              soundEnabled: true,
-              notificationsEnabled: true,
-              voiceCommandsEnabled: true,
-              aiCoachingEnabled: true,
-              offlineMode: false,
-              debugMode: false
-            }}
-            onSettingsChange={() => {}}
-          />
-        );
+        return <WorkoutsTab />;
       case 'nutrition':
         return <UserFriendlyNutritionTracker />;
+      case 'ai-coach':
+        return <AICoachTab />;
       case 'test':
         return <NutritionAPITest />;
       case 'debug':
@@ -167,49 +158,37 @@ function App() {
     }
   };
 
-  // Don't show navigation for the main app views (home, workout)
-  if (currentView === 'home' || currentView === 'workout') {
+  // Show bottom navigation for main app views (home, workout, nutrition, ai-coach)
+  if (currentView === 'home' || currentView === 'workout' || currentView === 'nutrition' || currentView === 'ai-coach') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      <div className="min-h-screen bg-gradient-dark">
         {renderCurrentView()}
+        <BottomNavigation 
+          currentView={currentView} 
+          onNavigate={(view) => setCurrentView(view as any)} 
+        />
       </div>
     );
   }
 
-  // Show navigation for nutrition and testing views
+  // Show navigation for testing views only
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+    <div className="min-h-screen bg-gradient-dark">
       {/* Navigation */}
-      <nav className="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4">
+      <nav className="glass border-b border-white/20 p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <button
             onClick={() => setCurrentView('home')}
-            className="text-2xl font-bold text-white hover:text-blue-300 transition-colors"
+            className="text-2xl font-bold text-white hover:text-primary transition-colors"
           >
             Fit App
           </button>
           <div className="flex space-x-4">
             <button
-              onClick={() => setCurrentView('workout')}
-              className="px-4 py-2 rounded-lg transition-colors bg-white/10 text-white/80 hover:bg-white/20"
-            >
-              💪 Workout
-            </button>
-            <button
-              onClick={() => setCurrentView('nutrition')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                currentView === 'nutrition' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
-              }`}
-            >
-              🍎 Nutrition
-            </button>
-            <button
               onClick={() => setCurrentView('test')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-xl transition-colors ${
                 currentView === 'test' 
-                  ? 'bg-green-500 text-white' 
+                  ? 'bg-success text-white' 
                   : 'bg-white/10 text-white/80 hover:bg-white/20'
               }`}
             >
@@ -217,9 +196,9 @@ function App() {
             </button>
             <button
               onClick={() => setCurrentView('debug')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-xl transition-colors ${
                 currentView === 'debug' 
-                  ? 'bg-red-500 text-white' 
+                  ? 'bg-error text-white' 
                   : 'bg-white/10 text-white/80 hover:bg-white/20'
               }`}
             >
@@ -227,9 +206,9 @@ function App() {
             </button>
             <button
               onClick={() => setCurrentView('comprehensive')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-xl transition-colors ${
                 currentView === 'comprehensive' 
-                  ? 'bg-purple-500 text-white' 
+                  ? 'bg-secondary text-white' 
                   : 'bg-white/10 text-white/80 hover:bg-white/20'
               }`}
             >

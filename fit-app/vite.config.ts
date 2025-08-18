@@ -4,6 +4,10 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    port: 5174,
+    strictPort: true
+  },
   esbuild: {
     target: 'es2020',
     logOverride: { 'this-is-undefined-in-esm': 'silent' }

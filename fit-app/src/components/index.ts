@@ -15,3 +15,8 @@ export { default as MobileWorkoutInterface } from './MobileWorkoutInterface';
 
 // AI Components
 export { IntegratedAICoach } from './ai/IntegratedAICoach';
+
+// Navigation Components
+export { BottomNavigation } from './BottomNavigation';
+export { WorkoutsTab } from './WorkoutsTab';
+export { AICoachTab } from './AICoachTab';

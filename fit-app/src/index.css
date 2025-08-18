@@ -3,50 +3,100 @@
 @tailwind utilities;
 
 :root {
-  /* Primary Colors */
+  /* Primary Colors - New clean palette */
+  --primary: #a5e635;
+  --primary-dark: #8ac926;
+  --primary-light: #b8f44a;
+  --primary-50: #f7fdf0;
+  --primary-100: #eefad8;
+  --primary-200: #ddf4b0;
+  --primary-300: #c8ed7e;
+  --primary-400: #a5e635;
+  --primary-500: #8ac926;
+  --primary-600: #6ba01c;
+  --primary-700: #527a1a;
+  --primary-800: #43611a;
+  --primary-900: #39521a;
+  
+  /* Secondary Colors - Clean and modern */
+  --secondary: #6366f1;
+  --secondary-dark: #4f46e5;
+  --accent: #f59e0b;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  
+  /* Voice States - Updated with new palette */
+  --voice-listening: #a5e635;
+  --voice-speaking: #6366f1;
+  --voice-processing: #f59e0b;
+  --voice-idle: #6b7280;
+  --voice-error: #ef4444;
+  
+  /* Legacy colors for backward compatibility */
   --fitness-blue: #3B82F6;
   --fitness-green: #10B981;
   --fitness-orange: #F59E0B;
   --fitness-red: #EF4444;
-  
-  /* Voice States */
-  --voice-listening: #8B5CF6;
-  --voice-speaking: #06B6D4;
-  --voice-processing: #F59E0B;
-  --voice-idle: #6B7280;
-  --voice-error: #EF4444;
-  
-  /* Neutral Scale */
-  --gray-50: #F9FAFB;
-  --gray-100: #F3F4F6;
-  --gray-200: #E5E7EB;
-  --gray-300: #D1D5DB;
-  --gray-400: #9CA3AF;
-  --gray-500: #6B7280;
-  --gray-600: #4B5563;
-  --gray-700: #374151;
-  --gray-800: #1F2937;
-  --gray-900: #111827;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Dark mode variables */
-.dark {
-  --bg-primary: var(--gray-900);
-  --bg-secondary: var(--gray-800);
-  --bg-tertiary: var(--gray-700);
-  --text-primary: var(--gray-50);
-  --text-secondary: var(--gray-300);
-  --text-tertiary: var(--gray-400);
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
 }
 
-/* Light mode variables */
-.light {
-  --bg-primary: var(--gray-50);
-  --bg-secondary: var(--gray-100);
-  --bg-tertiary: var(--gray-200);
-  --text-primary: var(--gray-900);
-  --text-secondary: var(--gray-700);
-  --text-tertiary: var(--gray-600);
+body.dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  width: 100%;
+}
+
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(165, 230, 53, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(165, 230, 53, 0.5);
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 @layer components {
@@ -55,99 +105,98 @@
   }
   
   .voice-button.listening {
-    @apply bg-voice-listening animate-pulse-slow;
+    @apply bg-primary animate-pulse-slow;
   }
   
   .voice-button.speaking {
-    @apply bg-voice-speaking animate-bounce-subtle;
-  }
-  
-  .voice-button.processing {
-    @apply bg-voice-processing animate-spin;
+    @apply bg-secondary;
   }
   
   .voice-button.idle {
-    @apply bg-voice-idle hover:bg-fitness-blue;
-  }
-  
-  .voice-button.error {
-    @apply bg-voice-error animate-pulse;
+    @apply bg-gray-600 hover:bg-gray-500;
   }
   
   .voice-wave {
-    @apply bg-current opacity-60 mx-1 animate-voice-wave;
-    width: 4px;
-    height: 20px;
-    border-radius: 2px;
+    @apply w-1 bg-white rounded-full animate-voice-wave;
   }
-  
-  .voice-wave:nth-child(2) {
-    animation-delay: 0.1s;
+
+  /* Modern card styling */
+  .card {
+    @apply bg-white dark:bg-dark-800 rounded-2xl shadow-soft border border-gray-100 dark:border-dark-700;
   }
-  
-  .voice-wave:nth-child(3) {
-    animation-delay: 0.2s;
+
+  .card-hover {
+    @apply hover:shadow-medium hover:scale-[1.02] transition-all duration-300;
   }
-  
-  .voice-wave:nth-child(4) {
-    animation-delay: 0.3s;
+
+  /* Modern button styling */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-soft hover:shadow-medium;
   }
-  
-  .voice-wave:nth-child(5) {
-    animation-delay: 0.4s;
+
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary-dark text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-soft hover:shadow-medium;
   }
-  
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-300 font-medium px-6 py-3 rounded-xl transition-all duration-200;
+  }
+
+  /* Modern input styling */
+  .input-modern {
+    @apply bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/80 dark:bg-dark-800/80 backdrop-blur-md border border-white/20 dark:border-dark-700/20;
+  }
+
+  /* Legacy components for backward compatibility */
   .workout-card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-700;
+    @apply card p-4;
   }
   
   .exercise-item {
-    @apply p-3 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
+    @apply p-3 rounded-xl border border-gray-200 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors;
   }
   
   .stat-card {
-    @apply bg-gradient-to-br from-fitness-blue to-fitness-green text-white p-4 rounded-lg shadow-md;
+    @apply bg-gradient-to-br from-primary to-primary-dark text-white p-4 rounded-xl shadow-soft;
   }
   
   .chat-message {
-    @apply max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-sm;
+    @apply max-w-xs lg:max-w-md px-4 py-2 rounded-xl text-sm;
   }
   
   .chat-message.user {
-    @apply bg-fitness-blue text-white ml-auto;
+    @apply bg-primary text-white ml-auto;
   }
   
   .chat-message.ai {
-    @apply bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mr-auto;
+    @apply bg-gray-200 dark:bg-dark-700 text-gray-900 dark:text-white mr-auto;
   }
 }
 
-/* Scrollbar styling */
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: var(--gray-400) var(--gray-100);
+/* Voice interface animations */
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: var(--gray-100);
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: var(--gray-400);
-  border-radius: 3px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-500);
+.voice-ripple {
+  animation: ripple 1.5s infinite;
 }
 
 /* Focus states for accessibility */
 .focus-ring {
-  @apply focus:outline-none focus:ring-2 focus:ring-fitness-blue focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
 }
 
 /* Loading spinner */
@@ -171,19 +220,6 @@
 }
 
 /* Ensure proper base styles */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #7c3aed 100%);
-  min-height: 100vh;
-}
-
-#root {
-  min-height: 100vh;
-}
-
-/* Fix any container issues */
 .max-w-6xl {
   max-width: 72rem;
 }
@@ -194,3 +230,4 @@ body {
     background-color: rgba(255, 255, 255, 0.1);
   }
 }
+
