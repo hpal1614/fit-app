@@ -98,29 +98,29 @@ export const useStreamingAI = (options: UseStreamingAIOptions = {}) => {
         const isTemplateRequest = templateKeywords.some(keyword => lowerMessage.includes(keyword));
         
         if (isTemplateRequest) {
-          // Enhanced parameter extraction with more variations
-          const experienceLevel = lowerMessage.includes('beginner') || lowerMessage.includes('novice') || lowerMessage.includes('new') ? 'beginner' : 
-                                 lowerMessage.includes('intermediate') || lowerMessage.includes('some experience') ? 'intermediate' : 
-                                 lowerMessage.includes('advanced') || lowerMessage.includes('expert') || lowerMessage.includes('experienced') ? 'advanced' : null;
+          // Enhanced parameter extraction with more variations and better pattern matching
+          const experienceLevel = lowerMessage.includes('beginner') || lowerMessage.includes('novice') || lowerMessage.includes('new') || lowerMessage.includes('start') ? 'beginner' : 
+                                 lowerMessage.includes('intermediate') || lowerMessage.includes('some experience') || lowerMessage.includes('2 years') || lowerMessage.includes('3 years') ? 'intermediate' : 
+                                 lowerMessage.includes('advanced') || lowerMessage.includes('expert') || lowerMessage.includes('experienced') || lowerMessage.includes('4 years') || lowerMessage.includes('5 years') || lowerMessage.includes('6 years') || lowerMessage.includes('7 years') || lowerMessage.includes('8 years') || lowerMessage.includes('9 years') || lowerMessage.includes('10 years') ? 'advanced' : null;
           
-          const primaryGoal = lowerMessage.includes('muscle building') || lowerMessage.includes('gain muscle') || lowerMessage.includes('build muscle') ? 'muscle_building' :
-                             lowerMessage.includes('weight loss') || lowerMessage.includes('lose weight') || lowerMessage.includes('fat loss') ? 'weight_loss' :
-                             lowerMessage.includes('strength') || lowerMessage.includes('get stronger') ? 'strength' :
-                             lowerMessage.includes('athletic') || lowerMessage.includes('performance') ? 'athletic' : null;
+          const primaryGoal = lowerMessage.includes('muscle building') || lowerMessage.includes('gain muscle') || lowerMessage.includes('build muscle') || lowerMessage.includes('muscle') ? 'muscle_building' :
+                             lowerMessage.includes('weight loss') || lowerMessage.includes('lose weight') || lowerMessage.includes('fat loss') || lowerMessage.includes('lose') ? 'weight_loss' :
+                             lowerMessage.includes('strength') || lowerMessage.includes('get stronger') || lowerMessage.includes('strong') ? 'strength' :
+                             lowerMessage.includes('athletic') || lowerMessage.includes('performance') || lowerMessage.includes('athletic') ? 'athletic' : null;
           
-          const equipment = lowerMessage.includes('gym') || lowerMessage.includes('fitness center') ? 'gym' :
-                           lowerMessage.includes('home') || lowerMessage.includes('house') ? 'home' :
-                           lowerMessage.includes('minimal') || lowerMessage.includes('bodyweight') ? 'minimal' : null;
+          const equipment = lowerMessage.includes('gym') || lowerMessage.includes('fitness center') || lowerMessage.includes('gym') ? 'gym' :
+                           lowerMessage.includes('home') || lowerMessage.includes('house') || lowerMessage.includes('home') ? 'home' :
+                           lowerMessage.includes('minimal') || lowerMessage.includes('bodyweight') || lowerMessage.includes('minimal') ? 'minimal' : null;
           
-          const timePerSession = lowerMessage.includes('90') || lowerMessage.includes('90min') ? 90 :
-                                lowerMessage.includes('60') || lowerMessage.includes('60min') || lowerMessage.includes('hour') ? 60 :
-                                lowerMessage.includes('45') || lowerMessage.includes('45min') ? 45 :
-                                lowerMessage.includes('30') || lowerMessage.includes('30min') ? 30 : null;
+          const timePerSession = lowerMessage.includes('90') || lowerMessage.includes('90min') || lowerMessage.includes('90 minutes') ? 90 :
+                                lowerMessage.includes('60') || lowerMessage.includes('60min') || lowerMessage.includes('60 minutes') || lowerMessage.includes('hour') || lowerMessage.includes('1 hour') ? 60 :
+                                lowerMessage.includes('45') || lowerMessage.includes('45min') || lowerMessage.includes('45 minutes') ? 45 :
+                                lowerMessage.includes('30') || lowerMessage.includes('30min') || lowerMessage.includes('30 minutes') ? 30 : null;
           
-          const daysPerWeek = lowerMessage.includes('6') || lowerMessage.includes('6x') || lowerMessage.includes('6 times') ? 6 :
-                             lowerMessage.includes('5') || lowerMessage.includes('5x') || lowerMessage.includes('5 times') ? 5 :
-                             lowerMessage.includes('4') || lowerMessage.includes('4x') || lowerMessage.includes('4 times') ? 4 :
-                             lowerMessage.includes('3') || lowerMessage.includes('3x') || lowerMessage.includes('3 times') ? 3 : null;
+          const daysPerWeek = lowerMessage.includes('6') || lowerMessage.includes('6x') || lowerMessage.includes('6 times') || lowerMessage.includes('6 days') ? 6 :
+                             lowerMessage.includes('5') || lowerMessage.includes('5x') || lowerMessage.includes('5 times') || lowerMessage.includes('5 days') ? 5 :
+                             lowerMessage.includes('4') || lowerMessage.includes('4x') || lowerMessage.includes('4 times') || lowerMessage.includes('4 days') ? 4 :
+                             lowerMessage.includes('3') || lowerMessage.includes('3x') || lowerMessage.includes('3 times') || lowerMessage.includes('3 days') ? 3 : null;
           
           // Check if all required parameters are provided
           if (experienceLevel && primaryGoal && equipment && timePerSession && daysPerWeek) {
@@ -199,6 +199,79 @@ export const useStreamingAI = (options: UseStreamingAIOptions = {}) => {
             "• Days per week (3/4/5/6) ",
             "Once you provide these details, I'll create your complete 8-week program! 🎯"
           ];
+        } else if ((lowerMessage.includes('muscle') || lowerMessage.includes('gym') || lowerMessage.includes('60') || lowerMessage.includes('5')) && 
+                   (lowerMessage.includes('muscle') || lowerMessage.includes('gym') || lowerMessage.includes('60') || lowerMessage.includes('5'))) {
+          // Handle parameter-only responses (when user provides details without context)
+          const experienceLevel = lowerMessage.includes('beginner') || lowerMessage.includes('novice') || lowerMessage.includes('new') || lowerMessage.includes('start') ? 'beginner' : 
+                                 lowerMessage.includes('intermediate') || lowerMessage.includes('some experience') || lowerMessage.includes('2 years') || lowerMessage.includes('3 years') ? 'intermediate' : 
+                                 lowerMessage.includes('advanced') || lowerMessage.includes('expert') || lowerMessage.includes('experienced') || lowerMessage.includes('4 years') || lowerMessage.includes('5 years') || lowerMessage.includes('6 years') || lowerMessage.includes('7 years') || lowerMessage.includes('8 years') || lowerMessage.includes('9 years') || lowerMessage.includes('10 years') ? 'advanced' : 'intermediate';
+          
+          const primaryGoal = lowerMessage.includes('muscle building') || lowerMessage.includes('gain muscle') || lowerMessage.includes('build muscle') || lowerMessage.includes('muscle') ? 'muscle_building' :
+                             lowerMessage.includes('weight loss') || lowerMessage.includes('lose weight') || lowerMessage.includes('fat loss') || lowerMessage.includes('lose') ? 'weight_loss' :
+                             lowerMessage.includes('strength') || lowerMessage.includes('get stronger') || lowerMessage.includes('strong') ? 'strength' :
+                             lowerMessage.includes('athletic') || lowerMessage.includes('performance') || lowerMessage.includes('athletic') ? 'athletic' : 'muscle_building';
+          
+          const equipment = lowerMessage.includes('gym') || lowerMessage.includes('fitness center') || lowerMessage.includes('gym') ? 'gym' :
+                           lowerMessage.includes('home') || lowerMessage.includes('house') || lowerMessage.includes('home') ? 'home' :
+                           lowerMessage.includes('minimal') || lowerMessage.includes('bodyweight') || lowerMessage.includes('minimal') ? 'minimal' : 'gym';
+          
+          const timePerSession = lowerMessage.includes('90') || lowerMessage.includes('90min') || lowerMessage.includes('90 minutes') ? 90 :
+                                lowerMessage.includes('60') || lowerMessage.includes('60min') || lowerMessage.includes('60 minutes') || lowerMessage.includes('hour') || lowerMessage.includes('1 hour') ? 60 :
+                                lowerMessage.includes('45') || lowerMessage.includes('45min') || lowerMessage.includes('45 minutes') ? 45 :
+                                lowerMessage.includes('30') || lowerMessage.includes('30min') || lowerMessage.includes('30 minutes') ? 30 : 60;
+          
+          const daysPerWeek = lowerMessage.includes('6') || lowerMessage.includes('6x') || lowerMessage.includes('6 times') || lowerMessage.includes('6 days') ? 6 :
+                             lowerMessage.includes('5') || lowerMessage.includes('5x') || lowerMessage.includes('5 times') || lowerMessage.includes('5 days') ? 5 :
+                             lowerMessage.includes('4') || lowerMessage.includes('4x') || lowerMessage.includes('4 times') || lowerMessage.includes('4 days') ? 4 :
+                             lowerMessage.includes('3') || lowerMessage.includes('3x') || lowerMessage.includes('3 times') || lowerMessage.includes('3 days') ? 3 : 5;
+          
+          // Generate workout template immediately
+          try {
+            const profile: UserProfile = {
+              experienceLevel,
+              primaryGoal,
+              equipment,
+              timePerSession,
+              daysPerWeek
+            };
+            
+            const template = TemplateGenerator.generateWorkoutTemplate(profile);
+            
+            // Generate detailed workout response in tabular format
+            let workoutTable = '';
+            template.workouts.forEach((workout, index) => {
+              workoutTable += `\n📅 **${workout.name}** (${workout.notes})\n`;
+              workoutTable += `| Exercise | Sets | Reps | Rest |\n`;
+              workoutTable += `|----------|------|------|------|\n`;
+              
+              workout.exercises.forEach(exercise => {
+                const sets = exercise.sets.length;
+                const reps = exercise.sets[0]?.reps || '8-12';
+                const rest = exercise.sets[0]?.rest || '60-90s';
+                workoutTable += `| ${exercise.name} | ${sets} | ${reps} | ${rest} |\n`;
+              });
+              workoutTable += `\n`;
+            });
+            
+            responses = [
+              `Perfect! I've created your personalized workout template! 💪 `,
+              `**Template: ${template.name}** `,
+              `**Description:** ${template.description} `,
+              `\n${workoutTable}`,
+              `\n**Progression Plan:** ${template.progressionPlan} `,
+              `\n**Notes:** ${template.notes.join(', ')} `,
+              `\n💾 **Save Template:** Click the "Save Template" button below to use this in your workout logger! `,
+              `\n🤔 **Need Changes?** Let me know if you want to modify exercises, sets, reps, or add/remove workouts! `,
+              `\n🍎 **Want Nutrition Plan?** Just ask for a 'nutrition plan' to complement your workouts! 🎯`
+            ];
+          } catch (error) {
+            responses = [
+              "I'm having trouble generating your workout template. ",
+              "Please make sure you've provided all the required information: ",
+              "experience level, goal, equipment, time, and frequency. ",
+              "Try asking again with all the details! 💪"
+            ];
+          }
         } else if (lowerMessage.includes('beginner') || lowerMessage.includes('start') || lowerMessage.includes('new')) {
           responses = [
             "Ah, a fresh warrior ready to conquer the fitness world! 💪 ",
