@@ -582,7 +582,8 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
               <button
                 type="submit"
                 disabled={!inputText.trim() || isStreaming || isVoiceMode}
-                className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-3 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="text-white p-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium hover:bg-[#94d929]"
+                style={{ backgroundColor: '#a5e635' }}
               >
                 <Send size={20} />
               </button>
