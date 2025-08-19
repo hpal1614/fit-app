@@ -433,9 +433,10 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
               onClick={() => setMode('coach')}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                 mode === 'coach'
-                  ? 'bg-green-500 text-white'
+                  ? 'text-white'
                   : 'text-gray-400 hover:text-white'
               }`}
+              style={mode === 'coach' ? { backgroundColor: '#a5e635' } : undefined}
             >
               💪 Coach
             </button>
