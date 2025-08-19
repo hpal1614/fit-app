@@ -6,6 +6,9 @@ import {
 import { useStreamingAI } from '../hooks/useStreamingAI';
 import { useVoice } from '../hooks/useVoice';
 import type { WorkoutContext } from '../types/workout';
+import { ConversationFlowService } from '../services/conversationFlowService';
+import { QuickReply } from '../types/conversationTypes';
+import QuickReplyButtons from './QuickReplyButtons';
 
 interface Message {
   id: string;
@@ -51,6 +54,8 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [generatedTemplate, setGeneratedTemplate] = useState<any>(null);
   const [showSaveButton, setShowSaveButton] = useState(false);
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
+  const flowRef = useRef<ConversationFlowService | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +97,19 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
           : chat
       ));
       setIsStreaming(false);
+
+      try {
+        if (!flowRef.current) {
+          flowRef.current = new ConversationFlowService();
+        }
+        const current = chats.find(c => c.id === currentChatId);
+        const lastUser = current?.messages.slice().reverse().find(m => m.type === 'user');
+        const scenario = flowRef.current.detectScenario(lastUser?.content || '', undefined);
+        const qr = flowRef.current.getQuickReplies(fullResponse, scenario);
+        setQuickReplies(qr);
+      } catch {
+        setQuickReplies([]);
+      }
       
       // Check if this is a template response
       if (fullResponse.includes('💾 **Save Template:**') || fullResponse.includes('Template:')) {
@@ -506,6 +524,14 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {currentChat?.messages.map((message) => renderMessage(message))}
+            {quickReplies.length > 0 && (
+              <QuickReplyButtons
+                replies={quickReplies}
+                onSelect={(reply) => {
+                  setInputText(reply.text);
+                }}
+              />
+            )}
             
             {/* Loading indicator */}
             {isStreaming && (
