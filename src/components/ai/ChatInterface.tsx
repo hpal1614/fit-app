@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { WorkoutContext } from '../../types';
 import { Send, Volume2, Loader, Bot, User, Lightbulb } from 'lucide-react';
+import type { QuickReply } from '../../types/conversationTypes';
+import { ConversationFlowService } from '../../services/conversationFlowService';
+import { QuickReplyButtons } from '../QuickReplyButtons';
 
 interface ChatInterfaceProps {
   aiCoach: any; // Using any for now since we're importing the hook
@@ -40,8 +43,10 @@ export function ChatInterface({
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const flow = useRef<ConversationFlowService | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,6 +55,12 @@ export function ChatInterface({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (!flow.current) {
+      flow.current = new ConversationFlowService();
+    }
+  }, []);
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim() || aiCoach.isLoading) return;
@@ -79,6 +90,13 @@ export function ChatInterface({
         };
 
         setMessages(prev => [...prev, aiMessage]);
+        try {
+          const scenario = flow.current?.detectScenario(message);
+          const qr = flow.current?.getQuickReplies(aiMessage.content, scenario || 'standard_beginner') || [];
+          setQuickReplies(qr);
+        } catch (_) {
+          setQuickReplies([]);
+        }
       } else {
         throw new Error('No response from AI coach');
       }
@@ -97,6 +115,10 @@ export function ChatInterface({
 
   const handleSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion);
+  };
+
+  const handleQuickReplySelect = (reply: QuickReply) => {
+    handleSendMessage(reply.text);
   };
 
   const handleSpeakMessage = async (message: string) => {
@@ -208,6 +230,13 @@ export function ChatInterface({
                               {suggestion}
                             </button>
                           ))}
+                        </div>
+                      )}
+
+                      {/* Smart Quick Replies (non-breaking, optional) */}
+                      {quickReplies && quickReplies.length > 0 && (
+                        <div className="mt-2">
+                          <QuickReplyButtons replies={quickReplies} onSelect={handleQuickReplySelect} />
                         </div>
                       )}
                     </div>

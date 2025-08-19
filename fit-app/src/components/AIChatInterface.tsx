@@ -4,6 +4,9 @@ import { useStreamingAI } from '../hooks/useStreamingAI';
 import { useVoice } from '../hooks/useVoice';
 import type { WorkoutContext } from '../types/workout';
 // Removed unused AIResponse import
+import { ConversationFlowService } from '../services/conversationFlowService';
+import { QuickReply } from '../types/conversationTypes';
+import QuickReplyButtons from './QuickReplyButtons';
 
 interface Message {
   id: string;
@@ -26,8 +29,10 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>('');
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const flowRef = useRef<ConversationFlowService | null>(null);
   
   const { streamResponse, isStreaming, stopStreaming } = useStreamingAI({
     onChunk: (chunk) => {
@@ -43,6 +48,14 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       };
       setMessages(prev => [...prev, aiMessage]);
       setCurrentStreamingMessage('');
+      try {
+        const lastUser = [...messages].reverse().find(m => m.type === 'user');
+        const scenario = flowRef.current?.detectScenario(lastUser?.content || '', undefined) || 'standard_beginner';
+        const qr = flowRef.current?.getQuickReplies(fullResponse, scenario) || [];
+        setQuickReplies(qr);
+      } catch (_) {
+        setQuickReplies([]);
+      }
       
       // Speak the response
       if (!isMuted) {
@@ -80,6 +93,9 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
 
   // Initial greeting
   useEffect(() => {
+    if (!flowRef.current) {
+      flowRef.current = new ConversationFlowService();
+    }
     const initialMessage: Message = {
       id: Date.now().toString(),
       type: 'ai',
@@ -259,6 +275,12 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         
         {renderStreamingMessage()}
         {renderLoadingState()}
+        {quickReplies.length > 0 && (
+          <QuickReplyButtons
+            replies={quickReplies}
+            onSelect={(reply) => sendMessage(reply.text)}
+          />
+        )}
         
         <div ref={messagesEndRef} />
       </div>
