@@ -571,7 +571,7 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
                         : "Ask me about fitness research, studies, or evidence-based advice..."
                   }
                   disabled={isStreaming || isVoiceMode}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-900 disabled:cursor-not-allowed text-left"
+                  className="w-full px-4 py-3 bg-gray-800 border border-[#a5e635] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#a5e635] focus:border-transparent disabled:bg-gray-900 disabled:cursor-not-allowed text-left"
                 />
                 {isVoiceMode && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -586,7 +586,7 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
                 className="text-white p-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium hover:bg-[#94d929]"
                 style={{ backgroundColor: '#a5e635' }}
               >
-                <Send size={20} />
+                <Send size={20} color="#0b0b0b" />
               </button>
             </form>
 
