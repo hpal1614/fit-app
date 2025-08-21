@@ -1,4 +1,5 @@
-import * as pdfjsLib from 'pdfjs-dist';
+// Align with documented legacy build to avoid worker/version mismatches
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 import { StoredWorkoutTemplate, DayWorkout } from '../services/workoutStorageService';
 import { EXERCISE_DATABASE } from '../constants/exercises';
 import { NimbusAIService } from '../nimbus/services/NimbusAIService';

@@ -10,6 +10,7 @@ import { getFixedVoiceService } from '../services/fixedVoiceService';
 // import { getContextualVoiceService, WorkoutContext } from '../services/contextualVoiceService';
 import { nimbusAI } from '../nimbus/services/NimbusAIService';
 import { EXERCISE_DATABASE, getExercisesByMuscleGroup, searchExercises } from '../constants/exercises';
+import ExerciseDatabaseService from '../services/exerciseDatabaseService';
 import { MuscleGroup } from '../types/workout';
 import { DatabaseService } from '../services/databaseService';
 import RestTimer from './RestTimer';
@@ -114,6 +115,54 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
   const [showPlateCalculator, setShowPlateCalculator] = useState(false);
   const [plateCalculatorType, setPlateCalculatorType] = useState<'weight' | 'reps'>('weight');
   const [plateCalculatorValue, setPlateCalculatorValue] = useState(0);
+  // Swapper filters
+  const [exerciseSearch, setExerciseSearch] = useState('');
+  const [exerciseFilter, setExerciseFilter] = useState<'All' | 'Chest' | 'Back' | 'Shoulders' | 'Arms' | 'Legs' | 'Core'>('All');
+  // Exercise Info panel
+  const [showExerciseInfo, setShowExerciseInfo] = useState(false);
+  const [loadingExerciseInfo, setLoadingExerciseInfo] = useState(false);
+  const [exerciseInfo, setExerciseInfo] = useState<any>(null);
+
+  const loadExerciseInfo = async () => {
+    try {
+      setLoadingExerciseInfo(true);
+      const current = workoutExercises[currentExerciseIndex];
+      if (!current?.name) {
+        setExerciseInfo(null);
+        return;
+      }
+      const db = ExerciseDatabaseService.getInstance();
+      await db.initialize();
+      const hits = await db.searchByName(current.name, 1);
+      const base = hits && hits.length > 0 ? hits[0] : undefined;
+      let similarWithGif: any | undefined;
+      if (base && !base.gifUrl) {
+        const simGif = await db.findSimilarExerciseWithGif(base.id);
+        if (simGif && simGif.gifUrl) similarWithGif = { name: simGif.name, gifUrl: simGif.gifUrl };
+      }
+      setExerciseInfo(base ? {
+        name: base.name,
+        gifUrl: base.gifUrl,
+        primary: base.primaryMuscles || [],
+        secondary: base.secondaryMuscles || [],
+        equipment: base.equipment || [],
+        instructions: base.instructions || [],
+        similarGif: similarWithGif
+      } : null);
+    } catch (e) {
+      console.warn('loadExerciseInfo failed', e);
+      setExerciseInfo(null);
+    } finally {
+      setLoadingExerciseInfo(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showExerciseInfo) {
+      loadExerciseInfo();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showExerciseInfo, currentExerciseIndex]);
   const [expandedSetIndex, setExpandedSetIndex] = useState<number | null>(null);
   const [showDropSetForIndex, setShowDropSetForIndex] = useState<number | null>(null);
   const [dropSetWeight, setDropSetWeight] = useState(0);
@@ -423,17 +472,17 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
 
   // Legacy voice system (kept for compatibility)
   const toggleVoice = async () => {
-    console.log('🎤 toggleVoice called, current state:', { isListening, voiceServiceRef: !!voiceServiceRef.current });
+    if (import.meta.env.DEV) console.log('🎤 toggleVoice called, current state:', { isListening, voiceServiceRef: !!voiceServiceRef.current });
     initAudio();
     
     if (!voiceServiceRef.current) {
-      console.error('❌ Voice service not available');
+      if (import.meta.env.DEV) console.error('❌ Voice service not available');
       showSmartSuggestion('Voice service not available. Please check microphone permissions.');
       return;
     }
     
     if (isListening) {
-      console.log('🛑 Stopping voice listening...');
+      if (import.meta.env.DEV) console.log('🛑 Stopping voice listening...');
       voiceServiceRef.current.stopListening();
       setIsListening(false);
       setIsWakeWordMode(false);
@@ -441,9 +490,9 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
       stopAllAudio();
       setVoiceText(`🎤 "${currentExerciseState.weight} for ${currentExerciseState.reps}, felt perfect"`);
     } else {
-      console.log('🎤 Starting voice listening...');
+      if (import.meta.env.DEV) console.log('🎤 Starting voice listening...');
       const success = await voiceServiceRef.current.startListening();
-      console.log('🎤 Voice listening start result:', success);
+      if (import.meta.env.DEV) console.log('🎤 Voice listening start result:', success);
       if (success) {
         setIsListening(true);
         setIsWakeWordMode(false);
@@ -451,7 +500,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
         setVoiceText('🎤 Listening... Say "Hey Couch" to activate AI assistant');
         showSmartSuggestion('Voice recognition active. Say "Hey Couch" to start chatting with your AI coach!');
       } else {
-        console.error('❌ Failed to start voice recognition');
+        if (import.meta.env.DEV) console.error('❌ Failed to start voice recognition');
         showSmartSuggestion('Failed to start voice recognition. Please check microphone permissions.');
       }
     }
@@ -508,7 +557,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
   };
 
   const startRestTimer = () => {
-    console.log('Starting/restarting rest timer');
+    if (import.meta.env.DEV) console.log('Starting/restarting rest timer');
     
     // Always stop any existing timer first
     if (timerIntervalRef.current) {
@@ -525,7 +574,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
     
     timerIntervalRef.current = setInterval(() => {
       setRestTime(prev => {
-        console.log('Timer tick - Current:', prev, 'Next will be:', prev - 1);
+        if (import.meta.env.DEV) console.log('Timer tick - Current:', prev, 'Next will be:', prev - 1);
         
         // Play warning sound at 10 seconds remaining
         if (prev === 10) {
@@ -534,7 +583,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
         
         // If timer is at 0 or less, complete it
         if (prev <= 0) {
-          console.log('Timer completed, resetting to default');
+          if (import.meta.env.DEV) console.log('Timer completed, resetting to default');
           clearInterval(timerIntervalRef.current!);
           timerIntervalRef.current = null;
           setTimerRunning(false);
@@ -545,7 +594,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
         
         // Count down normally
         const nextTime = prev - 1;
-        console.log('Timer counting down:', prev, '→', nextTime);
+        if (import.meta.env.DEV) console.log('Timer counting down:', prev, '→', nextTime);
         return nextTime;
       });
     }, 1000);
@@ -691,13 +740,13 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
   // Initialize Voice Service
   useEffect(() => {
     const initVoiceService = async () => {
-      console.log('🎤 Starting voice service initialization...');
+      if (import.meta.env.DEV) console.log('🎤 Starting voice service initialization...');
       try {
         const service = getFixedVoiceService();
-        console.log('🎤 Voice service instance created:', service);
+        if (import.meta.env.DEV) console.log('🎤 Voice service instance created:', service);
         
         const initialized = await service.initialize();
-        console.log('🎤 Voice service initialization result:', initialized);
+        if (import.meta.env.DEV) console.log('🎤 Voice service initialization result:', initialized);
         
         if (initialized) {
           voiceServiceRef.current = service;
@@ -705,29 +754,29 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
           
           // Subscribe to voice state changes
           service.onStateChange((state) => {
-            console.log('🎤 Voice state changed:', state);
+            if (import.meta.env.DEV) console.log('🎤 Voice state changed:', state);
             setIsListening(state.isListening);
             setVoiceTranscript(state.transcript);
             setVoiceConfidence(state.confidence);
             
             // Process transcript if we have one and confidence is reasonable
             if (state.transcript && state.transcript.trim().length > 0) {
-              console.log('🎤 Processing transcript:', state.transcript, 'Confidence:', state.confidence);
+              if (import.meta.env.DEV) console.log('🎤 Processing transcript:', state.transcript, 'Confidence:', state.confidence);
               // Lower confidence threshold to catch more commands
               if (state.confidence > 0.3) {
                 processVoiceCommand(state.transcript);
               } else {
-                console.log('🎤 Low confidence transcript ignored:', state.transcript);
+                if (import.meta.env.DEV) console.log('🎤 Low confidence transcript ignored:', state.transcript);
               }
             }
           });
           
-          console.log('✅ Voice service initialized successfully');
+          if (import.meta.env.DEV) console.log('✅ Voice service initialized successfully');
         } else {
-          console.error('❌ Failed to initialize voice service');
+          if (import.meta.env.DEV) console.error('❌ Failed to initialize voice service');
         }
       } catch (error) {
-        console.error('❌ Voice service initialization error:', error);
+        if (import.meta.env.DEV) console.error('❌ Voice service initialization error:', error);
       }
     };
 
@@ -753,7 +802,7 @@ export const EnhancedWorkoutLogger: React.FC<EnhancedWorkoutLoggerProps> = ({
 
   // Debug timer state
   useEffect(() => {
-    console.log('Timer state changed:', { timerRunning, restTime, showTimerExpanded });
+    if (import.meta.env.DEV) console.log('Timer state changed:', { timerRunning, restTime, showTimerExpanded });
   }, [timerRunning, restTime, showTimerExpanded]);
 
   // Ensure timer interval is cleaned up properly
@@ -2241,19 +2290,51 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
     
     setIsLoadingAllExercises(true);
     try {
-      // Get all exercises from our database
-      const allExercisesFromDB = EXERCISE_DATABASE.map(exercise => ({
-        id: exercise.id,
-        name: exercise.name,
-        category: exercise.category,
-        muscleGroups: exercise.muscleGroups,
-        equipment: exercise.equipment,
-        difficulty: exercise.difficulty,
-        instructions: exercise.instructions,
-        tips: exercise.tips
-      }));
-      
-      setAllExercises(allExercisesFromDB);
+      // Try unified hybrid DB first
+      const db = ExerciseDatabaseService.getInstance();
+      await db.initialize();
+
+      // Build a broad list by querying common muscles to avoid a heavy "get all"
+      const commonMuscles = ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'quad', 'hamstrings', 'glutes', 'core'];
+      const collected: Record<string, any> = {};
+      for (const m of commonMuscles) {
+        // eslint-disable-next-line no-await-in-loop
+        const byMuscle = await db.searchByMuscle(m, 50);
+        for (const ex of byMuscle) {
+          if (!collected[ex.id]) {
+            collected[ex.id] = {
+              id: ex.id,
+              name: ex.name,
+              category: ex.category,
+              muscleGroups: [...(ex.primaryMuscles || []), ...(ex.secondaryMuscles || [])],
+              equipment: ex.equipment || [],
+              difficulty: ex.difficulty === 'beginner' ? 1 : ex.difficulty === 'advanced' ? 4 : 3,
+              instructions: ex.instructions || [],
+              tips: ex.ai?.formCues || [],
+              gifUrl: ex.gifUrl,
+              imageUrl: (ex as any).imageUrl
+            };
+          }
+        }
+      }
+
+      const dbList = Object.values(collected) as any[];
+      if (dbList.length > 0) {
+        setAllExercises(dbList.slice(0, 300)); // cap for UI
+      } else {
+        // Fallback to static constants if DB empty/unavailable
+        const allExercisesFromConstants = EXERCISE_DATABASE.map(exercise => ({
+          id: exercise.id,
+          name: exercise.name,
+          category: exercise.category,
+          muscleGroups: exercise.muscleGroups,
+          equipment: exercise.equipment,
+          difficulty: exercise.difficulty,
+          instructions: exercise.instructions,
+          tips: exercise.tips
+        }));
+        setAllExercises(allExercisesFromConstants);
+      }
     } catch (error) {
       console.error('Failed to load exercises:', error);
       setAllExercises([]);
@@ -2269,26 +2350,65 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
     try {
       const currentExercise = workoutExercises[currentExerciseIndex];
       
-      // First, try to find alternatives from our database
-      let alternatives = [];
+      // Prefer unified DB suggestions first
+      const db = ExerciseDatabaseService.getInstance();
+      await db.initialize();
+      let alternatives: any[] = [];
+      let dbBase: any | undefined;
+      const nameHits = await db.searchByName(currentExercise?.name || '', 1);
+      if (nameHits && nameHits.length > 0) {
+        dbBase = nameHits[0];
+        const similar = await db.getSimilarExercises(dbBase.id);
+        alternatives = similar.map(sim => ({
+          id: sim.id,
+          name: sim.name,
+          equipment: (sim.equipment || []).join(', '),
+          reason: sim.gifUrl ? 'Similar muscles (with GIF)' : 'Similar muscles',
+          muscles: [...(sim.primaryMuscles || []), ...(sim.secondaryMuscles || [])].join(', ')
+        })).slice(0, 6);
+      } else {
+        // Fallback: broad search by likely related muscles
+        const likelyMuscles = ['chest', 'shoulders', 'triceps'];
+        const byMuscle: any[] = [];
+        for (const m of likelyMuscles) {
+          // eslint-disable-next-line no-await-in-loop
+          const res = await db.searchByMuscle(m, 10);
+          byMuscle.push(...res);
+        }
+        const uniq = new Map<string, any>();
+        for (const ex of byMuscle) if (!uniq.has(ex.id)) uniq.set(ex.id, ex);
+        alternatives = Array.from(uniq.values()).map(sim => ({
+          id: sim.id,
+          name: sim.name,
+          equipment: (sim.equipment || []).join(', '),
+          reason: sim.gifUrl ? 'Similar muscles (with GIF)' : 'Similar muscles',
+          muscles: [...(sim.primaryMuscles || []), ...(sim.secondaryMuscles || [])].join(', ')
+        })).slice(0, 6);
+      }
       
-      // Search by exercise name for variations
-      const searchResults = searchExercises(currentExercise?.name || '');
+      // If still thin, fallback to legacy constants-based suggestions
+      if (alternatives.length < 3) {
+        // Search by exercise name for variations
+        const searchResults = searchExercises(currentExercise?.name || '');
+        // Get exercises that target similar muscle groups
+        const chestExercises = getExercisesByMuscleGroup(MuscleGroup.CHEST);
+        const shoulderExercises = getExercisesByMuscleGroup(MuscleGroup.SHOULDERS);
+        const tricepExercises = getExercisesByMuscleGroup(MuscleGroup.TRICEPS);
+        const allRelated = [...chestExercises, ...shoulderExercises, ...tricepExercises];
+        const uniqueAlternatives = allRelated.filter(exercise => 
+          exercise.name !== currentExercise?.name
+        ).slice(0, 5);
+        const legacy = [...searchResults, ...uniqueAlternatives].map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          equipment: (e.equipment || []).join ? (e.equipment || []).join(', ') : (Array.isArray(e.equipment) ? e.equipment.join(', ') : String(e.equipment || '')),
+          reason: 'Similar movement/muscles',
+          muscles: (e.muscleGroups || []).join(', ')
+        }));
+        alternatives = [...alternatives, ...legacy];
+      }
       
-      // Get exercises that target similar muscle groups
-      const chestExercises = getExercisesByMuscleGroup(MuscleGroup.CHEST);
-      const shoulderExercises = getExercisesByMuscleGroup(MuscleGroup.SHOULDERS);
-      const tricepExercises = getExercisesByMuscleGroup(MuscleGroup.TRICEPS);
-      
-      // Combine and filter unique exercises
-      const allRelated = [...chestExercises, ...shoulderExercises, ...tricepExercises];
-      const uniqueAlternatives = allRelated.filter(exercise => 
-        exercise.name !== currentExercise?.name
-      ).slice(0, 5);
-      
-      alternatives = [...searchResults, ...uniqueAlternatives];
-      
-      // If we don't have enough alternatives, use AI to generate more
+      // If we still don't have enough, use AI to generate more
       if (alternatives.length < 3) {
         const prompt = `I'm doing ${currentExercise?.name} but want alternatives. Suggest 3-4 different exercises that target similar muscles (chest, shoulders, triceps) but use different equipment or movement patterns. Keep each suggestion under 30 words.`;
         
@@ -2532,9 +2652,18 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
             </div>
           </div>
           
+          {/* Header Right Controls */}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+            {/* Toggle Exercise Info */}
+            <button
+              onClick={() => setShowExerciseInfo(prev => !prev)}
+              className={`w-16 h-16 rounded-lg ${showExerciseInfo ? 'bg-blue-500/30 text-blue-300 border border-blue-500/40' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'} hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-1`}
+              title="Exercise Info"
+            >
+              <div className="text-lg font-bold">ℹ️</div>
+              <span className="text-xs font-medium">Info</span>
+            </button>
 
-            
             {/* Change Exercise Button */}
             <button
               onClick={() => {
@@ -2567,37 +2696,25 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
                   generateAlternativeExercises();
                 }
               }}
-              disabled={isGeneratingAlternatives}
-              className="w-16 h-16 rounded-lg bg-lime-500/20 text-lime-400 border border-lime-500/30 hover:bg-lime-500/30 hover:scale-105 transition-all duration-200 disabled:opacity-50 flex flex-col items-center justify-center gap-1"
+              className="w-16 h-16 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-1"
             >
-              {isGeneratingAlternatives ? (
-                <>
-                  <div className="w-4 h-4 border border-lime-400 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-xs font-medium">Loading</span>
-                </>
-              ) : (
-                <>
-                  <div className="text-lg font-bold">💡</div>
-                  <span className="text-xs font-medium">Alt</span>
-                </>
-              )}
+              <div className="text-lg font-bold">✨</div>
+              <span className="text-xs font-medium">Alternatives</span>
             </button>
             
-            {/* How Do You Feel Button */}
             <button
               onClick={() => setShowDifficultyModal(true)}
               className="w-16 h-16 rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/30 hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-1"
             >
-              <div className="text-lg font-bold">⚡</div>
-              <span className="text-xs font-medium">Feel</span>
+              <div className="text-lg font-bold">⚖️</div>
+              <span className="text-xs font-medium">RPE</span>
             </button>
             
-            {/* Something Hurts Button */}
             <button
               onClick={() => setShowPainModal(true)}
               className="w-16 h-16 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30 hover:bg-orange-500/30 hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-1"
             >
-              <div className="text-lg font-bold">🩹</div>
+              <div className="text-lg font-bold">⚕️</div>
               <span className="text-xs font-medium">Pain</span>
             </button>
           </div>
@@ -3189,11 +3306,22 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
               <p className="text-sm text-gray-400 mb-3">
                 Choose any exercise from our database to replace the current exercise
               </p>
+              <div className="flex items-center gap-2 mb-3">
+                <input
+                  value={exerciseSearch}
+                  onChange={(e) => setExerciseSearch(e.target.value)}
+                  placeholder="Search exercises..."
+                  className="flex-1 px-3 py-2 bg-gray-800 text-gray-200 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-                {['All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'].map(category => (
+                {(['All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'] as const).map(category => (
                   <button
                     key={category}
-                    className="px-3 py-2 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+                    onClick={() => setExerciseFilter(category)}
+                    className={`px-3 py-2 text-xs rounded-lg transition-colors ${
+                      exerciseFilter === category ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
                   >
                     {category}
                   </button>
@@ -3202,23 +3330,52 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
             </div>
             
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {allExercises.map((exercise) => (
+              {allExercises.filter((exercise) => {
+                const nameMatch = !exerciseSearch || exercise.name.toLowerCase().includes(exerciseSearch.toLowerCase());
+                const tag = exercise.muscleGroups?.[0] || '';
+                const filterMatch = exerciseFilter === 'All' || (typeof tag === 'string' && tag.toLowerCase().includes(exerciseFilter.toLowerCase()));
+                return nameMatch && filterMatch;
+              }).map((exercise) => (
                 <button
                   key={exercise.id}
                   onClick={() => swapExercise(exercise)}
                   className="w-full p-4 glass rounded-lg text-left hover:bg-white/5 transition-modern"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="text-lg font-semibold text-white mb-1">{exercise.name}</div>
-                      <div className="text-sm text-gray-400 mb-2">
-                        {exercise.muscleGroups?.join(', ') || 'Multiple muscle groups'}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-12 h-12 bg-black/20 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {exercise.gifUrl ? (
+                          <img
+                            src={exercise.gifUrl}
+                            alt={exercise.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              if (exercise.imageUrl) {
+                                target.src = exercise.imageUrl as string;
+                              } else {
+                                (target.parentElement as HTMLElement).innerHTML = '<div class="text-[10px] text-gray-500]">No GIF</div>';
+                              }
+                            }}
+                          />
+                        ) : exercise.imageUrl ? (
+                          <img src={exercise.imageUrl as string} alt={exercise.name} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="text-[10px] text-gray-500">No GIF</div>
+                        )}
                       </div>
-                      <div className="text-xs text-purple-400">
-                        Equipment: {exercise.equipment?.join(', ') || 'Bodyweight'}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-lg font-semibold text-white mb-1 truncate">{exercise.name}</div>
+                        <div className="text-sm text-gray-400 mb-1 truncate">
+                          {exercise.muscleGroups?.join(', ') || 'Multiple muscle groups'}
+                        </div>
+                        <div className="text-xs text-purple-400 truncate">
+                          Equipment: {exercise.equipment?.join(', ') || 'Bodyweight'}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 ml-4">
+                    <div className="text-xs text-gray-500 ml-4 whitespace-nowrap">
                       Difficulty: {exercise.difficulty || 'N/A'}
                     </div>
                   </div>
@@ -3932,9 +4089,11 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
           {isListening ? (
             <div className="relative">
               <Mic className="w-7 h-7 text-white animate-pulse" />
-              <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full animate-ping ${
-                isWakeWordMode ? 'bg-green-400' : 'bg-red-500'
-              }`}></div>
+              {isWakeWordMode ? (
+                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-ping bg-green-400"></div>
+              ) : (
+                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-ping bg-red-500"></div>
+              )}
             </div>
           ) : (
             <div className="relative">
@@ -4064,7 +4223,47 @@ Coach: "Great! I've updated it to ${context.lastSetWeight + 5} lbs. You've got t
         </div>
       )}
 
-
+      {/* Exercise Info Panel */}
+      {showExerciseInfo && (
+        <div className="mt-3 p-3 glass rounded-lg border border-blue-500/20">
+          {loadingExerciseInfo ? (
+            <div className="text-sm text-gray-300">Loading info...</div>
+          ) : exerciseInfo ? (
+            <div className="flex gap-3 items-start">
+              <div className="w-20 h-20 bg-black/20 rounded overflow-hidden flex items-center justify-center">
+                {exerciseInfo.gifUrl ? (
+                  <img src={exerciseInfo.gifUrl} alt={exerciseInfo.name} className="w-full h-full object-cover" loading="lazy" />
+                ) : exerciseInfo.similarGif?.gifUrl ? (
+                  <img src={exerciseInfo.similarGif.gifUrl} alt={exerciseInfo.similarGif.name} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <span className="text-xs text-gray-500">No GIF</span>
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="text-sm text-white font-semibold mb-1">{exerciseInfo.name}</div>
+                <div className="text-xs text-gray-400 mb-1">
+                  Muscles: {[...(exerciseInfo.primary||[]), ...(exerciseInfo.secondary||[])].join(', ') || '—'}
+                </div>
+                <div className="text-xs text-gray-400 mb-2">
+                  Equipment: {(exerciseInfo.equipment||[]).join(', ') || '—'}
+                </div>
+                {exerciseInfo.instructions && exerciseInfo.instructions.length > 0 && (
+                  <ul className="text-xs text-gray-300 list-disc pl-4 space-y-1">
+                    {exerciseInfo.instructions.slice(0, 4).map((line: string, idx: number) => (
+                      <li key={idx}>{line}</li>
+                    ))}
+                  </ul>
+                )}
+                {!exerciseInfo.gifUrl && exerciseInfo.similarGif?.gifUrl && (
+                  <div className="mt-2 text-xs text-blue-300">Showing similar exercise GIF: {exerciseInfo.similarGif.name}</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-300">No info found for this exercise.</div>
+          )}
+        </div>
+      )}
 
     </div>
   );

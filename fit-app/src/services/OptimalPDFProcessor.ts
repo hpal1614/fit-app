@@ -8,7 +8,7 @@
  * - Bulletproof error handling
  */
 
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 import type { StoredWorkoutTemplate, DayWorkout } from './workoutStorageService';
 import { v4 as uuidv4 } from 'uuid';
 

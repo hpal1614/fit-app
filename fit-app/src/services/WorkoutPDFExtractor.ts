@@ -7,7 +7,7 @@
  *  Overhead Barbell Press 3 4 - 6 60 Sec"
  */
 
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 import type { StoredWorkoutTemplate, DayWorkout } from './workoutStorageService';
 // Generate UUID function
 function generateId(): string {
