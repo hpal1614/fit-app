@@ -25,9 +25,11 @@ class WorkoutDatabase extends Dexie {
   constructor() {
     super('FitnessCoachDB');
     
-    this.version(1).stores({
+    // Bump version to ensure stores exist after prior malformed schemas
+    this.version(3).stores({
       workouts: '++id, date, name, startTime, endTime, totalVolume, duration',
-      exercises: '++id, name, category, &muscleGroups, equipment',
+      // Use multiEntry index for muscleGroups instead of unique
+      exercises: '++id, name, category, muscleGroups*, equipment',
       sets: '++id, workoutExerciseId, reps, weight, completedAt, restTime',
       templates: '++id, name, category, difficulty, estimatedDuration',
       personalRecords: '++id, exerciseId, type, value, date, workoutId'
@@ -40,13 +42,11 @@ class WorkoutDatabase extends Dexie {
   }
 
   private async populateDefaultData() {
-    // Add default exercises if none exist
     const exerciseCount = await this.exercises.count();
     if (exerciseCount === 0) {
       await this.exercises.bulkAdd(EXERCISE_DATABASE);
     }
 
-    // Add default templates if none exist
     const templateCount = await this.templates.count();
     if (templateCount === 0) {
       await this.templates.bulkAdd(WORKOUT_TEMPLATES);
@@ -64,6 +64,7 @@ export class WorkoutService {
   private restTimer: number | null = null;
   private workoutTimer: number | null = null;
   private startTime: Date | null = null;
+  private dbReady: Promise<void>;
 
   // Event callbacks
   private onWorkoutUpdate?: (workout: Workout) => void;
@@ -71,12 +72,29 @@ export class WorkoutService {
   private onPersonalRecord?: (record: PersonalRecord) => void;
   private onRestTimerUpdate?: (timeRemaining: number) => void;
 
+  // Expose DB open state to callers that manage lifecycle across HMR
+  public isDbOpen(): boolean {
+    try {
+      return this.db.isOpen();
+    } catch {
+      return false;
+    }
+  }
+
   constructor(preferences?: Partial<WorkoutPreferences>) {
     this.db = new WorkoutDatabase();
     this.preferences = this.getDefaultPreferences();
     if (preferences) {
       this.preferences = { ...this.preferences, ...preferences };
     }
+    // Eagerly open DB; if schema mismatch, delete and recreate
+    this.dbReady = this.db.open().catch(async (e: any) => {
+      try {
+        await Dexie.delete('FitnessCoachDB');
+      } catch {}
+      this.db = new WorkoutDatabase();
+      await this.db.open();
+    }).then(() => {});
   }
 
   // Start a new workout
@@ -443,6 +461,7 @@ export class WorkoutService {
 
   // Get workout history
   async getWorkoutHistory(limit = 50): Promise<Workout[]> {
+    await this.dbReady;
     return await this.db.workouts
       .orderBy('date')
       .reverse()
@@ -613,11 +632,256 @@ export class WorkoutService {
 
   // Template methods
   async getWorkoutTemplates(): Promise<WorkoutTemplate[]> {
+    await this.dbReady;
     return await this.db.templates.toArray();
   }
 
   async getWorkoutTemplate(id: string): Promise<WorkoutTemplate | undefined> {
     return await this.db.templates.get(id);
+  }
+
+  async saveWorkoutTemplate(template: WorkoutTemplate): Promise<string> {
+    await this.dbReady;
+    const id = template.id || this.generateId();
+    const templateToSave = {
+      ...template,
+      id,
+      createdAt: template.createdAt || new Date(),
+      updatedAt: new Date()
+    };
+    await this.db.templates.put(templateToSave);
+    return id;
+  }
+
+  async updateWorkoutTemplate(template: WorkoutTemplate): Promise<void> {
+    await this.dbReady;
+    const templateToUpdate = {
+      ...template,
+      updatedAt: new Date()
+    };
+    await this.db.templates.put(templateToUpdate);
+  }
+
+  async deleteWorkoutTemplate(id: string): Promise<void> {
+    await this.dbReady;
+    await this.db.templates.delete(id);
+  }
+
+  async getTemplatesByCategory(category: string): Promise<WorkoutTemplate[]> {
+    await this.dbReady;
+    return await this.db.templates
+      .where('category')
+      .equals(category)
+      .toArray();
+  }
+
+  async getTemplatesByType(type: 'custom' | 'ai' | 'uploaded' | 'prebuilt'): Promise<WorkoutTemplate[]> {
+    await this.dbReady;
+    return await this.db.templates
+      .where('type')
+      .equals(type)
+      .toArray();
+  }
+
+  async initializeDefaultTemplates(): Promise<void> {
+    await this.dbReady;
+    
+    // Check if templates already exist
+    const existingTemplates = await this.db.templates.toArray();
+    if (existingTemplates.length > 0) {
+      return; // Templates already exist
+    }
+
+    const defaultTemplates: WorkoutTemplate[] = [
+      {
+        id: 'prebuilt-beginner-strength',
+        name: 'Beginner Strength Program',
+        description: 'Perfect for those new to strength training. Focus on form and building a solid foundation.',
+        category: 'strength',
+        difficulty: 'beginner',
+        estimatedDuration: 45,
+        type: 'prebuilt',
+        exercises: [
+          {
+            exerciseId: 'squats',
+            exercise: {
+              id: 'squats',
+              name: 'Squats',
+              category: 'strength',
+              muscleGroups: ['quadriceps', 'glutes', 'hamstrings'],
+              equipment: ['barbell'],
+              instructions: ['Stand with feet shoulder-width apart', 'Lower your body as if sitting back into a chair', 'Keep your chest up and knees behind toes'],
+              tips: ['Focus on form over weight', 'Go as deep as you can while maintaining good form']
+            },
+            targetSets: 3,
+            targetReps: 10,
+            targetWeight: 0,
+            order: 1
+          },
+          {
+            exerciseId: 'push-ups',
+            exercise: {
+              id: 'push-ups',
+              name: 'Push-ups',
+              category: 'strength',
+              muscleGroups: ['chest', 'triceps', 'shoulders'],
+              equipment: ['bodyweight'],
+              instructions: ['Start in a plank position', 'Lower your body until chest nearly touches the ground', 'Push back up to starting position'],
+              tips: ['Keep your body in a straight line', 'Modify on knees if needed']
+            },
+            targetSets: 3,
+            targetReps: 8,
+            targetWeight: 0,
+            order: 2
+          },
+          {
+            exerciseId: 'plank',
+            exercise: {
+              id: 'plank',
+              name: 'Plank',
+              category: 'core',
+              muscleGroups: ['abs', 'core', 'shoulders'],
+              equipment: ['bodyweight'],
+              instructions: ['Hold a push-up position with arms straight', 'Keep your body in a straight line', 'Engage your core'],
+              tips: ['Don\'t let your hips sag', 'Breathe steadily']
+            },
+            targetSets: 3,
+            targetReps: 30,
+            targetWeight: 0,
+            order: 3
+          }
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'prebuilt-intermediate-cardio',
+        name: 'Intermediate Cardio Blast',
+        description: 'High-intensity cardio workout to boost endurance and burn calories.',
+        category: 'cardio',
+        difficulty: 'intermediate',
+        estimatedDuration: 30,
+        type: 'prebuilt',
+        exercises: [
+          {
+            exerciseId: 'jumping-jacks',
+            exercise: {
+              id: 'jumping-jacks',
+              name: 'Jumping Jacks',
+              category: 'cardio',
+              muscleGroups: ['full-body'],
+              equipment: ['bodyweight'],
+              instructions: ['Start standing with feet together', 'Jump feet apart while raising arms overhead', 'Return to starting position'],
+              tips: ['Keep a steady rhythm', 'Land softly']
+            },
+            targetSets: 3,
+            targetReps: 50,
+            targetWeight: 0,
+            order: 1
+          },
+          {
+            exerciseId: 'mountain-climbers',
+            exercise: {
+              id: 'mountain-climbers',
+              name: 'Mountain Climbers',
+              category: 'cardio',
+              muscleGroups: ['abs', 'shoulders'],
+              equipment: ['bodyweight'],
+              instructions: ['Start in plank position', 'Alternate bringing knees toward chest', 'Keep your core engaged'],
+              tips: ['Maintain plank position', 'Move quickly but controlled']
+            },
+            targetSets: 3,
+            targetReps: 30,
+            targetWeight: 0,
+            order: 2
+          },
+          {
+            exerciseId: 'burpees',
+            exercise: {
+              id: 'burpees',
+              name: 'Burpees',
+              category: 'cardio',
+              muscleGroups: ['full-body'],
+              equipment: ['bodyweight'],
+              instructions: ['Start standing', 'Drop into squat position', 'Kick feet back to plank', 'Perform push-up', 'Jump feet forward', 'Jump up with arms overhead'],
+              tips: ['Full body exercise', 'Modify push-up if needed']
+            },
+            targetSets: 3,
+            targetReps: 10,
+            targetWeight: 0,
+            order: 3
+          }
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'prebuilt-advanced-strength',
+        name: 'Advanced Strength Builder',
+        description: 'Intense strength training program for experienced lifters looking to build muscle and power.',
+        category: 'strength',
+        difficulty: 'advanced',
+        estimatedDuration: 75,
+        type: 'prebuilt',
+        exercises: [
+          {
+            exerciseId: 'deadlifts',
+            exercise: {
+              id: 'deadlifts',
+              name: 'Deadlifts',
+              category: 'strength',
+              muscleGroups: ['back', 'legs', 'glutes'],
+              equipment: ['barbell'],
+              instructions: ['Stand with feet hip-width apart', 'Bend at hips and knees to lower hands to bar', 'Lift bar by extending hips and knees', 'Keep bar close to body'],
+              tips: ['Maintain neutral spine', 'Drive through heels']
+            },
+            targetSets: 4,
+            targetReps: 6,
+            targetWeight: 0,
+            order: 1
+          },
+          {
+            exerciseId: 'bench-press',
+            exercise: {
+              id: 'bench-press',
+              name: 'Bench Press',
+              category: 'strength',
+              muscleGroups: ['chest', 'triceps', 'shoulders'],
+              equipment: ['barbell', 'bench'],
+              instructions: ['Lie on bench with feet flat', 'Grip bar slightly wider than shoulders', 'Lower bar to chest', 'Press bar back up'],
+              tips: ['Keep shoulder blades retracted', 'Control the descent']
+            },
+            targetSets: 4,
+            targetReps: 8,
+            targetWeight: 0,
+            order: 2
+          },
+          {
+            exerciseId: 'pull-ups',
+            exercise: {
+              id: 'pull-ups',
+              name: 'Pull-ups',
+              category: 'strength',
+              muscleGroups: ['back', 'biceps'],
+              equipment: ['pull-up-bar'],
+              instructions: ['Hang from bar with hands shoulder-width apart', 'Pull your body up until chin over bar', 'Lower back down with control'],
+              tips: ['Engage your back muscles', 'Avoid swinging']
+            },
+            targetSets: 4,
+            targetReps: 8,
+            targetWeight: 0,
+            order: 3
+          }
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+
+    // Save all default templates
+    for (const template of defaultTemplates) {
+      await this.db.templates.put(template);
+    }
   }
 
   // Event handlers
@@ -691,7 +955,7 @@ export class WorkoutService {
 let workoutServiceInstance: WorkoutService | null = null;
 
 export function getWorkoutService(preferences?: Partial<WorkoutPreferences>): WorkoutService {
-  if (!workoutServiceInstance) {
+  if (!workoutServiceInstance || !workoutServiceInstance.isDbOpen()) {
     workoutServiceInstance = new WorkoutService(preferences);
   }
   return workoutServiceInstance;
