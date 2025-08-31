@@ -2,13 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import NutritionMacros from '../finalUI/NutritionMacros';
 import NutritionWater from '../finalUI/NutritionWater';
 
-// Try to use the rich nutrition API from the nested implementation
-// If project config disallows cross-folder import, this file will still compile
-// because we guard usage behind availability checks.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import { useNutritionAPI } from '../../../fit-app/src/hooks/useNutritionAPI';
-
 type MealKey = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 interface FoodSearchItem {
@@ -75,13 +68,7 @@ const NutritionTab: React.FC<NutritionTabProps> = ({ aiCoach }) => {
   const [recipeIngredients, setRecipeIngredients] = useState('');
   const [recipeSuggestion, setRecipeSuggestion] = useState<string>('');
 
-  let api: ReturnType<typeof useNutritionAPI> | null = null;
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    api = useNutritionAPI();
-  } catch {
-    api = null;
-  }
+  const api = null;
 
   const addFoodItem = (meal: MealKey, item: FoodSearchItem, quantity = 1) => {
     setItems(prev => [

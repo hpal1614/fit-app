@@ -19,7 +19,7 @@ import './index.css';
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [showChat, setShowChat] = useState(false);
-  const [showFinalUI, setShowFinalUI] = useState(true); // Default to showing the new UI
+  const [showFinalUI, setShowFinalUI] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [showWorkoutCardTest, setShowWorkoutCardTest] = useState(false);
   const [showBeautifulWorkoutCardTest, setShowBeautifulWorkoutCardTest] = useState(false);
@@ -215,7 +215,7 @@ function App() {
               aiCoach={aiCoach}
             />
           )}
-          {activeTab === 'dashboard' && (
+          {(activeTab === 'dashboard' || true) && (
             <FinalUI 
               workoutLogger={workoutLogger}
               voiceRecognition={voiceRecognition}
