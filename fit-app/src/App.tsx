@@ -16,7 +16,7 @@ import TestFinalUI from './components/finalUI/TestFinalUI';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'nutrition' | 'ai-coach' | 'final-ui' | 'test' | 'debug' | 'comprehensive'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'nutrition' | 'ai-coach' | 'final-ui' | 'test' | 'debug' | 'comprehensive'>('final-ui');
   const [isAppReady, setIsAppReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
