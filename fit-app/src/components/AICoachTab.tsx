@@ -14,9 +14,18 @@ export const AICoachTab: React.FC = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto p-4">
+        {/* Visual confirmation banner for active AI Coach build */}
+        <div
+          id="ai-coach-visual-marker"
+          className="mb-4 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg"
+          style={{ backgroundColor: '#a5e635', color: '#0b0b0b' }}
+        >
+          ✅ AI Coach Updated Mode Active
+        </div>
         <div className="h-[calc(100vh-200px)]">
           <AmazingAICoach 
             workoutContext={{}}
+            className="ring-4 ring-[#a5e635]"
           />
         </div>
       </div>

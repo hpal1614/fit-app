@@ -28,12 +28,17 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const workout = day?.workout;
 
-  const StatItem: React.FC<{label: string, value: React.ReactNode}> = ({label, value}) => (
-    <div className="text-center">
-        <p className="text-xs sm:text-sm text-gray-400">{label}</p>
-        <p className="text-lg sm:text-xl font-bold text-gray-100">{value}</p>
-    </div>
-  );
+  const StatItem: React.FC<{label: string, value: React.ReactNode}> = ({label, value}) => {
+    const valueTitle = typeof value === 'string' ? value : undefined;
+    return (
+      <div className="text-center min-w-0">
+          <p className="text-xs sm:text-sm text-gray-400">{label}</p>
+          <p className="text-lg sm:text-xl font-bold text-gray-100 truncate mx-auto max-w-full" title={valueTitle}>
+            {value}
+          </p>
+      </div>
+    );
+  };
 
   // Controls now visible whenever there is a workout (disable Start when not today)
   const shouldShowWorkoutControls = !!workout && !isWorkoutActive;
@@ -68,6 +73,21 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
     }
   };
 
+  const getDifficultyDisplay = (difficulty: string) => {
+    switch (difficulty?.toLowerCase?.()) {
+      case 'beginner':
+        return '1/5';
+      case 'intermediate':
+        return '3/5';
+      case 'advanced':
+        return '4/5';
+      case 'expert':
+        return '5/5';
+      default:
+        return 'N/A';
+    }
+  };
+
   const formatDayLabel = (dateLike: unknown) => {
     const d = dateLike instanceof Date ? dateLike : new Date(dateLike as any);
     return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
@@ -92,18 +112,18 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
         {workout ? (
           <div onClick={onViewDetails} className="bg-black/20 rounded-xl p-4 cursor-pointer hover:bg-black/30 transition-colors">
               <div className="flex justify-between items-start mb-4">
-                  <div>
-                      <h4 className="text-lg font-bold text-white">{workout.name}</h4>
-                      <p className="text-sm text-gray-400">{workout.category}</p>
+                  <div className="flex-1 min-w-0">
+                      <h4 className="text-lg font-bold text-white truncate" title={workout.name}>{workout.name}</h4>
+                      <p className="text-sm text-gray-400 truncate" title={workout.category}>{workout.category}</p>
                       <p className="text-xs text-gray-500 mt-1">{getStatusText()}</p>
                   </div>
-                  {getStatusIcon()}
+                  <div className="shrink-0">{getStatusIcon()}</div>
               </div>
 
               <div className="grid grid-cols-3 gap-4 border-t border-white/10 pt-4">
                 <StatItem label="Duration" value={`${workout.estimatedDuration || 'N/A'} min`} />
                 <StatItem label="Exercises" value={workout.exercises?.length || 0} />
-                <StatItem label="Difficulty" value={`${workout.difficulty}/5`} />
+                <StatItem label="Difficulty" value={getDifficultyDisplay(String(workout.difficulty))} />
               </div>
           </div>
         ) : (

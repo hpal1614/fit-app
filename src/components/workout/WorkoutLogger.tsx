@@ -44,7 +44,7 @@ export function WorkoutLogger({
   };
 
   const getDifficultyColor = (level: number) => {
-    const colors = ['bg-green-500', 'bg-yellow-500', 'bg-orange-500', 'bg-red-500', 'bg-purple-500'];
+    const colors = ['bg-success', 'bg-accent', 'bg-warning', 'bg-error', 'bg-secondary'];
     return colors[level - 1];
   };
 
@@ -55,17 +55,20 @@ export function WorkoutLogger({
 
   if (!isRecording || !workout) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div className="text-center py-8">
-          <Dumbbell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <div className="card p-8">
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-gray-100 dark:bg-dark-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Dumbbell className="w-10 h-10 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
             No Active Workout
           </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            Start a workout to begin logging your exercises
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+            Start a workout to begin logging your exercises and tracking your progress
           </p>
-          <div className="text-sm text-gray-400 dark:text-gray-500">
-            Try saying: "Start workout" or "Start chest workout"
+          <div className="text-sm text-gray-500 dark:text-gray-500 bg-gray-50 dark:bg-dark-700 rounded-xl p-4">
+            <p className="font-medium mb-2">Try saying:</p>
+            <p>"Start workout" or "Start chest workout"</p>
           </div>
         </div>
       </div>
@@ -73,27 +76,27 @@ export function WorkoutLogger({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-6">
+    <div className="card p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             {workout.name}
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             {workout.exercises.length} exercises • {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} sets
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-fitness-green rounded-full animate-pulse" />
-          <span className="text-sm text-fitness-green font-medium">Recording</span>
+        <div className="flex items-center space-x-2 px-3 py-2 bg-primary/10 rounded-xl">
+          <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+          <span className="text-sm text-primary font-medium">Recording</span>
         </div>
       </div>
 
       {/* Current Exercise */}
       {currentExercise && (
-        <div className="border-2 border-fitness-blue rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
-          <div className="flex items-center justify-between mb-3">
+        <div className="border-2 border-primary/20 rounded-2xl p-6 bg-primary-50 dark:bg-primary-900/10">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               {currentExercise.exercise.name}
             </h3>
@@ -106,13 +109,13 @@ export function WorkoutLogger({
           </div>
 
           {/* Sets Display */}
-          <div className="space-y-2 mb-4">
+          <div className="space-y-3 mb-6">
             {currentExercise.sets.map((set, index) => (
-              <div key={index} className="flex items-center justify-between bg-white dark:bg-gray-700 rounded p-2">
-                <span className="text-sm font-medium">Set {index + 1}</span>
+              <div key={index} className="flex items-center justify-between bg-white dark:bg-dark-700 rounded-xl p-4 shadow-soft">
+                <span className="text-sm font-medium text-gray-900 dark:text-white">Set {index + 1}</span>
                 <div className="flex items-center space-x-4 text-sm">
-                  <span>{set.reps} reps</span>
-                  <span>{set.weight} {preferences.weightUnit}</span>
+                  <span className="text-gray-700 dark:text-gray-300">{set.reps} reps</span>
+                  <span className="text-gray-700 dark:text-gray-300">{set.weight} {preferences.weightUnit}</span>
                   {set.difficulty && (
                     <div className={`w-3 h-3 rounded-full ${getDifficultyColor(set.difficulty)}`} 
                          title={getDifficultyText(set.difficulty)} />
@@ -123,30 +126,30 @@ export function WorkoutLogger({
           </div>
 
           {/* Quick Log Controls */}
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Reps
                 </label>
                 <input
                   type="number"
                   value={quickLogReps}
                   onChange={(e) => setQuickLogReps(parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="input-modern w-full"
                   min="1"
                   max="50"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Weight ({preferences.weightUnit})
                 </label>
                 <input
                   type="number"
                   value={quickLogWeight}
                   onChange={(e) => setQuickLogWeight(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="input-modern w-full"
                   min="0"
                   step="2.5"
                 />
@@ -155,7 +158,7 @@ export function WorkoutLogger({
 
             {/* Difficulty Selection */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 How did it feel?
               </label>
               <div className="flex space-x-2">
@@ -164,10 +167,10 @@ export function WorkoutLogger({
                     key={level}
                     onClick={() => setDifficulty(level as 1 | 2 | 3 | 4 | 5)}
                     className={`
-                      flex-1 py-2 px-1 rounded text-xs font-medium transition-all
+                      flex-1 py-3 px-2 rounded-xl text-sm font-medium transition-all duration-200
                       ${difficulty === level 
-                        ? `${getDifficultyColor(level)} text-white scale-105` 
-                        : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:scale-105'
+                        ? `${getDifficultyColor(level)} text-white scale-105 shadow-medium` 
+                        : 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:scale-105 hover:bg-gray-200 dark:hover:bg-dark-600'
                       }
                     `}
                     title={getDifficultyText(level)}
@@ -176,7 +179,7 @@ export function WorkoutLogger({
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center">
                 {getDifficultyText(difficulty)}
               </p>
             </div>
@@ -185,16 +188,16 @@ export function WorkoutLogger({
             <button
               onClick={handleQuickLog}
               disabled={isLogging}
-              className="w-full bg-fitness-green hover:bg-green-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+              className="btn-primary w-full flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLogging ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   <span>Logging...</span>
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                   <span>Log Set</span>
                 </>
               )}
@@ -204,89 +207,63 @@ export function WorkoutLogger({
       )}
 
       {/* Exercise List */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-          Exercises
-        </h3>
-        <div className="space-y-2">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Workout Exercises</h3>
+        <div className="space-y-3">
           {workout.exercises.map((exercise, index) => (
             <div
-              key={exercise.id}
+              key={exercise.exercise.id}
               className={`
-                p-3 rounded-lg border-2 cursor-pointer transition-all
-                ${exercise.id === currentExercise?.id
-                  ? 'border-fitness-blue bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                p-4 rounded-xl transition-all duration-200 cursor-pointer
+                ${currentExercise?.exercise.id === exercise.exercise.id
+                  ? 'bg-primary-50 dark:bg-primary-900/20 border-2 border-primary/30'
+                  : 'bg-gray-50 dark:bg-dark-700 hover:bg-gray-100 dark:hover:bg-dark-600'
                 }
               `}
-              onClick={() => onSelectExercise(exercise.exerciseId)}
+              onClick={() => onSelectExercise(exercise.exercise.id)}
             >
               <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-white">
-                    {exercise.exercise.name}
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {exercise.sets.length} sets completed
-                    {exercise.targetSets && ` of ${exercise.targetSets}`}
-                  </p>
+                <div className="flex items-center space-x-3">
+                  <div className={`
+                    w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium
+                    ${currentExercise?.exercise.id === exercise.exercise.id
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-200 dark:bg-dark-600 text-gray-700 dark:text-gray-300'
+                    }
+                  `}>
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white">
+                      {exercise.exercise.name}
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {exercise.sets.length} sets logged
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {exercise.sets.reduce((total, set) => total + (set.weight * set.reps), 0)} {preferences.weightUnit}
+                    {exercise.sets.length > 0 ? exercise.sets[exercise.sets.length - 1].weight : 0} {preferences.weightUnit}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Volume
+                    Last set
                   </div>
                 </div>
               </div>
-
-              {/* Sets preview */}
-              {exercise.sets.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {exercise.sets.map((set, setIndex) => (
-                    <span
-                      key={setIndex}
-                      className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded"
-                    >
-                      {set.reps}×{set.weight}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Voice Commands Hint */}
-      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-          💡 Try saying: "Log {currentExercise?.exercise.name || 'bench press'} for {quickLogReps} reps at {quickLogWeight} pounds"
-        </p>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-fitness-blue">
-            {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Total Sets</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-fitness-green">
-            {Math.round(workout.totalVolume)}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Volume ({preferences.weightUnit})</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-fitness-orange">
-            {workout.exercises.length}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Exercises</div>
-        </div>
-      </div>
+      {/* Add Exercise Button */}
+      <button
+        onClick={() => onAddExercise('')}
+        className="w-full btn-ghost border-2 border-dashed border-gray-300 dark:border-dark-600 hover:border-primary dark:hover:border-primary py-4 rounded-xl transition-all duration-200"
+      >
+        <Plus className="w-5 h-5 mx-auto mb-2 text-gray-400" />
+        <span className="text-gray-600 dark:text-gray-400">Add Exercise</span>
+      </button>
     </div>
   );
 }

@@ -5,13 +5,25 @@ import { useWorkoutLogger } from './hooks/useWorkoutLogger';
 import { VoiceInterface } from './components/voice/VoiceInterface';
 import { WorkoutLogger } from './components/workout/WorkoutLogger';
 import { ChatInterface } from './components/ai/ChatInterface';
+import AICoachScreen from './components/ai/AICoachScreen';
 import { WorkoutTimer } from './components/workout/WorkoutTimer';
-import { VoiceCommandResult } from './types';
+import type { VoiceCommandResult } from './types';
+import { FinalUI } from './components/finalUI';
+import BottomNav, { type TabKey } from './components/BottomNav';
+import { TestWorkoutCard } from './components/finalUI/TestWorkoutCard';
+import { TestBeautifulWorkoutCard } from './components/finalUI/TestBeautifulWorkoutCard';
+import { WorkoutsHome } from './components/workout/WorkoutsHome';
+import NutritionTab from './components/nutrition/NutritionTab';
 import './index.css';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [showChat, setShowChat] = useState(false);
+  const [showFinalUI, setShowFinalUI] = useState(true); // Default to showing the new UI
+  const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
+  const [showWorkoutCardTest, setShowWorkoutCardTest] = useState(false);
+  const [showBeautifulWorkoutCardTest, setShowBeautifulWorkoutCardTest] = useState(false);
+  const [isWorkoutCardOpen, setIsWorkoutCardOpen] = useState(false);
 
   // Initialize hooks
   const workoutLogger = useWorkoutLogger();
@@ -185,61 +197,106 @@ function App() {
     }
   }, [workoutLogger.recentPersonalRecords.length]);
 
+  // If showing the new UI, render it
+  if (showFinalUI) {
+    return (
+      <div className={`min-h-screen transition-all duration-300 ${
+        isDarkMode ? 'dark bg-dark-900 text-white' : 'bg-gray-50 text-gray-900'
+      }`}>
+        {/* Header (hidden on AI tab) */}
+        {/* Header removed on all screens per request */}
+
+        {/* Main Content - Tabs */}
+        <main className="relative pb-24 lg:pb-0">
+          {activeTab === 'workouts' && (
+            <WorkoutsHome
+              workoutLogger={workoutLogger}
+              voiceRecognition={voiceRecognition}
+              aiCoach={aiCoach}
+            />
+          )}
+          {activeTab === 'dashboard' && (
+            <FinalUI 
+              workoutLogger={workoutLogger}
+              voiceRecognition={voiceRecognition}
+              aiCoach={aiCoach}
+              showChat={showChat}
+              onToggleChat={() => setShowChat(!showChat)}
+              onWorkoutCardStateChange={setIsWorkoutCardOpen}
+            />
+          )}
+          {activeTab === 'nutrition' && (
+            <NutritionTab aiCoach={aiCoach as any} />
+          )}
+          {activeTab === 'ai' && (
+            <AICoachScreen workoutContext={workoutLogger.getWorkoutContext()} />
+          )}
+        </main>
+
+        <BottomNav active={activeTab} onChange={setActiveTab} />
+
+        {/* Voice Command Help */}
+        {voiceRecognition.transcript && (
+          <div className="fixed bottom-6 left-6 right-6 md:left-auto md:w-96 glass p-4 rounded-2xl shadow-strong backdrop-blur-md animate-slide-up">
+            <p className="text-sm text-gray-900 dark:text-white">
+              <span className="opacity-75">You said:</span> "{voiceRecognition.transcript}"
+            </p>
+            <div className="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-2 mt-3">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{ width: `${voiceRecognition.confidence * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {(voiceRecognition.hasError || workoutLogger.hasError || aiCoach.hasError) && (
+          <div className="fixed top-6 right-6 glass p-4 rounded-2xl shadow-strong max-w-sm animate-slide-up">
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-white">Error</h4>
+                <p className="text-sm mt-1 text-gray-700 dark:text-gray-300">
+                  {voiceRecognition.error?.message || workoutLogger.error || aiCoach.error}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  voiceRecognition.clearError();
+                  workoutLogger.clearError();
+                  aiCoach.clearError();
+                }}
+                className="ml-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Test Workout Card Mode
+  if (showWorkoutCardTest) {
+    return <TestWorkoutCard />;
+  }
+
+  // Test Beautiful Workout Card Mode
+  if (showBeautifulWorkoutCardTest) {
+    return <TestBeautifulWorkoutCard />;
+  }
+
+  // Original UI (fallback)
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+    <div className={`min-h-screen transition-all duration-300 ${
+      isDarkMode ? 'dark bg-dark-900 text-white' : 'bg-gray-50 text-gray-900'
     }`}>
-      {/* Header */}
-      <header className="bg-gradient-to-r from-fitness-blue to-fitness-green p-4 shadow-lg">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-white">AI Fitness Coach</h1>
-            {workoutLogger.isWorkoutActive && (
-              <div className="text-white text-sm opacity-90">
-                <span className="bg-white/20 px-2 py-1 rounded">
-                  {workoutLogger.workoutDurationFormatted}
-                </span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {/* Voice Status Indicator */}
-            {voiceRecognition.isActive && (
-              <div className="flex items-center space-x-2 text-white">
-                <div className={`w-3 h-3 rounded-full animate-pulse ${
-                  voiceRecognition.isListening ? 'bg-voice-listening' : 
-                  voiceRecognition.isSpeaking ? 'bg-voice-speaking' : 'bg-voice-processing'
-                }`} />
-                <span className="text-sm">
-                  {voiceRecognition.isListening ? 'Listening...' :
-                   voiceRecognition.isSpeaking ? 'Speaking...' : 'Processing...'}
-                </span>
-              </div>
-            )}
-            
-            {/* Chat Toggle */}
-            <button
-              onClick={() => setShowChat(!showChat)}
-              className="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg transition-colors"
-            >
-              AI Chat
-            </button>
-            
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg transition-colors"
-            >
-              {isDarkMode ? '☀️' : '🌙'}
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Header removed on all screens per request */}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="max-w-7xl mx-auto px-6 py-8 pb-24 lg:pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Left Column - Voice Interface & Workout Controls */}
           <div className="lg:col-span-1 space-y-6">
@@ -266,15 +323,13 @@ function App() {
             )}
 
             {/* Quick Actions */}
-            <div className={`p-4 rounded-lg ${
-              isDarkMode ? 'bg-gray-800' : 'bg-white'
-            } shadow-lg`}>
-              <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
-              <div className="space-y-2">
+            <div className="card p-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
+              <div className="space-y-3">
                 {!workoutLogger.isWorkoutActive ? (
                   <button
                     onClick={() => workoutLogger.startWorkout()}
-                    className="w-full bg-fitness-green hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors"
+                    className="btn-primary w-full"
                   >
                     Start Workout
                   </button>
@@ -282,14 +337,14 @@ function App() {
                   <>
                     <button
                       onClick={() => workoutLogger.endWorkout()}
-                      className="w-full bg-fitness-red hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-colors"
+                      className="w-full bg-error hover:bg-red-600 text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-soft hover:shadow-medium"
                     >
                       End Workout
                     </button>
                     {!workoutLogger.isResting && (
                       <button
                         onClick={() => workoutLogger.startRestTimer()}
-                        className="w-full bg-fitness-orange hover:bg-orange-600 text-white py-2 px-4 rounded-lg transition-colors"
+                        className="w-full bg-accent hover:bg-orange-600 text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-soft hover:shadow-medium"
                       >
                         Start Rest Timer
                       </button>
@@ -300,7 +355,7 @@ function App() {
                 <button
                   onClick={() => voiceRecognition.speak("Hello! I'm your AI fitness coach. How can I help you today?")}
                   disabled={!voiceRecognition.canListen}
-                  className="w-full bg-fitness-blue hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                  className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Test Voice
                 </button>
@@ -309,18 +364,14 @@ function App() {
 
             {/* Current Exercise Info */}
             {workoutLogger.hasCurrentExercise && (
-              <div className={`p-4 rounded-lg ${
-                isDarkMode ? 'bg-gray-800' : 'bg-white'
-              } shadow-lg`}>
-                <h3 className="text-lg font-semibold mb-2">Current Exercise</h3>
+              <div className="card p-6 space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Current Exercise</h3>
                 <div className="space-y-2">
-                  <p className="font-medium">{workoutLogger.currentExerciseName}</p>
-                  <p className="text-sm opacity-75">
-                    Sets: {workoutLogger.exerciseProgress}
-                  </p>
-                  <p className="text-sm opacity-75">
-                    Target: {workoutLogger.currentExerciseTargetReps} reps
-                  </p>
+                  <p className="font-medium text-gray-900 dark:text-white">{workoutLogger.currentExerciseName}</p>
+                  <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                    <span>Sets: {workoutLogger.exerciseProgress}</span>
+                    <span>Target: {workoutLogger.currentExerciseTargetReps} reps</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -355,26 +406,24 @@ function App() {
 
         {/* Workout Summary */}
         {workoutLogger.workoutSummary && (
-          <div className={`mt-6 p-4 rounded-lg ${
-            isDarkMode ? 'bg-gray-800' : 'bg-white'
-          } shadow-lg`}>
-            <h3 className="text-lg font-semibold mb-3">Workout Summary</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-fitness-blue">{workoutLogger.workoutSummary.duration}</p>
-                <p className="text-sm opacity-75">Minutes</p>
+          <div className="card mt-8 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Workout Summary</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-primary">{workoutLogger.workoutSummary.duration}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Minutes</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-fitness-green">{workoutLogger.workoutSummary.exerciseCount}</p>
-                <p className="text-sm opacity-75">Exercises</p>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-secondary">{workoutLogger.workoutSummary.exerciseCount}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Exercises</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-fitness-orange">{workoutLogger.workoutSummary.setCount}</p>
-                <p className="text-sm opacity-75">Sets</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-fitness-red">{Math.round(workoutLogger.workoutSummary.volume)}</p>
-                <p className="text-sm opacity-75">lbs Volume</p>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-accent">{workoutLogger.workoutSummary.setCount}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Sets</p>
+                </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-success">{Math.round(workoutLogger.workoutSummary.volume)}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">lbs Volume</p>
               </div>
             </div>
           </div>
@@ -382,15 +431,16 @@ function App() {
 
         {/* Personal Records */}
         {workoutLogger.recentPersonalRecords.length > 0 && (
-          <div className={`mt-6 p-4 rounded-lg ${
-            isDarkMode ? 'bg-gray-800' : 'bg-white'
-          } shadow-lg`}>
-            <h3 className="text-lg font-semibold mb-3">Recent Personal Records 🏆</h3>
-            <div className="space-y-2">
+          <div className="card mt-8 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <span className="mr-2">🏆</span>
+              Recent Personal Records
+            </h3>
+            <div className="space-y-3">
               {workoutLogger.recentPersonalRecords.map((record, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-fitness-green/10 rounded">
-                  <span className="font-medium">{record.exercise.name}</span>
-                  <span className="text-fitness-green font-bold">
+                <div key={index} className="flex justify-between items-center p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-200 dark:border-primary-800">
+                  <span className="font-medium text-gray-900 dark:text-white">{record.exercise.name}</span>
+                  <span className="text-primary font-bold">
                     {record.value} {record.type.replace('_', ' ')}
                   </span>
                 </div>
@@ -400,15 +450,17 @@ function App() {
         )}
       </main>
 
+      <BottomNav active={activeTab} onChange={setActiveTab} />
+
       {/* Voice Command Help */}
       {voiceRecognition.transcript && (
-        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:w-96 bg-black/80 text-white p-3 rounded-lg backdrop-blur">
-          <p className="text-sm">
+        <div className="fixed bottom-6 left-6 right-6 md:left-auto md:w-96 glass p-4 rounded-2xl shadow-strong backdrop-blur-md animate-slide-up">
+          <p className="text-sm text-gray-900 dark:text-white">
             <span className="opacity-75">You said:</span> "{voiceRecognition.transcript}"
           </p>
-          <div className="w-full bg-white/20 rounded-full h-1 mt-2">
+          <div className="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-2 mt-3">
             <div 
-              className="bg-fitness-green h-1 rounded-full transition-all duration-300"
+              className="bg-primary h-2 rounded-full transition-all duration-300"
               style={{ width: `${voiceRecognition.confidence * 100}%` }}
             />
           </div>
@@ -417,11 +469,11 @@ function App() {
 
       {/* Error Display */}
       {(voiceRecognition.hasError || workoutLogger.hasError || aiCoach.hasError) && (
-        <div className="fixed top-4 right-4 bg-fitness-red text-white p-4 rounded-lg shadow-lg max-w-sm">
+        <div className="fixed top-6 right-6 glass p-4 rounded-2xl shadow-strong max-w-sm animate-slide-up">
           <div className="flex justify-between items-start">
             <div>
-              <h4 className="font-semibold">Error</h4>
-              <p className="text-sm mt-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white">Error</h4>
+              <p className="text-sm mt-1 text-gray-700 dark:text-gray-300">
                 {voiceRecognition.error?.message || workoutLogger.error || aiCoach.error}
               </p>
             </div>
@@ -431,7 +483,7 @@ function App() {
                 workoutLogger.clearError();
                 aiCoach.clearError();
               }}
-              className="ml-2 text-white/80 hover:text-white"
+              className="ml-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
             >
               ✕
             </button>

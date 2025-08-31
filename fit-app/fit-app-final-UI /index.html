@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitQuest Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --color-background-start: #111113;
+        --color-background-end: #000000;
+        --color-text-primary: #f8fafc;
+        --color-text-secondary: #a1a1aa;
+        --color-text-tertiary: #52525b;
+        --color-accent: #a5e635;
+        --color-accent-dark: #82b82a;
+        --color-card-background: rgba(24, 24, 27, 0.3);
+        --color-card-border: rgba(255, 255, 255, 0.07);
+        --color-card-shadow: rgba(0, 0, 0, 0.5);
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--color-background-start);
+        background-image: 
+          radial-gradient(circle at 1px 1px, rgba(165, 230, 53, 0.1) 1px, transparent 0),
+          linear-gradient(165deg, var(--color-background-start) 0%, var(--color-background-end) 100%);
+        background-size: 24px 24px, 100% 100%;
+        color: var(--color-text-primary);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      /* Custom scrollbar for a more integrated look */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      
+      @keyframes wave {
+        0% { transform: translate(0, 0) scale(1.05); }
+        50% { transform: translate(-25%, 5px) scale(1); }
+        100% { transform: translate(0, 0) scale(1.05); }
+      }
+
+      @keyframes wave-reverse {
+        0% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(25%, -5px) scale(1.05); }
+        100% { transform: translate(0, 0) scale(1); }
+      }
+      
+      @keyframes gentle-slosh {
+        0%, 100% { transform: rotate(-0.5deg); }
+        50% { transform: rotate(0.5deg); }
+      }
+      .animate-gentle-slosh {
+        animation: gentle-slosh 8s ease-in-out infinite;
+        transform-origin: 50% 150%;
+      }
+
+      @keyframes jiggle-effect {
+        0%   { transform: scale(1.0, 1.0); }
+        30%  { transform: scale(1.05, 0.95) translateY(2px); }
+        50%  { transform: scale(0.9, 1.1) translateY(-2px); }
+        70%  { transform: scale(1.02, 0.98); }
+        100% { transform: scale(1.0, 1.0); }
+      }
+      .animate-jiggle {
+        animation: jiggle-effect 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+      }
+
+      @keyframes pour-droplet {
+        0% { transform: translateY(-20px) scale(0.6); opacity: 1; }
+        100% { transform: translateY(30px) scale(1); opacity: 0; }
+      }
+
+      @keyframes splash-particle {
+        0% { transform: translateY(0) scale(1); opacity: 1; }
+        100% { transform: translateY(-30px) scale(0); opacity: 0; }
+      }
+      
+      @keyframes bubble-rise {
+        0% { transform: translateY(0) scale(0.1); opacity: 0; }
+        50% { opacity: 0.8; }
+        100% { transform: translateY(-20px) scale(1); opacity: 0; }
+      }
+
+
+      @keyframes fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-out forwards;
+      }
+
+      @keyframes fade-in-down {
+        from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .animate-fade-in-down {
+        animation: fade-in-down 0.2s ease-out forwards;
+      }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+    "react/": "https://esm.sh/react@^19.1.1/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <!-- SVG filter for the "gooey" effect -->
+    <svg style="display: none;">
+      <defs>
+        <filter id="gooey">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+        </filter>
+      </defs>
+    </svg>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

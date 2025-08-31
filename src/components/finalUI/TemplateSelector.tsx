@@ -141,7 +141,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       const workoutService = getWorkoutService();
       await workoutService.initializeDefaultTemplates();
       
-      const loadedTemplates = await getWorkoutTemplates();
+      const loadedTemplates = await workoutService.getWorkoutTemplates();
+      console.log('Loaded templates:', loadedTemplates);
       setTemplates(loadedTemplates);
     } catch (error) {
       console.error('Error loading templates:', error);
@@ -149,6 +150,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       setIsLoading(false);
     }
   };
+
+  // Load templates on component mount
+  useEffect(() => {
+    loadTemplates();
+  }, []);
 
   // Load available exercises for manual creation
   const loadAvailableExercises = async () => {
@@ -282,6 +288,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     // Save the template to the database
     const workoutService = getWorkoutService();
     await workoutService.saveWorkoutTemplate(mapped);
+    
+    // Reload templates to show the new one
+    await loadTemplates();
     
     onSelectTemplate(mapped);
     onClose();
@@ -576,7 +585,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[100]">
       <div className="bg-gray-900/95 border border-gray-700/50 rounded-xl w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl overflow-hidden shadow-2xl">
         <CardHeader title="Choose Your Template">
           <button
@@ -900,8 +909,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                   <div className="space-y-3">
                     <button
                       onClick={() => setManualStep(6)}
-                      disabled={manualDaysData.every(day => day.exercises.length === 0)}
-                      className="w-full px-4 py-3 bg-lime-500 text-black font-semibold rounded-lg hover:bg-lime-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 bg-lime-500 text-black font-semibold rounded-lg hover:bg-lime-400 transition-all duration-200"
                     >
                       Continue to Review
                     </button>
@@ -1041,6 +1049,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                         // Save the template to the database
                         const workoutService = getWorkoutService();
                         await workoutService.saveWorkoutTemplate(template);
+                        
+                        // Reload templates to show the new one
+                        await loadTemplates();
                         
                         onSelectTemplate(template);
                         onClose();
@@ -1261,6 +1272,9 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                           const workoutService = getWorkoutService();
                           await workoutService.saveWorkoutTemplate(template);
                           
+                          // Reload templates to show the new one
+                          await loadTemplates();
+                          
                           onSelectTemplate(template);
                           onClose();
                         }}
@@ -1380,7 +1394,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 </div>
               ) : filteredTemplates.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-400">No templates found</p>
+                  <p className="text-gray-400">No templates found (Total: {templates.length}, Filtered: {filteredTemplates.length})</p>
+                  <button 
+                    onClick={() => loadTemplates()} 
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Reload Templates
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
@@ -1466,7 +1486,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
           {/* Exercise Selector Modal */}
           {showExerciseSelector && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
               <div className="bg-gray-900/95 border border-gray-700/50 rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl">
                 <div className="p-4 border-b border-gray-700/50">
                   <div className="flex justify-between items-center">
@@ -1552,7 +1572,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
           {/* Custom Exercise Form Modal */}
           {showCustomExerciseForm && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[120]">
               <div className="bg-gray-900/95 border border-gray-700/50 rounded-xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-2xl">
                 <div className="p-4 border-b border-gray-700/50">
                   <div className="flex justify-between items-center">
@@ -1755,7 +1775,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
           {/* Exercise Editor Modal */}
           {showExerciseEditor && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[80]">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[130]">
               <div className="bg-gray-900/95 border border-gray-700/50 rounded-xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-2xl">
                 <div className="p-4 border-b border-gray-700/50">
                   <div className="flex justify-between items-center">

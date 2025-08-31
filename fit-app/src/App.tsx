@@ -11,10 +11,12 @@ import { TestNutritionUI } from './components/TestNutritionUI';
 import { BottomNavigation } from './components/BottomNavigation';
 import { WorkoutsTab } from './components/WorkoutsTab';
 import { AICoachTab } from './components/AICoachTab';
+import { FinalUI } from './components/finalUI';
+import TestFinalUI from './components/finalUI/TestFinalUI';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'nutrition' | 'ai-coach' | 'test' | 'debug' | 'comprehensive'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'workout' | 'nutrition' | 'ai-coach' | 'final-ui' | 'test' | 'debug' | 'comprehensive'>('home');
   const [isAppReady, setIsAppReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,6 +138,8 @@ function App() {
         return <UserFriendlyNutritionTracker />;
       case 'ai-coach':
         return <AICoachTab />;
+      case 'final-ui':
+        return <FinalUI />;
       case 'test':
         return <NutritionAPITest />;
       case 'debug':
@@ -158,8 +162,8 @@ function App() {
     }
   };
 
-  // Show bottom navigation for main app views (home, workout, nutrition, ai-coach)
-  if (currentView === 'home' || currentView === 'workout' || currentView === 'nutrition' || currentView === 'ai-coach') {
+  // Show bottom navigation for main app views (home, workout, nutrition, ai-coach, final-ui)
+  if (currentView === 'home' || currentView === 'workout' || currentView === 'nutrition' || currentView === 'ai-coach' || currentView === 'final-ui') {
     return (
       <div className="min-h-screen bg-gradient-dark">
         {renderCurrentView()}

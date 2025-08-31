@@ -211,7 +211,6 @@ export class VoiceService {
   // Speak text using speech synthesis
   async speak(text: string, options?: SpeechOptions): Promise<void> {
     if (this.isSpeaking) {
-      // If high priority, interrupt current speech
       if (options?.interrupt) {
         this.synthesis.cancel();
       } else {
@@ -220,65 +219,46 @@ export class VoiceService {
     }
 
     try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      const synthConfig = this.config.synthesis;
-      
-      // Configure utterance
-      utterance.rate = options?.rate || synthConfig.rate;
-      utterance.pitch = options?.pitch || synthConfig.pitch;
-      utterance.volume = options?.volume || synthConfig.volume;
-      utterance.lang = this.config.recognition.language;
+      const synthConfig: any = this.config.synthesis as any;
 
-      // Set voice if specified
-      if (options?.voice || synthConfig.preferredVoice) {
-        const voices = this.synthesis.getVoices();
-        const preferredVoice = voices.find(voice => 
-          voice.name === (options?.voice || synthConfig.preferredVoice)
-        );
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-        }
+      if (synthConfig.engine === 'google') {
+        // Call our backend proxy for Google TTS; returns an audio URL
+        const res = await fetch('/api/tts/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            voice: synthConfig.voice || 'en-AU-WilliamNeural',
+            rate: options?.rate || synthConfig.rate,
+            pitch: options?.pitch || synthConfig.pitch
+          })
+        });
+        const { audioUrl } = await res.json();
+        const audio = new Audio(audioUrl);
+        await new Promise<void>((resolve, reject) => {
+          audio.onplay = () => this.updateState({ mode: 'speaking', isSpeaking: true });
+          audio.onended = () => { this.updateState({ mode: 'idle', isSpeaking: false }); resolve(); };
+          audio.onerror = () => { this.updateState({ mode: 'idle', isSpeaking: false }); reject(); };
+          audio.play();
+        });
+        return;
       }
 
-      // Set up event listeners
-      utterance.onstart = () => {
-        this.updateState({ 
-          mode: 'speaking', 
-          isSpeaking: true,
-          lastActivity: new Date() 
-        });
-      };
-
-      utterance.onend = () => {
-        this.updateState({ 
-          mode: 'idle', 
-          isSpeaking: false,
-          lastActivity: new Date() 
-        });
-        this.currentUtterance = null;
-      };
-
-      utterance.onerror = (event) => {
-        const voiceError: VoiceError = {
-          type: 'synthesis_failed',
-          message: `Speech synthesis error: ${event.error}`,
-          timestamp: new Date(),
-          context: { text, options }
-        };
-        this.handleError(voiceError);
-      };
-
-      this.currentUtterance = utterance;
-      this.synthesis.speak(utterance);
-
+      const utterance = new SpeechSynthesisUtterance(text);
+      const localSynth = this.synthesis;
+      const rate = options?.rate || (this.config.synthesis as any).rate;
+      const pitch = options?.pitch || (this.config.synthesis as any).pitch;
+      const volume = options?.volume || (this.config.synthesis as any).volume;
+      utterance.rate = rate; utterance.pitch = pitch; utterance.volume = volume; utterance.lang = this.config.recognition.language;
+      // Best-effort voice selection as before
+      const voices = localSynth.getVoices();
+      const preferred = voices.find(v => v.lang?.toLowerCase().startsWith('en-au')) || voices.find(v => v.name.toLowerCase().includes('male'));
+      if (preferred) utterance.voice = preferred;
+      utterance.onstart = () => this.updateState({ mode: 'speaking', isSpeaking: true });
+      utterance.onend = () => this.updateState({ mode: 'idle', isSpeaking: false });
+      localSynth.speak(utterance);
     } catch (error) {
-      const voiceError: VoiceError = {
-        type: 'synthesis_failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date(),
-        context: { text, options }
-      };
-      this.handleError(voiceError);
+      this.handleError({ type: 'synthesis_failed', message: error instanceof Error ? error.message : 'Unknown error', timestamp: new Date() });
     }
   }
 
@@ -345,13 +325,38 @@ export class VoiceService {
         this.onTranscript(transcript, confidence);
       }
 
-      // Process final results
+      // Process final results with wake-word gating
       if (lastResult.isFinal) {
+        const normalized = this.normalizeTranscript(transcript);
+        const wake = (this.config.wakeWord || '').toLowerCase();
+
+        if (wake && (normalized.startsWith(wake) || normalized.includes(` ${wake} `))) {
+          const idx = normalized.indexOf(wake);
+          const remainder = normalized.slice(idx + wake.length).trim();
+          this.updateState({ sessionActive: true });
+          if (remainder.length === 0) {
+            this.speak('Yes?');
+            return;
+          }
+          if (confidence >= this.confidenceThreshold) {
+            const result = this.processVoiceCommand(remainder);
+            this.lastTranscript = transcript;
+            return;
+          } else {
+            this.speak("I didn't catch that clearly. Could you repeat?");
+            return;
+          }
+        }
+
+        if (!this.state.sessionActive) {
+          // Ignore commands without wake word
+          return;
+        }
+
         if (confidence >= this.confidenceThreshold) {
-          const result = this.processVoiceCommand(transcript);
+          const result = this.processVoiceCommand(normalized);
           this.lastTranscript = transcript;
         } else {
-          // Low confidence, ask for clarification
           this.speak("I didn't catch that clearly. Could you repeat?");
         }
       }
@@ -493,8 +498,10 @@ export class VoiceService {
       parameters.value = captures[0]?.trim();
     }
 
-    // Calculate confidence based on exact match
-    const confidence = 0.9; // Simplified confidence calculation
+    // Heuristic confidence: longer utterances and full matches score higher
+    const base = 0.6;
+    const lengthBoost = Math.min(0.3, (transcript.length / 40));
+    const confidence = base + lengthBoost;
     
     return { confidence, parameters };
   }
@@ -572,6 +579,13 @@ export class VoiceService {
     }
   }
 
+  // Optional: cloud recognition (Google) placeholder
+  async transcribeCloud(blob: Blob): Promise<string> {
+    const res = await fetch('/api/asr/google', { method: 'POST', body: blob });
+    const { text } = await res.json();
+    return text || '';
+  }
+
   // Get default configuration
   private getDefaultConfig(): VoiceConfig {
     return {
@@ -579,20 +593,22 @@ export class VoiceService {
         engine: 'browser',
         continuous: true,
         interimResults: true,
-        language: 'en-US',
+        language: 'en-AU',
         noiseReduction: true,
-        confidenceThreshold: 0.7
+        confidenceThreshold: 0.55
       },
       synthesis: {
-        voice: 'neural',
-        rate: 1.0,
-        pitch: 1.0,
+        engine: 'google',
+        voice: 'en-AU-WilliamNeural',
+        preferredLocale: 'en-AU',
+        rate: 1.05,
+        pitch: 1.05,
         volume: 1.0,
-        ssmlSupport: false
+        ssmlSupport: true
       },
       commands: FITNESS_VOICE_COMMANDS,
       wakeWord: 'hey coach',
-      timeoutDuration: 5000,
+      timeoutDuration: 12000,
       maxRetries: 3
     };
   }

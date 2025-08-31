@@ -218,3 +218,24 @@ We've taken a basic fitness app and transformed it into a **world-class AI-power
 ---
 
 *Made with ❤️ and cutting-edge AI. Start your intelligent fitness journey today!*
+
+---
+
+## Hybrid Exercise Database (Free, Offline)
+
+The app ships with a local dataset at `public/data/exercises.v1.json` and an IndexedDB store managed by `ExerciseHybridDB`.
+
+Build or update dataset:
+
+```bash
+npm run build:exercises
+```
+
+Sources supported:
+- Wger fixtures (place JSON into `data-sources/wger/{exercises.json,equipment.json,muscles.json}`)
+- ExerciseDB Top 100 (optional, `data-sources/exercisedb/top100.json` with fields id,name,equipment,gifUrl,target,secondaryMuscles)
+
+Runtime behavior:
+- Prioritizes GIF exercises in results
+- AI-enhanced text fallback when no GIF
+- Suggests similar exercise with GIF when original lacks one
