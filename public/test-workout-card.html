@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Card Test - Dropset Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .workout-card {
+            background: #111827;
+            border-radius: 24px 24px 0 0;
+            max-height: 90vh;
+            overflow: hidden;
+        }
+        .handle {
+            width: 48px;
+            height: 4px;
+            background: #4b5563;
+            border-radius: 2px;
+        }
+        .set-row {
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .input-field {
+            background: #374151;
+            border: none;
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+        .input-field:focus {
+            outline: none;
+            border: 1px solid #6b7280;
+        }
+        .progress-bar {
+            background: #374151;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: #10b981;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        .button-primary {
+            background: #059669;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .button-primary:hover {
+            background: #047857;
+        }
+        .button-secondary {
+            background: #374151;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        .button-secondary:hover {
+            background: #4b5563;
+        }
+        .icon-button {
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .icon-button:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="text-center max-w-md">
+            <h1 class="text-4xl font-bold mb-6">Workout Card Demo</h1>
+            <p class="text-gray-400 mb-8">
+                Experience the new workout card interface inspired by Dropset app. 
+                Click the button below to see all the features in action.
+            </p>
+            
+            <button
+                id="openWorkoutCard"
+                class="px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold text-lg rounded-xl transition-colors shadow-lg"
+            >
+                🏋️ Open Workout Card
+            </button>
+        </div>
+    </div>
+
+    <!-- Workout Card Modal -->
+    <div id="workoutCardModal" class="fixed inset-0 modal-overlay hidden flex items-end justify-center z-50">
+        <div class="workout-card w-full max-w-md">
+            <!-- Handle -->
+            <div class="flex justify-center pt-3 pb-2">
+                <div class="handle"></div>
+            </div>
+
+            <!-- Header -->
+            <div class="px-6 pb-4 border-b border-gray-800">
+                <div class="flex items-center justify-between">
+                    <button id="closeCard" class="icon-button">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    
+                    <div class="flex items-center space-x-3">
+                        <button id="formTipsBtn" class="icon-button">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
+                        
+                        <button id="swapBtn" class="button-secondary flex items-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <span>Swap</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Exercise Name and Info -->
+                <div class="mt-4 flex items-center justify-between">
+                    <h2 class="text-2xl font-bold">Cable Row</h2>
+                    <button id="infoBtn" class="icon-button">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Sets and Reps Display -->
+                <div class="mt-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-center">
+                            <div class="font-semibold">3</div>
+                            <div class="text-gray-400 text-sm">Sets</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="font-semibold">12</div>
+                            <div class="text-gray-400 text-sm">Reps</div>
+                        </div>
+                    </div>
+                    
+                    <button id="editBtn" class="button-secondary flex items-center space-x-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        <span>Edit</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info Modal -->
+            <div id="infoModal" class="px-6 py-4 bg-gray-800 border-b border-gray-700 hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-semibold">Exercise Info</h3>
+                    <button id="closeInfo" class="icon-button">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="w-full h-32 bg-gray-700 rounded-lg mb-3 flex items-center justify-center">
+                    <span class="text-gray-400">Exercise Image/GIF</span>
+                </div>
+                
+                <div class="space-y-2">
+                    <h4 class="font-medium">How to perform:</h4>
+                    <ol class="list-decimal list-inside space-y-1 text-gray-300 text-sm">
+                        <li>Find a machine suited for this exercise</li>
+                        <li>Sit close enough so that your legs have a slight bend</li>
+                        <li>Engage your core and grab the handle</li>
+                        <li>Keep your back straight and pull the handle</li>
+                        <li>Slowly return the weight to the start position</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Form Tips Modal -->
+            <div id="formTipsModal" class="px-6 py-4 bg-gray-800 border-b border-gray-700 hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-semibold">Form Tips</h3>
+                    <button id="closeFormTips" class="icon-button">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-2 text-gray-300 text-sm">
+                    <p>• Keep your back straight throughout the movement</p>
+                    <p>• Engage your core muscles</p>
+                    <p>• Control the weight on both the lift and descent</p>
+                    <p>• Breathe steadily throughout the exercise</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="px-6 py-3 border-b border-gray-800">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm">Progress</span>
+                    <span id="progressPercent" class="text-gray-400 text-sm">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Sets Logging -->
+            <div class="px-6 py-4 space-y-3">
+                <h3 class="font-semibold">Log Your Sets</h3>
+                
+                <div id="setsContainer">
+                    <!-- Set rows will be generated here -->
+                </div>
+                
+                <!-- Timer display -->
+                <div id="timerDisplay" class="text-center py-2 hidden">
+                    <div id="timerText" class="text-2xl font-bold">1:30</div>
+                    <div class="text-gray-400 text-sm">Rest Timer</div>
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="px-6 py-4 border-t border-gray-800">
+                <button id="notesBtn" class="flex items-center space-x-2 text-white hover:text-gray-300 transition-colors">
+                    <svg id="notesIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                    <span>Add Notes</span>
+                </button>
+                
+                <div id="notesSection" class="mt-3 hidden">
+                    <textarea
+                        id="notesInput"
+                        placeholder="Type your notes here..."
+                        class="w-full bg-gray-800 text-white p-3 rounded-lg border border-gray-700 focus:border-gray-500 focus:outline-none resize-none"
+                        rows="3"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="px-6 py-4 border-t border-gray-800">
+                <button id="saveBtn" class="w-full button-primary flex items-center justify-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
+                    <span>Save & Sync</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate set rows
+        function generateSetRows() {
+            const container = document.getElementById('setsContainer');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 3; i++) {
+                const setRow = document.createElement('div');
+                setRow.className = 'set-row flex items-center space-x-3';
+                setRow.innerHTML = `
+                    <button class="set-checkbox flex-shrink-0" data-set="${i}">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </button>
+                    <span class="text-white font-medium w-8">Set ${i + 1}</span>
+                    <input type="number" placeholder="0" class="input-field flex-1" data-weight="${i}">
+                    <span class="text-gray-400 text-sm">kg</span>
+                    <input type="number" placeholder="0" class="input-field flex-1" data-reps="${i}">
+                    <span class="text-gray-400 text-sm">reps</span>
+                    <button class="timer-btn p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors" data-set="${i}">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </button>
+                `;
+                container.appendChild(setRow);
+            }
+        }
+
+        // Timer functionality
+        let timerInterval = null;
+        let currentTimer = 90;
+
+        function startTimer() {
+            if (timerInterval) return;
+            
+            const timerDisplay = document.getElementById('timerDisplay');
+            const timerText = document.getElementById('timerText');
+            
+            timerDisplay.classList.remove('hidden');
+            currentTimer = 90;
+            
+            timerInterval = setInterval(() => {
+                currentTimer--;
+                const mins = Math.floor(currentTimer / 60);
+                const secs = currentTimer % 60;
+                timerText.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                
+                if (currentTimer <= 0) {
+                    stopTimer();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('timerDisplay').classList.add('hidden');
+        }
+
+        // Progress tracking
+        let completedSets = 0;
+        const totalSets = 3;
+
+        function updateProgress() {
+            const progress = (completedSets / totalSets) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+        }
+
+        // Event listeners
+        document.getElementById('openWorkoutCard').addEventListener('click', () => {
+            document.getElementById('workoutCardModal').classList.remove('hidden');
+            generateSetRows();
+        });
+
+        document.getElementById('closeCard').addEventListener('click', () => {
+            document.getElementById('workoutCardModal').classList.add('hidden');
+            stopTimer();
+        });
+
+        document.getElementById('infoBtn').addEventListener('click', () => {
+            document.getElementById('infoModal').classList.toggle('hidden');
+        });
+
+        document.getElementById('closeInfo').addEventListener('click', () => {
+            document.getElementById('infoModal').classList.add('hidden');
+        });
+
+        document.getElementById('formTipsBtn').addEventListener('click', () => {
+            document.getElementById('formTipsModal').classList.toggle('hidden');
+        });
+
+        document.getElementById('closeFormTips').addEventListener('click', () => {
+            document.getElementById('formTipsModal').classList.add('hidden');
+        });
+
+        document.getElementById('notesBtn').addEventListener('click', () => {
+            const notesSection = document.getElementById('notesSection');
+            const notesIcon = document.getElementById('notesIcon');
+            
+            if (notesSection.classList.contains('hidden')) {
+                notesSection.classList.remove('hidden');
+                notesIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>';
+            } else {
+                notesSection.classList.add('hidden');
+                notesIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
+            }
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = `
+                <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Saving...</span>
+            `;
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert('Workout saved successfully!');
+            }, 2000);
+        });
+
+        // Set completion and timer
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('set-checkbox')) {
+                const setIndex = e.target.dataset.set;
+                const isCompleted = e.target.querySelector('svg').classList.contains('text-green-500');
+                
+                if (isCompleted) {
+                    e.target.querySelector('svg').classList.remove('text-green-500');
+                    completedSets--;
+                } else {
+                    e.target.querySelector('svg').classList.add('text-green-500');
+                    completedSets++;
+                }
+                
+                updateProgress();
+            }
+            
+            if (e.target.classList.contains('timer-btn')) {
+                if (timerInterval) {
+                    stopTimer();
+                } else {
+                    startTimer();
+                }
+            }
+        });
+
+        // Initialize
+        generateSetRows();
+    </script>
+</body>
+</html>
+

@@ -479,9 +479,10 @@ export const IntegratedAICoach: React.FC<IntegratedAICoachProps> = ({
                     <button
                       type="submit"
                       disabled={!inputText.trim() || isStreaming}
-                      className="btn btn-primary btn-sm"
+                      className="btn btn-sm text-black hover:opacity-90"
+                      style={{ backgroundColor: '#a5e635' }}
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-4 h-4" color="#0b0b0b" />
                     </button>
                   )}
                 </div>

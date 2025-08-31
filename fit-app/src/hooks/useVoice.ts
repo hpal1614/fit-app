@@ -67,29 +67,39 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
         const voiceService = VoiceService.getInstance();
         voiceServiceRef.current = voiceService;
 
-        // Set up event listeners
-        voiceService.addEventListener('stateChange', (event) => {
-          if (event.state) {
-            setState(event.state);
+        // Handlers (stable refs) matching VoiceService emitted events
+        const onListeningStarted = () => {
+          setState((prev) => ({ ...prev, isListening: true, mode: 'listening' }));
+        };
+        const onListeningStopped = () => {
+          setState((prev) => ({ ...prev, isListening: false, mode: prev.isSpeaking ? 'speaking' : 'idle' }));
+        };
+        const onSynthesisStarted = () => {
+          setState((prev) => ({ ...prev, isSpeaking: true, mode: 'speaking' }));
+        };
+        const onSynthesisEnded = () => {
+          setState((prev) => ({ ...prev, isSpeaking: false, mode: prev.isListening ? 'listening' : 'idle' }));
+        };
+        const onCommandRecognized = (event: any) => {
+          if (event && event.data) {
+            setLastCommand(event.data);
+            setConfidence(event.data.confidence || 0);
           }
-        });
-
-        voiceService.addEventListener('error', (event) => {
-          if (event.error) {
-            setError(event.error);
+        };
+        const onErrorOccurred = (event: any) => {
+          if (event) {
+            setError(event);
+            setState((prev) => ({ ...prev, mode: 'error' }));
           }
-        });
+        };
 
-        voiceService.addEventListener('commandProcessed', (event) => {
-          if (event.result) {
-            setLastCommand(event.result);
-            setConfidence(event.result.confidence);
-          }
-        });
-
-        voiceService.addEventListener('transcriptChange', (_event) => {
-          // Handle intermediate transcripts
-        });
+        // Register listeners
+        voiceService.addEventListener('listening_started', onListeningStarted);
+        voiceService.addEventListener('listening_stopped', onListeningStopped);
+        voiceService.addEventListener('synthesis_started', onSynthesisStarted);
+        voiceService.addEventListener('synthesis_ended', onSynthesisEnded);
+        voiceService.addEventListener('command_recognized', onCommandRecognized);
+        voiceService.addEventListener('error_occurred', onErrorOccurred);
 
         // Initialize voice service
         const initialized = await voiceService.initialize();
@@ -98,6 +108,19 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
           await voiceService.startListening();
         }
 
+        // Cleanup on unmount: remove all registered listeners
+        return () => {
+          try {
+            voiceService.removeEventListener('listening_started', onListeningStarted);
+            voiceService.removeEventListener('listening_stopped', onListeningStopped);
+            voiceService.removeEventListener('synthesis_started', onSynthesisStarted);
+            voiceService.removeEventListener('synthesis_ended', onSynthesisEnded);
+            voiceService.removeEventListener('command_recognized', onCommandRecognized);
+            voiceService.removeEventListener('error_occurred', onErrorOccurred);
+          } finally {
+            voiceService.stopListening();
+          }
+        };
       } catch (err) {
         setError({
           type: 'initialization_error',
@@ -108,9 +131,9 @@ export const useVoice = (options: UseVoiceOptions = {}): UseVoiceReturn => {
       }
     };
 
-    initializeVoice();
+    const cleanupPromise = initializeVoice();
 
-    // Cleanup on unmount
+    // Fallback cleanup in case initializeVoice didn't attach the inner cleanup
     return () => {
       if (voiceServiceRef.current) {
         voiceServiceRef.current.stopListening();

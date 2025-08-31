@@ -1,4 +1,4 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 import type { StoredWorkoutTemplate, DayWorkout } from '../services/workoutStorageService';
 import { v4 as uuidv4 } from 'uuid';
 

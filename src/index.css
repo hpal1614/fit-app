@@ -3,24 +3,40 @@
 @tailwind utilities;
 
 :root {
-  /* Primary Colors */
-  --fitness-blue: #3B82F6;
-  --fitness-green: #10B981;
-  --fitness-orange: #F59E0B;
-  --fitness-red: #EF4444;
+  /* Primary Colors - New clean palette */
+  --primary: #a5e635;
+  --primary-dark: #8ac926;
+  --primary-light: #b8f44a;
+  --primary-50: #f7fdf0;
+  --primary-100: #eefad8;
+  --primary-200: #ddf4b0;
+  --primary-300: #c8ed7e;
+  --primary-400: #a5e635;
+  --primary-500: #8ac926;
+  --primary-600: #6ba01c;
+  --primary-700: #527a1a;
+  --primary-800: #43611a;
+  --primary-900: #39521a;
   
-  /* Voice States */
-  --voice-listening: #8B5CF6;
-  --voice-speaking: #06B6D4;
-  --voice-processing: #F59E0B;
+  /* Secondary Colors - Clean and modern */
+  --secondary: #6366f1;
+  --secondary-dark: #4f46e5;
+  --accent: #f59e0b;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
   
-  /* Neutral Scale */
-  --gray-50: #F9FAFB;
-  --gray-100: #F3F4F6;
-  --gray-900: #111827;
+  /* Voice States - Updated with new palette */
+  --voice-listening: #a5e635;
+  --voice-speaking: #6366f1;
+  --voice-processing: #f59e0b;
+  --voice-idle: #6b7280;
+  --voice-error: #ef4444;
 
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  line-height: 1.6;
   font-weight: 400;
 
   color-scheme: light dark;
@@ -35,17 +51,41 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: #0f172a;
+}
+
+body.dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(165, 230, 53, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(165, 230, 53, 0.5);
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 @layer components {
@@ -54,11 +94,11 @@ body {
   }
   
   .voice-button.listening {
-    @apply bg-voice-listening animate-pulse-slow;
+    @apply bg-primary animate-pulse-slow;
   }
   
   .voice-button.speaking {
-    @apply bg-voice-speaking;
+    @apply bg-secondary;
   }
   
   .voice-button.idle {
@@ -67,6 +107,38 @@ body {
   
   .voice-wave {
     @apply w-1 bg-white rounded-full animate-voice-wave;
+  }
+
+  /* Modern card styling */
+  .card {
+    @apply bg-white dark:bg-dark-800 rounded-2xl shadow-soft border border-gray-100 dark:border-dark-700;
+  }
+
+  .card-hover {
+    @apply hover:shadow-medium hover:scale-[1.02] transition-all duration-300;
+  }
+
+  /* Modern button styling */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-soft hover:shadow-medium;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary-dark text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-soft hover:shadow-medium;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-300 font-medium px-6 py-3 rounded-xl transition-all duration-200;
+  }
+
+  /* Modern input styling */
+  .input-modern {
+    @apply bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/80 dark:bg-dark-800/80 backdrop-blur-md border border-white/20 dark:border-dark-700/20;
   }
 }
 
@@ -84,4 +156,21 @@ body {
 
 .voice-ripple {
   animation: ripple 1.5s infinite;
+}
+
+/* Modern gradient backgrounds */
+.gradient-primary {
+  background: linear-gradient(135deg, #a5e635 0%, #8ac926 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.gradient-light {
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
 }

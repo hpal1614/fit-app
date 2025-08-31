@@ -4,6 +4,7 @@ import { useStreamingAI } from '../hooks/useStreamingAI';
 import { useVoice } from '../hooks/useVoice';
 import type { WorkoutContext } from '../types/workout';
 // Removed unused AIResponse import
+// Scoped quick replies only to AI Coach view (AmazingAICoach)
 
 interface Message {
   id: string;
@@ -29,6 +30,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  
   const { streamResponse, isStreaming, stopStreaming } = useStreamingAI({
     onChunk: (chunk) => {
       setCurrentStreamingMessage(prev => prev + chunk);
@@ -43,6 +45,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
       };
       setMessages(prev => [...prev, aiMessage]);
       setCurrentStreamingMessage('');
+      // Quick replies are handled in the dedicated AI Coach view
       
       // Speak the response
       if (!isMuted) {
@@ -66,16 +69,18 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Never show loading for more than 5 seconds - CRITICAL TIMEOUT PROTECTION
+  // Configurable streaming timeout to avoid indefinite hangs
   useEffect(() => {
-    if (isStreaming) {
-      const timeout = setTimeout(() => {
-        // Force stop loading if it takes too long
-        console.warn('AI loading timeout - forcing stop');
-        stopStreaming();
-      }, 5000);
-      return () => clearTimeout(timeout);
-    }
+    if (!isStreaming) return;
+
+    // Allow override via env; default to 15000ms for better reliability
+    const timeoutMs = Number(import.meta?.env?.VITE_AI_STREAM_TIMEOUT_MS) || 15000;
+    const timeout = setTimeout(() => {
+      console.warn('AI loading timeout reached - stopping stream');
+      stopStreaming();
+    }, timeoutMs);
+
+    return () => clearTimeout(timeout);
   }, [isStreaming, stopStreaming]);
 
   // Initial greeting

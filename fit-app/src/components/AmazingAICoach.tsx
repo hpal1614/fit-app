@@ -6,6 +6,10 @@ import {
 import { useStreamingAI } from '../hooks/useStreamingAI';
 import { useVoice } from '../hooks/useVoice';
 import type { WorkoutContext } from '../types/workout';
+import { ConversationFlowService } from '../services/conversationFlowService';
+import { QuickReply } from '../types/conversationTypes';
+import QuickReplyButtons from './QuickReplyButtons';
+import { TemplateGenerator } from '../services/templateGenerator';
 
 interface Message {
   id: string;
@@ -51,6 +55,23 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [generatedTemplate, setGeneratedTemplate] = useState<any>(null);
   const [showSaveButton, setShowSaveButton] = useState(false);
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
+  const flowRef = useRef<ConversationFlowService | null>(null);
+  const [pendingProgram, setPendingProgram] = useState(false);
+  const [coachProfile, setCoachProfile] = useState<{
+    experienceLevel?: 'beginner' | 'intermediate' | 'advanced';
+    primaryGoal?: 'weight_loss' | 'muscle_building' | 'strength';
+    equipment?: 'gym' | 'home' | 'minimal' | 'unsure';
+    timePerSession?: 30 | 45 | 60 | 90;
+    daysPerWeek?: 3 | 4 | 5 | 6;
+    currentWeight?: number;
+    injuries?: { knee?: boolean; back?: boolean; shoulder?: boolean };
+    pregnant?: boolean;
+    senior?: boolean;
+    shiftWorker?: boolean;
+    busyParent?: boolean;
+    mentalHealth?: boolean;
+  }>({ injuries: {} });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +113,19 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
           : chat
       ));
       setIsStreaming(false);
+
+      try {
+        if (!flowRef.current) {
+          flowRef.current = new ConversationFlowService();
+        }
+        const current = chats.find(c => c.id === currentChatId);
+        const lastUser = current?.messages.slice().reverse().find(m => m.type === 'user');
+        const scenario = flowRef.current.detectScenario(lastUser?.content || '', undefined);
+        const qr = flowRef.current.getQuickReplies(fullResponse, scenario);
+        setQuickReplies(qr);
+      } catch {
+        setQuickReplies([]);
+      }
       
       // Check if this is a template response
       if (fullResponse.includes('💾 **Save Template:**') || fullResponse.includes('Template:')) {
@@ -175,6 +209,259 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
     setCurrentChatId(newChat.id);
   };
 
+  const extractProfileFromText = (text: string) => {
+    const lower = text.toLowerCase();
+    const updates: Partial<typeof coachProfile> = {};
+    if (lower.includes('beginner')) updates.experienceLevel = 'beginner';
+    else if (lower.includes('advanced')) updates.experienceLevel = 'advanced';
+    else if (lower.includes('intermediate')) updates.experienceLevel = 'intermediate';
+
+    if (lower.includes('gym') || lower.includes('membership')) updates.equipment = 'gym';
+    if (lower.includes('home')) updates.equipment = 'home';
+    if (lower.includes('outdoor') || lower.includes('outside')) updates.equipment = 'minimal';
+
+    if (lower.includes('lose weight') || lower.includes('weight loss')) updates.primaryGoal = 'weight_loss';
+    if (lower.includes('build muscle') || lower.includes('hypertrophy')) updates.primaryGoal = 'muscle_building';
+    if (lower.includes('strength')) updates.primaryGoal = 'strength';
+
+    const timeMatch = lower.match(/(\d{2,3})\s*(min|minutes)/);
+    if (timeMatch) {
+      const minutes = parseInt(timeMatch[1], 10);
+      const nearest: 30 | 45 | 60 | 90 = minutes <= 30 ? 30 : minutes <= 45 ? 45 : minutes <= 60 ? 60 : 90;
+      updates.timePerSession = nearest;
+    }
+
+    const daysMatch = lower.match(/(\b[3-6]\b)\s*(days|day|days\/wk|days per week)/);
+    if (daysMatch) {
+      const days = parseInt(daysMatch[1], 10) as 3 | 4 | 5 | 6;
+      if (days >= 3 && days <= 6) updates.daysPerWeek = days;
+    }
+
+    const kgMatch = lower.match(/(\d{2,3})\s*kg/);
+    const lbsMatch = lower.match(/(\d{2,3})\s*(lb|lbs|pounds)/);
+    if (kgMatch) updates.currentWeight = parseInt(kgMatch[1], 10);
+    if (lbsMatch) updates.currentWeight = Math.round(parseInt(lbsMatch[1], 10) * 0.453592);
+
+    const injuries = { ...(coachProfile.injuries || {}) } as { knee?: boolean; back?: boolean; shoulder?: boolean };
+    if (/knee/.test(lower)) injuries.knee = true;
+    if (/back/.test(lower)) injuries.back = true;
+    if (/shoulder/.test(lower)) injuries.shoulder = true;
+    if (Object.keys(injuries).length > 0) updates.injuries = injuries;
+
+    // Additional scenario flags
+    if (/pregnan(t|cy)/.test(lower)) (updates as any).pregnant = true;
+    if (/(senior|elderly|\b65\b)/.test(lower)) (updates as any).senior = true;
+    if (/(shift worker|night work|night shift|rotating shift)/.test(lower)) (updates as any).shiftWorker = true;
+    if (/(busy parent|kids|children|parent)/.test(lower)) (updates as any).busyParent = true;
+    if (/(anxiety|depress|mental|motivation)/.test(lower)) (updates as any).mentalHealth = true;
+
+    return updates;
+  };
+
+  const getMissingFields = (p: typeof coachProfile) => {
+    const missing: string[] = [];
+    if (!p.experienceLevel) missing.push('experience');
+    if (!p.primaryGoal) missing.push('goal');
+    if (!p.equipment || p.equipment === 'unsure') missing.push('equipment');
+    if (!p.timePerSession) missing.push('time');
+    if (!p.daysPerWeek) missing.push('days per week');
+    return missing;
+  };
+
+  const composeClarifyMessage = (missing: string[]) => {
+    const parts: string[] = [];
+    if (missing.includes('experience')) parts.push('experience level (beginner, intermediate, advanced)');
+    if (missing.includes('goal')) parts.push('primary goal (lose weight, build muscle, strength)');
+    if (missing.includes('equipment')) parts.push('equipment (Gym Membership or At Home)');
+    if (missing.includes('time')) parts.push('time per session in minutes (30, 45, 60)');
+    if (missing.includes('days per week')) parts.push('days per week (3, 4, 5, 6)');
+    const sentence = parts.join(', ');
+    return `To personalize your 8-week plan, please confirm your ${sentence}. Also share any injuries (e.g., knee, back, shoulder).`;
+  };
+
+  const renderWorkoutWithInjuryMods = (template: any, p: typeof coachProfile) => {
+    const replaceWithKneeFriendly = (name: string) => {
+      if (!p.injuries?.knee) return name;
+      if (/squat/i.test(name)) return 'Glute Bridges';
+      if (/lunge/i.test(name)) return 'Hip Thrusts (light)';
+      if (/jump|burpee/i.test(name)) return 'Planks';
+      if (/leg press/i.test(name)) return 'Hamstring Curls';
+      return name;
+    };
+    const replaceWithBackFriendly = (name: string) => {
+      if (!p.injuries?.back) return name;
+      if (/deadlift/i.test(name)) return 'Hip Hinge (light dumbbells)';
+      if (/romanian deadlift/i.test(name)) return 'Glute Bridges';
+      if (/good\s*morning/i.test(name)) return 'Back Extensions (gentle)';
+      if (/bent-?over row|barbell row/i.test(name)) return 'Chest-Supported Row';
+      if (/back squat|front squat/i.test(name)) return 'Goblet Box Squat (light)';
+      return name;
+    };
+    const replaceWithShoulderFriendly = (name: string) => {
+      if (!p.injuries?.shoulder) return name;
+      if (/overhead press|ohp|military press/i.test(name)) return 'Landmine Press';
+      if (/bench press/i.test(name)) return 'Incline Dumbbell Press (neutral grip)';
+      if (/upright row/i.test(name)) return 'Lateral Raises (light)';
+      if (/dip/i.test(name)) return 'Close-Grip Push-up (elevated)';
+      return name;
+    };
+    const applyAllMods = (name: string) => {
+      let out = name;
+      out = replaceWithKneeFriendly(out);
+      out = replaceWithBackFriendly(out);
+      out = replaceWithShoulderFriendly(out);
+      return out;
+    };
+    let workoutTable = '';
+    template.workouts.forEach((workout: any) => {
+      workoutTable += `\n📅 **${workout.name}** (${workout.notes})\n`;
+      workoutTable += `| Exercise | Sets | Reps | Rest |\n`;
+      workoutTable += `|----------|------|------|------|\n`;
+      workout.exercises.forEach((exercise: any) => {
+        const sets = exercise.sets.length;
+        const reps = exercise.sets[0]?.reps || '8-12';
+        const rest = exercise.sets[0]?.rest || '60-90s';
+        workoutTable += `| ${applyAllMods(exercise.name)} | ${sets} | ${reps} | ${rest} |\n`;
+      });
+      workoutTable += `\n`;
+    });
+    const injuryNotes: string[] = [];
+    if (p.injuries?.knee) injuryNotes.push('🦵 Knee-friendly: avoided deep knee flexion and high-impact jumps; focused on glutes/hamstrings and low-impact options.');
+    if (p.injuries?.back) injuryNotes.push('🧱 Back-friendly: minimized spinal loading, used chest-supported rows and hip-dominant, controlled movements.');
+    if (p.injuries?.shoulder) injuryNotes.push('🫱 Shoulder-friendly: avoided overhead pressing/dips; emphasized neutral-grip pushing and light lateral work.');
+
+    const scenarioNotes: string[] = [];
+    if (p.pregnant) scenarioNotes.push('🤰 Pregnancy: avoided supine positions after first trimester and high-impact moves; prioritize RPE 5-6/10 and breathing/pelvic floor awareness.');
+    if (p.senior) scenarioNotes.push('👟 Senior: emphasized balance, mobility, and controlled tempo; kept volume moderate.');
+    if (p.shiftWorker) scenarioNotes.push('🌙 Shift worker: schedule is flexible; prefer consistent timing relative to your sleep window; avoid maximal intensity right before bedtime.');
+    if (p.busyParent) scenarioNotes.push('🧩 Busy parent: sessions optimized for time; circuits/EMOM-style options keep workouts 20–45 minutes.');
+    if (p.mentalHealth) scenarioNotes.push('🫶 Mental health: lower cognitive load, steady pacing, and optional outdoor walks for mood support.');
+    const weightNote = p.currentWeight && (p.currentWeight < 50 || p.currentWeight > 100)
+      ? `\n⚖️ Adjusted intensity guidance for current weight (${p.currentWeight} kg). Prioritize perfect form and controlled progression.`
+      : '';
+    const allNotes = [...injuryNotes, ...scenarioNotes];
+    const notesBlock = allNotes.length ? `\n${allNotes.join(' ')}` : '';
+    return workoutTable + notesBlock + weightNote;
+  };
+
+  const wantsProgram = (text: string) => {
+    const lower = text.toLowerCase();
+    return (
+      lower.includes('workout') ||
+      lower.includes('routine') ||
+      lower.includes('exercise') ||
+      lower.includes('program') ||
+      lower.includes('training') ||
+      lower.includes('plan') ||
+      lower.includes('8 week') ||
+      lower.includes('8-week') ||
+      lower.includes('weeks program') ||
+      lower.includes('template') ||
+      (lower.includes('lose') && lower.includes('weight'))
+    );
+  };
+
+  const handleProgramFlowIfNeeded = async (userMessage: string): Promise<boolean> => {
+    const programAsked = wantsProgram(userMessage) || pendingProgram;
+    if (!programAsked) return false;
+
+    const updates = extractProfileFromText(userMessage);
+    setCoachProfile(prev => ({ ...prev, ...updates }));
+    const merged = { ...coachProfile, ...updates };
+    const missing = getMissingFields(merged);
+
+    if (missing.length > 0) {
+      const clarify = composeClarifyMessage(missing);
+      // Add assistant clarify message
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: 'assistant',
+        content: clarify,
+        timestamp: new Date(),
+        isStreaming: false,
+        mode: 'coach'
+      };
+      setChats(prev => prev.map(chat =>
+        chat.id === currentChatId ? { ...chat, messages: [...chat.messages, assistantMessage] } : chat
+      ));
+
+      // Generate quick replies for the clarify content
+      try {
+        if (!flowRef.current) flowRef.current = new ConversationFlowService();
+        const qr = flowRef.current.getQuickReplies(clarify, 'standard_beginner');
+        setQuickReplies(qr);
+      } catch {
+        setQuickReplies([]);
+      }
+
+      setPendingProgram(true);
+      setIsStreaming(false);
+      return true;
+    }
+
+    // Enough info → generate program
+    const experienceLevel = merged.experienceLevel || 'intermediate';
+    const primaryGoal = merged.primaryGoal || 'weight_loss';
+    const equipment = (merged.equipment === 'unsure' || !merged.equipment) ? 'gym' : (merged.equipment as 'gym' | 'home' | 'minimal');
+    const timePerSession = (merged.timePerSession || 60) as 30 | 45 | 60 | 90;
+    const daysPerWeek = (merged.daysPerWeek || 4) as 3 | 4 | 5 | 6;
+
+    try {
+      const template = TemplateGenerator.generateWorkoutTemplate({
+        experienceLevel,
+        primaryGoal: primaryGoal as any,
+        equipment: equipment === 'minimal' ? 'home' : equipment, // map minimal to home template for now
+        timePerSession,
+        daysPerWeek
+      } as any);
+      const table = renderWorkoutWithInjuryMods(template, merged);
+      const full = [
+        `Great! I'll create an 8-week ${primaryGoal.replace('_', ' ')} program tailored to you. `,
+        `**Template: ${template.name}** `,
+        `**Description:** ${template.description} `,
+        `\n${table}`,
+        `\n**Progression Plan:** ${template.progressionPlan} `,
+        `\n**Notes:** ${template.notes.join(', ')} `,
+        `\nWant to tweak anything (experience, days per week, time, equipment)?`
+      ].join('');
+
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: 'assistant',
+        content: full,
+        timestamp: new Date(),
+        isStreaming: false,
+        mode: 'coach'
+      };
+      setChats(prev => prev.map(chat =>
+        chat.id === currentChatId ? { ...chat, messages: [...chat.messages, assistantMessage] } : chat
+      ));
+
+      setShowSaveButton(true);
+      setGeneratedTemplate({ name: template.name, content: full, type: 'workout' });
+      setPendingProgram(false);
+      setIsStreaming(false);
+      setQuickReplies([]);
+      return true;
+    } catch (e) {
+      // Fallback to clarify if generation fails
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: 'assistant',
+        content: 'I can generate your program, but I need a few details: experience, equipment (home/gym), time per session, and days per week.',
+        timestamp: new Date(),
+        isStreaming: false,
+        mode: 'coach'
+      };
+      setChats(prev => prev.map(chat =>
+        chat.id === currentChatId ? { ...chat, messages: [...chat.messages, assistantMessage] } : chat
+      ));
+      setPendingProgram(true);
+      setIsStreaming(false);
+      return true;
+    }
+  };
+
   const deleteChat = (chatId: string) => {
     setChats(prev => prev.filter(chat => chat.id !== chatId));
     if (currentChatId === chatId) {
@@ -182,35 +469,32 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!inputText.trim() || isStreaming || !currentChatId) return;
-    
-    const userMessage = inputText.trim();
+  const sendUserMessage = async (userMessage: string) => {
+    if (!userMessage.trim() || isStreaming || !currentChatId) return;
     const userMessageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Add user message
+
     const newUserMessage: Message = {
       id: userMessageId,
       type: 'user',
-      content: userMessage,
+      content: userMessage.trim(),
       timestamp: new Date(),
       mode,
       isVoice: isVoiceMode
     };
-    
-    // Update current chat
-    setChats(prev => prev.map(chat => 
-      chat.id === currentChatId 
+
+    setChats(prev => prev.map(chat =>
+      chat.id === currentChatId
         ? { ...chat, messages: [...chat.messages, newUserMessage] }
         : chat
     ));
-    
+
     setInputText('');
+    // Intercept for program flow
+    const handled = await handleProgramFlowIfNeeded(userMessage);
+    if (handled) return;
+
     setIsStreaming(true);
-    
-    // Create assistant message placeholder with unique ID
+
     const assistantMessageId = `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const assistantMessage: Message = {
       id: assistantMessageId,
@@ -220,19 +504,23 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
       isStreaming: true,
       mode
     };
-    
-    setChats(prev => prev.map(chat => 
-      chat.id === currentChatId 
+
+    setChats(prev => prev.map(chat =>
+      chat.id === currentChatId
         ? { ...chat, messages: [...chat.messages, assistantMessage] }
         : chat
     ));
-    
+
     try {
-      // Start streaming response
-      await streamResponse(userMessage);
+      await streamResponse(userMessage.trim());
     } catch (error) {
       console.error('Message processing failed:', error);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendUserMessage(inputText);
   };
 
   const handleVoiceToggle = async () => {
@@ -415,9 +703,10 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
               onClick={() => setMode('coach')}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                 mode === 'coach'
-                  ? 'bg-green-500 text-white'
+                  ? 'text-white'
                   : 'text-gray-400 hover:text-white'
               }`}
+              style={mode === 'coach' ? { backgroundColor: '#a5e635' } : undefined}
             >
               💪 Coach
             </button>
@@ -506,6 +795,15 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {currentChat?.messages.map((message) => renderMessage(message))}
+            {quickReplies.length > 0 && (
+              <QuickReplyButtons
+                replies={quickReplies}
+                onSelect={(reply) => {
+                  // Immediately send quick replies instead of only filling the input
+                  sendUserMessage(reply.text);
+                }}
+              />
+            )}
             
             {/* Loading indicator */}
             {isStreaming && (
@@ -544,7 +842,7 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
                         : "Ask me about fitness research, studies, or evidence-based advice..."
                   }
                   disabled={isStreaming || isVoiceMode}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-900 disabled:cursor-not-allowed text-left"
+                  className="w-full px-4 py-3 bg-gray-800 border border-[#a5e635] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#a5e635] focus:border-transparent disabled:bg-gray-900 disabled:cursor-not-allowed text-left"
                 />
                 {isVoiceMode && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -556,9 +854,10 @@ export const AmazingAICoach: React.FC<AmazingAICoachProps> = ({
               <button
                 type="submit"
                 disabled={!inputText.trim() || isStreaming || isVoiceMode}
-                className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-3 rounded-xl hover:from-green-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="text-white p-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium hover:bg-[#94d929]"
+                style={{ backgroundColor: '#a5e635' }}
               >
-                <Send size={20} />
+                <Send size={20} color="#0b0b0b" />
               </button>
             </form>
 

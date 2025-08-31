@@ -1,0 +1,12 @@
+/* Lightweight styles for QuickReplyButtons; designed to be non-breaking */
+.quick-replies-container { display: flex; flex-direction: column; gap: 0.5rem; }
+.quick-replies-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.quick-reply-button { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.75rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #e5e7eb; transition: background 150ms ease, transform 100ms ease; }
+.quick-reply-button:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
+.reply-icon { width: 1.25rem; height: 1.25rem; display: inline-flex; align-items: center; justify-content: center; color: var(--brand-primary, #a5e635); }
+.reply-text { font-size: 0.875rem; line-height: 1rem; }
+.show-more-button { align-self: center; font-size: 0.75rem; color: #9ca3af; background: transparent; border: none; cursor: pointer; }
+
+
+
+

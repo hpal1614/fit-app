@@ -27,11 +27,11 @@ export function VoiceInterface({
   const isProcessing = voiceState?.isProcessing || false;
 
   const getStatusColor = () => {
-    if (error) return 'bg-fitness-red';
-    if (isListening) return 'bg-voice-listening';
-    if (isSpeaking) return 'bg-voice-speaking';
-    if (isProcessing) return 'bg-voice-processing';
-    return 'bg-gray-600';
+    if (error) return 'bg-error';
+    if (isListening) return 'bg-primary';
+    if (isSpeaking) return 'bg-secondary';
+    if (isProcessing) return 'bg-accent';
+    return 'bg-gray-500';
   };
 
   const getStatusText = () => {
@@ -52,25 +52,36 @@ export function VoiceInterface({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-4">
+    <div className="card p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           Voice Assistant
         </h2>
-        <div className={`px-3 py-1 rounded-full text-xs font-medium text-white ${getStatusColor()}`}>
+        <div className={`px-4 py-2 rounded-xl text-sm font-medium text-white ${getStatusColor()}`}>
           {getStatusText()}
         </div>
       </div>
 
+      {/* Test Wake-Word Toggle */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-600 dark:text-gray-300">Test mode: say "Hey Coach" to wake</span>
+        <button
+          onClick={onToggle}
+          className="px-3 py-1.5 text-xs rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+        >
+          {isListening ? 'Stop Test' : 'Start Test'}
+        </button>
+      </div>
+
       {/* Main Voice Button */}
-      <div className="flex flex-col items-center space-y-4">
+      <div className="flex flex-col items-center space-y-6">
         <div className="relative">
           {/* Ripple effect for listening state */}
           {isListening && (
             <>
-              <div className="absolute inset-0 rounded-full bg-voice-listening animate-ping opacity-20" />
-              <div className="absolute inset-0 rounded-full bg-voice-listening animate-pulse opacity-40" />
+              <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" />
+              <div className="absolute inset-0 rounded-full bg-primary animate-pulse opacity-40" />
             </>
           )}
           
@@ -79,12 +90,12 @@ export function VoiceInterface({
             onClick={onToggle}
             disabled={!isInitialized || isSpeaking || isProcessing}
             className={`
-              relative w-20 h-20 rounded-full flex items-center justify-center
+              relative w-24 h-24 rounded-full flex items-center justify-center
               transition-all duration-300 ease-in-out transform hover:scale-105
               disabled:opacity-50 disabled:cursor-not-allowed
               ${getStatusColor()}
               ${isListening ? 'animate-pulse-slow' : ''}
-              shadow-lg hover:shadow-xl
+              shadow-soft hover:shadow-medium
             `}
           >
             {getStatusIcon()}
@@ -93,111 +104,101 @@ export function VoiceInterface({
 
         {/* Voice waves animation */}
         {(isListening || isSpeaking) && (
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             {[...Array(5)].map((_, i) => (
               <div
                 key={i}
-                className={`voice-wave h-6 ${
-                  isListening ? 'bg-voice-listening' : 'bg-voice-speaking'
+                className={`voice-wave h-8 ${
+                  isListening ? 'bg-primary' : 'bg-secondary'
                 }`}
                 style={{
                   animationDelay: `${i * 0.1}s`,
-                  height: `${Math.random() * 20 + 10}px`
+                  animationDuration: '1.5s'
                 }}
               />
             ))}
           </div>
         )}
 
-        {/* Action text */}
-        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-          {!isInitialized ? 'Setting up voice recognition...' :
-           error ? 'Voice recognition error' :
-           isListening ? 'I\'m listening. Say a command!' :
-           isSpeaking ? 'Speaking your response...' :
-           isProcessing ? 'Processing your command...' :
-           'Tap to start voice commands'}
-        </p>
+        {/* Status message */}
+        <div className="text-center">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {isListening && "I'm listening... Speak naturally!"}
+            {isSpeaking && "Speaking response..."}
+            {isProcessing && "Processing your request..."}
+            {!isListening && !isSpeaking && !isProcessing && !error && "Tap to start listening"}
+            {error && "Voice recognition error"}
+          </p>
+        </div>
       </div>
 
-      {/* Transcript Display */}
-      {transcript && (
-        <div className="space-y-2">
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              <span className="font-medium">You said:</span> "{transcript}"
-            </p>
-            
-            {/* Confidence indicator */}
-            <div className="mt-2 flex items-center space-x-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400">Confidence:</span>
-              <div className="flex-1 bg-gray-300 dark:bg-gray-600 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    confidence > 0.8 ? 'bg-fitness-green' :
-                    confidence > 0.6 ? 'bg-fitness-orange' : 'bg-fitness-red'
-                  }`}
-                  style={{ width: `${confidence * 100}%` }}
-                />
-              </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {Math.round(confidence * 100)}%
-              </span>
-            </div>
+      {/* Error Display */}
+      {error && (
+        <div className="bg-error/10 border border-error/20 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-error">Voice Recognition Error</h3>
+            <button
+              onClick={onClearError}
+              className="text-error hover:text-red-700 dark:hover:text-red-400 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            {error.message}
+          </p>
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            Error Code: {error.code}
           </div>
         </div>
       )}
 
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-          <div className="flex items-start space-x-2">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <h4 className="text-sm font-medium text-red-800 dark:text-red-200">
-                Voice Error
-              </h4>
-              <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                {error.message}
-              </p>
-              {error.type === 'permission_denied' && (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-2">
-                  Please allow microphone access in your browser settings.
-                </p>
-              )}
+      {/* Transcript Display */}
+      {transcript && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white">Transcript</h3>
+          <div className="bg-gray-50 dark:bg-dark-700 rounded-xl p-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              "{transcript}"
+            </p>
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Confidence</span>
+                <span>{Math.round(confidence * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${confidence * 100}%` }}
+                />
+              </div>
             </div>
-            <button
-              onClick={onClearError}
-              className="text-red-500 hover:text-red-700 dark:hover:text-red-300"
-            >
-              ✕
-            </button>
           </div>
         </div>
       )}
 
       {/* Voice Commands Help */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-        <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
-          Example Commands:
-        </h4>
-        <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-          <li>• "Start workout" or "Start chest workout"</li>
-          <li>• "Log bench press for 8 reps at 185 pounds"</li>
-          <li>• "What's my squat personal record?"</li>
-          <li>• "Start rest timer"</li>
-          <li>• "I need motivation"</li>
-          <li>• "What should I eat after my workout?"</li>
-        </ul>
-      </div>
-
-      {/* Initialization Status */}
-      {!isInitialized && (
-        <div className="flex items-center justify-center space-x-2 text-gray-500 dark:text-gray-400">
-          <Loader className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Initializing voice recognition...</span>
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-white">Voice Commands</h3>
+        <div className="grid grid-cols-1 gap-2 text-xs">
+          <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-dark-700 rounded-lg">
+            <span className="text-gray-700 dark:text-gray-300">"Start workout"</span>
+            <span className="text-primary font-medium">Begin session</span>
+          </div>
+          <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-dark-700 rounded-lg">
+            <span className="text-gray-700 dark:text-gray-300">"Log bench press 8 reps 185"</span>
+            <span className="text-primary font-medium">Record set</span>
+          </div>
+          <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-dark-700 rounded-lg">
+            <span className="text-gray-700 dark:text-gray-300">"What's my squat PR?"</span>
+            <span className="text-primary font-medium">Get records</span>
+          </div>
+          <div className="flex justify-between items-center p-2 bg-gray-50 dark:bg-dark-700 rounded-lg">
+            <span className="text-gray-700 dark:text-gray-300">"Give me motivation"</span>
+            <span className="text-primary font-medium">Get inspired</span>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

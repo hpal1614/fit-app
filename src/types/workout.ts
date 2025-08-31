@@ -56,6 +56,7 @@ export interface WorkoutTemplate {
   category: WorkoutCategory;
   difficulty: DifficultyLevel;
   estimatedDuration: number; // in minutes
+  type?: 'custom' | 'ai' | 'uploaded' | 'prebuilt';
   createdAt: Date;
   updatedAt: Date;
 }

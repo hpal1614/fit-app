@@ -13,12 +13,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     { id: 'home', label: 'Logger', icon: '💪', color: 'primary' },
     { id: 'workout', label: 'Workouts', icon: '🏋️', color: 'secondary' },
     { id: 'nutrition', label: 'Nutrition', icon: '🍎', color: 'success' },
-    { id: 'ai-coach', label: 'AI Coach', icon: '🤖', color: 'accent' }
+    { id: 'ai-coach', label: 'AI Coach', icon: '🤖', color: 'accent' },
+    { id: 'final-ui', label: 'New UI', icon: '✨', color: 'warning' }
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 dark:bg-gray-900/95 dark:border-gray-700 z-50">
-      <div className="flex justify-around items-center h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 dark:bg-gray-900/95 dark:border-gray-700 z-50 rounded-t-2xl">
+      <div className="flex justify-around items-center h-16 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom,0)+8px)]">
         {tabs.map((tab) => {
           const isActive = currentView === tab.id;
           return (
